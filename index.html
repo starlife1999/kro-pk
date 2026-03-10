@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRO PK — DROP 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&display=swap" rel="stylesheet">
+    <!-- Basic SEO -->
+<meta name="description" content="KRO PK — Nigerian streetwear brand. Motorsport drop 2026. Effortlessly swag, no cap.">
+<meta name="keywords" content="KRO PK, streetwear Nigeria, Lagos fashion, motorsport clothing, IPK Starboy">
+<meta name="author" content="KRO PK">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph (social media) -->
+<meta property="og:title" content="KRO PK — DROP 2026">
+<meta property="og:description" content="Nigerian streetwear. Motorsport collection. Keep rocking.">
+<meta property="og:image" content="https://kro-pk.shop/images/og-image.jpg">
+<meta property="og:url" content="https://kro-pk.shop">
+<meta property="og:type" content="website">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="KRO PK">
+<meta name="twitter:description" content="Nigerian streetwear. Drop 2026.">
+<meta name="twitter:image" content="https://kro-pk.shop/images/og-image.jpg">
+<link rel="icon" type="image/png" href="favicon.png.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #0f172a;
+            --white: #f8fafc;
+            --red: #ef4444;
+            --yellow: #fbbf24;
+        }
+
+        body {
+            font-family: 'Permanent Marker', cursive;
+            background: var(--navy);
+            color: var(--white);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Slideshow container */
+        .slideshow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        /* Placeholder gradients until you add images */
+        .slide:nth-child(1) {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+        .slide:nth-child(2) {
+            background: linear-gradient(225deg, #0f172a 0%, #1e293b 100%);
+        }
+        .slide:nth-child(3) {
+            background: linear-gradient(45deg, #1e293b 0%, #0f172a 100%);
+        }
+        .slide:nth-child(4) {
+            background: linear-gradient(315deg, #0f172a 0%, #1e293b 100%);
+        }
+        .slide:nth-child(5) {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        }
+
+       /* Image placeholders text */
+.slide::before {
+    display: none;
+}
+        /* Overlay gradient for text readability */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.6) 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Top branding */
+        .brand {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            text-align: center;
+        }
+
+        .brand-logo {
+            font-family: 'Bangers', cursive;
+            font-size: 4rem;
+            text-shadow: 4px 4px 0 var(--red);
+            letter-spacing: 0.1em;
+        }
+
+        .brand-drop {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.2rem;
+            color: var(--yellow);
+            margin-top: 0.5rem;
+        }
+
+        /* Enter button */
+        .enter-btn {
+            position: fixed;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            text-decoration: none;
+        }
+
+        .enter-text {
+            font-family: 'Bangers', cursive;
+            font-size: 2rem;
+            background: var(--red);
+            color: var(--white);
+            padding: 1.5rem 4rem;
+            border: 3px solid var(--white);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+            display: inline-block;
+            letter-spacing: 0.05em;
+        }
+
+        .enter-text:hover {
+            background: var(--yellow);
+            color: var(--navy);
+            transform: translateX(-50%) translateY(-3px);
+            box-shadow: 8px 8px 0 var(--red);
+        }
+
+        /* Slide indicators */
+        .indicators {
+            position: fixed;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--white);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: var(--yellow);
+            border-color: var(--yellow);
+        }
+
+        /* Sound effect on hover */
+        .enter-btn:hover::before {
+            content: 'VROOM!';
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-10deg);
+            font-family: 'Bangers', cursive;
+            font-size: 1.5rem;
+            color: var(--yellow);
+            animation: pop 0.5s ease;
+        }
+
+        @keyframes pop {
+            0% { transform: translateX(-50%) scale(0) rotate(-10deg); }
+            50% { transform: translateX(-50%) scale(1.2) rotate(-10deg); }
+            100% { transform: translateX(-50%) scale(1) rotate(-10deg); }
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .brand-logo {
+                font-size: 2.5rem;
+            }
+            .enter-text {
+                font-size: 1.5rem;
+                padding: 1rem 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Slideshow -->
+    <div class="slideshow">
+        <div class="slide active"></div>
+        <div class="slide"></div>
+        <div class="slide"></div>
+        <div class="slide"></div>
+        <div class="slide"></div>
+    </div>
+
+    <!-- Dark overlay -->
+    <div class="overlay"></div>
+
+    <!-- Branding -->
+    <div class="brand">
+        <div class="brand-logo">KRO PK</div>
+        <div class="brand-drop">DROP 2026 — MOTORSPORT</div>
+    </div>
+
+    <!-- Enter button -->
+    <a href="shop.html" class="enter-btn">
+        <div class="enter-text">ENTER SITE →</div>
+    </a>
+
+    <!-- Slide indicators -->
+    <div class="indicators">
+        <div class="dot active" onclick="goToSlide(0)"></div>
+        <div class="dot" onclick="goToSlide(1)"></div>
+        <div class="dot" onclick="goToSlide(2)"></div>
+        <div class="dot" onclick="goToSlide(3)"></div>
+        <div class="dot" onclick="goToSlide(4)"></div>
+    </div>
+
+   <script>
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.dot');
+    const images = ['campaign-1.jpg', 'campaign-2.jpg', 'campaign-3.jpg'];
+    let current = 0;
+
+    // Set images on the first three slides, hide the rest
+    slides.forEach((slide, i) => {
+        if (i < images.length) {
+            slide.style.backgroundImage = `url('${images[i]}')`;
+            slide.style.backgroundSize = 'cover';
+            slide.style.backgroundPosition = 'center';
+        } else {
+            slide.style.display = 'none';
+        }
+    });
+
+    // Hide unused dots
+    dots.forEach((dot, i) => {
+        if (i >= images.length) dot.style.display = 'none';
+    });
+
+    function goToSlide(index) {
+        slides[current].classList.remove('active');
+        dots[current].classList.remove('active');
+        current = index;
+        slides[current].classList.add('active');
+        dots[current].classList.add('active');
+    }
+
+    // Auto-advance every 1.5 seconds
+    setInterval(() => {
+        goToSlide((current + 1) % images.length);
+    }, 1500);
+</script>
+
+</body>
+</html>
+
+
+
+

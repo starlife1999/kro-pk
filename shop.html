@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRO PK — DROP 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #0f172a;
+            --navy-light: #1e293b;
+            --white: #f8fafc;
+            --red: #ef4444;
+            --yellow: #fbbf24;
+            --blue: #3b82f6;
+            --outline: 3px solid var(--white);
+        }
+
+        body {
+            font-family: 'Comic Neue', cursive;
+            background: var(--navy);
+            color: var(--white);
+            overflow-x: hidden;
+        }
+
+/* Halftone overlay */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 8px 8px;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Remove halftone from ALL product images - STRONGER FIX */
+.product-image-placeholder {
+    position: relative;
+    z-index: 10000 !important;
+    isolation: isolate;
+}
+
+.product-image-placeholder img {
+    position: relative;
+    z-index: 10001 !important;
+}
+
+.product-card {
+    position: relative;
+    z-index: 10000;
+}
+        /* Comic panel style */
+        .panel {
+            border: var(--outline);
+            background: var(--navy-light);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        /* Hero Section - No header, starts immediately */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--navy) 0%, #020617 100%);
+            border-bottom: var(--outline);
+        }
+
+        /* Background speed lines */
+        .speed-lines-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            opacity: 0.1;
+        }
+
+        .speed-line-bg {
+            position: absolute;
+            background: var(--white);
+            height: 2px;
+            width: 100%;
+        }
+
+        .speed-line-bg:nth-child(1) { top: 20%; transform: rotate(-5deg); }
+        .speed-line-bg:nth-child(2) { top: 40%; transform: rotate(-3deg); }
+        .speed-line-bg:nth-child(3) { top: 60%; transform: rotate(-7deg); }
+        .speed-line-bg:nth-child(4) { top: 80%; transform: rotate(-4deg); }
+
+        /* Large Mascot */
+        .hero-mascot {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin-bottom: 2rem;
+            animation: hover 3s ease-in-out infinite;
+        }
+
+        @keyframes hover {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+
+        .starboy-racer-xl {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .helmet-xl {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e293b 0%, var(--navy) 50%, #020617 100%);
+            border-radius: 50% 50% 45% 45%;
+            border: var(--outline);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+        }
+
+        .helmet-xl::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 20%;
+            width: 30%;
+            height: 20%;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            filter: blur(10px);
+        }
+
+        .goggles-xl {
+            position: absolute;
+            top: 35%;
+            left: 10%;
+            width: 80%;
+            height: 35%;
+            background: linear-gradient(135deg, var(--red) 0%, var(--yellow) 50%, var(--red) 100%);
+            border-radius: 50%;
+            border: var(--outline);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .goggles-xl::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shine 3s ease-in-out infinite;
+        }
+
+        @keyframes shine {
+            0%, 100% { left: -100%; }
+            50% { left: 150%; }
+        }
+
+        .goggles-xl::after {
+            content: '★';
+            color: var(--white);
+            font-size: 3rem;
+            text-shadow: 3px 3px 0 var(--navy);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .hair-xl {
+            position: absolute;
+            top: -5%;
+            right: -5%;
+            width: 35%;
+            height: 35%;
+            background: var(--white);
+            border: var(--outline);
+            border-radius: 0 50% 50% 50%;
+            transform: rotate(-30deg);
+        }
+
+        /* Speed streaks behind mascot */
+        .speed-streaks-xl {
+            position: absolute;
+            width: 150%;
+            height: 100%;
+            left: -25%;
+            top: 0;
+            z-index: -1;
+        }
+
+        .streak-xl {
+            position: absolute;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--red), transparent);
+            opacity: 0.6;
+        }
+
+        .streak-xl:nth-child(1) { width: 200px; top: 30%; left: -50px; transform: rotate(-10deg); }
+        .streak-xl:nth-child(2) { width: 250px; top: 50%; left: -80px; transform: rotate(-5deg); }
+        .streak-xl:nth-child(3) { width: 180px; top: 70%; left: -30px; transform: rotate(-15deg); }
+
+        /* Hero Text */
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: var(--red);
+            color: var(--white);
+            padding: 0.8rem 2rem;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.3rem;
+            border: var(--outline);
+            transform: rotate(-3deg);
+            margin-bottom: 1.5rem;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .hero-badge::after {
+            content: 'NEW!';
+            position: absolute;
+            top: -15px;
+            right: -25px;
+            background: var(--yellow);
+            color: var(--navy);
+            font-family: 'Bangers', cursive;
+            font-size: 1rem;
+            padding: 0.3rem 0.8rem;
+            border: var(--outline);
+            transform: rotate(15deg);
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: rotate(15deg) translateY(0); }
+            50% { transform: rotate(15deg) translateY(-5px); }
+        }
+
+        .hero-title {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(4rem, 15vw, 8rem);
+            line-height: 0.9;
+            text-shadow: 4px 4px 0 var(--red);
+            margin-bottom: 1rem;
+            transform: rotate(-2deg);
+        }
+
+        .hero-title span {
+            display: block;
+        }
+
+        .hero-title .outline {
+            color: transparent;
+            -webkit-text-stroke: 3px var(--yellow);
+            text-shadow: none;
+        }
+
+        .hero-sub {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.5rem;
+            color: var(--yellow);
+            transform: rotate(-1deg);
+            margin-top: 1rem;
+        }
+
+        /* SFX bubbles */
+        .sfx {
+            position: absolute;
+            font-family: 'Bangers', cursive;
+            font-size: 2.5rem;
+            color: var(--yellow);
+            text-shadow: 3px 3px 0 var(--navy);
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .sfx-vroom {
+            top: 10%;
+            right: 10%;
+            transform: rotate(15deg);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .sfx-pow {
+            bottom: 20%;
+            left: 10%;
+            color: var(--red);
+            transform: rotate(-10deg);
+            animation: float 3s ease-in-out infinite 0.5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: rotate(15deg) translateY(0); }
+            50% { transform: rotate(15deg) translateY(-15px); }
+        }
+
+        /* Racing stripes */
+        .racing-stripes {
+            display: flex;
+            height: 20px;
+            border-bottom: var(--outline);
+        }
+
+        .stripe-check {
+            flex: 1;
+            background: repeating-linear-gradient(
+                45deg,
+                var(--white),
+                var(--white) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+        }
+
+        .stripe-red { flex: 2; background: var(--red); }
+        .stripe-yellow { flex: 1; background: var(--yellow); }
+
+        /* Drop Section */
+        .drop-section {
+            padding: 4rem 1rem;
+            background: var(--navy);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-label {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.2rem;
+            color: var(--red);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            text-shadow: 3px 3px 0 var(--blue);
+            display: inline-block;
+            border: var(--outline);
+            padding: 0.5rem 2rem;
+            background: var(--navy-light);
+            transform: rotate(-1deg);
+        }
+
+        /* Catalogue Grid */
+        .catalogue {
+            padding: 2rem 1rem 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            composes: panel;
+            transform: rotate(-1deg);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .product-card:nth-child(even) {
+            transform: rotate(1deg);
+        }
+
+        .product-card:hover {
+            transform: rotate(0deg) scale(1.03);
+            z-index: 10;
+            box-shadow: 8px 8px 0 var(--red);
+        }
+
+        /* Image placeholder - REPLACE THIS DIV WITH YOUR IMG TAG */
+        .product-image-placeholder {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--navy-light) 0%, #0f172a 100%);
+            position: relative;
+            overflow: hidden;
+            border-bottom: var(--outline);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .product-tag {
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background: var(--yellow);
+            color: var(--navy);
+            font-family: 'Bangers', cursive;
+            font-size: 0.9rem;
+            padding: 0.3rem 2rem;
+            transform: rotate(45deg);
+            border: 2px solid var(--white);
+            z-index: 5;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+        }
+
+        .product-tag.bestseller { background: var(--red); color: var(--white); }
+        .product-tag.new { background: var(--blue); color: var(--white); }
+        .product-tag.sold { background: #64748b; color: var(--white); }
+
+        /* Graphic placeholders until you add images */
+        .placeholder-graphic {
+            font-family: 'Bangers', cursive;
+            font-size: 4rem;
+            color: var(--white);
+            opacity: 0.3;
+            text-align: center;
+        }
+
+        .product-info {
+            padding: 1.5rem;
+        }
+
+        .product-name {
+            font-family: 'Bangers', cursive;
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+            color: var(--white);
+        }
+
+        .product-price {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.4rem;
+            color: var(--yellow);
+            margin-bottom: 1rem;
+        }
+
+        .product-desc {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .cta-button {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            background: var(--red);
+            color: var(--white);
+            font-family: 'Bangers', cursive;
+            font-size: 1.2rem;
+            border: 2px solid var(--white);
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .cta-button:hover {
+            background: var(--yellow);
+            color: var(--navy);
+            transform: translateY(-2px);
+            box-shadow: 4px 4px 0 var(--navy);
+        }
+
+        /* Marquee */
+        .marquee-container {
+            background: var(--red);
+            border-top: var(--outline);
+            border-bottom: var(--outline);
+            overflow: hidden;
+            padding: 1rem 0;
+        }
+
+        .marquee {
+            display: flex;
+            animation: scroll 15s linear infinite;
+            white-space: nowrap;
+        }
+
+        .marquee span {
+            font-family: 'Bangers', cursive;
+            font-size: 1.8rem;
+            color: var(--white);
+            text-shadow: 2px 2px 0 var(--navy);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .marquee span::after {
+            content: '★';
+            color: var(--yellow);
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Minimal Footer */
+        footer {
+            background: #020617;
+            padding: 3rem 1rem;
+            border-top: var(--outline);
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-family: 'Bangers', cursive;
+            font-size: 3rem;
+            color: var(--white);
+            text-shadow: 3px 3px 0 var(--red);
+            margin-bottom: 1rem;
+        }
+
+        .footer-contact {
+            font-family: 'Comic Neue', cursive;
+            font-size: 1.1rem;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+
+        .footer-contact a {
+            color: var(--yellow);
+            text-decoration: none;
+        }
+
+        .socials {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .socials a {
+            width: 50px;
+            height: 50px;
+            background: var(--navy-light);
+            border: var(--outline);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Bangers', cursive;
+            color: var(--white);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .socials a:hover {
+            background: var(--yellow);
+            color: var(--navy);
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .copyright {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .hero-mascot {
+                width: 200px;
+                height: 200px;
+            }
+
+            .goggles-xl::after {
+                font-size: 2rem;
+            }
+
+            .hero-title {
+                font-size: 3rem;
+            }
+
+            .sfx {
+                font-size: 1.5rem;
+            }
+
+            .sfx-vroom { right: 5%; }
+            .sfx-pow { left: 5%; }
+
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero - No header, starts immediately -->
+    <section class="hero">
+        <div class="speed-lines-bg">
+            <div class="speed-line-bg"></div>
+            <div class="speed-line-bg"></div>
+            <div class="speed-line-bg"></div>
+            <div class="speed-line-bg"></div>
+        </div>
+
+        <div class="hero-mascot">
+            <div class="speed-streaks-xl">
+                <div class="streak-xl"></div>
+                <div class="streak-xl"></div>
+                <div class="streak-xl"></div>
+            </div>
+            <div class="starboy-racer-xl">
+                <div class="helmet-xl">
+                    <div class="goggles-xl"></div>
+                    <div class="hair-xl"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sfx sfx-vroom">VROOM!</div>
+        <div class="sfx sfx-pow">POW!</div>
+
+        <div class="hero-content">
+            <div class="hero-badge">DROP 2026 — MOTORSPORT</div>
+            <h1 class="hero-title">
+                <span>OVER</span>
+                <span class="outline">DRIVE</span>
+            </h1>
+            <p class="hero-sub">Effortlessly Swag. No Cap.</p>
+        </div>
+    </section>
+
+    <div class="racing-stripes">
+        <div class="stripe-check"></div>
+        <div class="stripe-red"></div>
+        <div class="stripe-yellow"></div>
+        <div class="stripe-check"></div>
+    </div>
+
+    <!-- Drop Section -->
+    <section class="drop-section" id="drop">
+        <div class="section-header">
+            <div class="section-label">COLLECTION 01</div>
+            <h2 class="section-title">THE DROP</h2>
+        </div>
+    </section>
+
+    <!-- Catalogue -->
+    <section class="catalogue">
+        <div class="product-grid">
+            
+           <!-- IPK Starboy Polo -->
+<a href="ipk-starboy-polo.html" style="text-decoration: none; color: inherit; display: block;">
+    <div class="product-card panel">
+        <div class="product-tag bestseller">HOT!</div>
+        <div class="product-image-placeholder">
+            <img src="ipk-polo-front.png" alt="IPK Starboy Polo" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">IPK STARBOY POLO</h3>
+            <div class="product-price">₦25,000</div>
+            <p class="product-desc">Black motorsport polo. Over Drive shoulders. Starboy chest hit. Racing stripes.</p>
+            <div class="cta-button">Cop Now</div>
+        </div>
+    </div>
+</a>
+
+         <!-- PK Thermal -->
+<a href="pk-thermal.html" style="text-decoration: none; color: inherit; display: block;">
+    <div class="product-card panel">
+        <div class="product-tag new">NEW</div>
+        <div class="product-image-placeholder">
+            <img src="pk-thermal.jpg" alt="PK Thermal" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">PK THERMAL</h3>
+            <div class="product-price">₦20,000</div>
+            <p class="product-desc">Long sleeve thermal. Waffle texture. Sleeve graphics. Layer essential.</p>
+            <div class="cta-button">Cop Now</div>
+        </div>
+    </div>
+</a>
+        <!-- Jorts -->
+<a href="jorts.html" style="text-decoration: none; color: inherit; display: block;">
+    <div class="product-card panel">
+        <div class="product-tag new">NEW</div>
+        <div class="product-image-placeholder">
+            <img src="jorts-front.png" alt="KRO PK Jorts" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">KRO PK JORTS</h3>
+            <div class="product-price">₦17,000</div>
+            <p class="product-desc">Joggers material jorts. Knee length. Heavy weight. Racing patch. Summer essential.</p>
+            <div class="cta-button">Cop Now</div>
+        </div>
+    </div>
+</a>
+
+           <!-- Beanie -->
+<a href="beanie.html" style="text-decoration: none; color: inherit; display: block;">
+    <div class="product-card panel">
+        <div class="product-image-placeholder">
+            <img src="beanie-front.png" alt="KRO PK Beanie" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">KRO PK BEANIE</h3>
+            <div class="product-price">₦10,000</div>
+            <p class="product-desc">Cuffed beanie. Embroidered logo. Winter essential. Keep rocking.</p>
+            <div class="cta-button">Cop Now</div>
+        </div>
+    </div>
+</a>
+
+            <!-- KRO PK Graphic Tee -->
+<a href="graphic-tee.html" style="text-decoration: none; color: inherit; display: block;">
+    <div class="product-card panel">
+        <div class="product-tag new">NEW</div>
+        <div class="product-image-placeholder">
+            <img src="graphic-tee.png" alt="KRO PK Graphic Tee" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">KRO PK GRAPHIC TEE</h3>
+            <div class="product-price">₦12,000</div>
+            <p class="product-desc">Heavyweight cotton. Motorsport graphic print. Box fit. Everyday essential.</p>
+            <div class="cta-button">Cop Now</div>
+        </div>
+    </div>
+</a>
+
+           <!-- KRO PK Core Tee -->
+<a href="kro-tee.html" style="text-decoration: none; color: inherit; display: block;">
+    <div class="product-card panel">
+        <div class="product-image-placeholder">
+            <div class="placeholder-graphic">KRO<br>TEE</div>
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">KRO PK TEE</h3>
+            <div class="product-price">₦10,000</div>
+            <p class="product-desc">Core logo tee. Heavy cotton. Box fit. Essential.</p>
+            <div class="cta-button">Cop Now</div>
+        </div>
+    </div>
+</a>
+
+        </div>
+    </section>
+
+    <!-- Marquee -->
+    <div class="marquee-container">
+        <div class="marquee">
+            <span>KEEP ROCKING</span>
+            <span>IPK STARBOY</span>
+            <span>OVER DRIVE</span>
+            <span>TOP GEAR</span>
+            <span>BALANCE</span>
+            <span>KEEP ROCKING</span>
+            <span>IPK STARBOY</span>
+            <span>OVER DRIVE</span>
+            <span>TOP GEAR</span>
+            <span>BALANCE</span>
+        </div>
+    </div>
+
+    <!-- Minimal Footer -->
+    <footer>
+        <div class="footer-logo">KRO PK</div>
+        <div class="footer-contact">
+            orders@kropk.com<br>
+            Lagos, Nigeria
+        </div>
+        <div class="socials">
+            <a href="https://www.instagram.com/reel/DVRaHvnCNlo/">IG</a>
+            <a href="#">X</a>
+            <a href="https://www.tiktok.com/@kro_pk?is_from_webapp=1&sender_device=pc">TK</a>
+        </div>
+        <div class="copyright">© 2026 KRO PK. KEEP ROCKING.</div>
+    </footer>
+
+    <script>
+        // Mascot follows mouse slightly
+        document.addEventListener('mousemove', (e) => {
+            const mascot = document.querySelector('.hero-mascot');
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            mascot.style.transform = `translate(${x}px, ${y}px) rotate(${x * 0.2}deg)`;
+        });
+
+        // Product card engine rev on hover
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.animation = 'shake 0.4s ease-in-out';
+            });
+            card.addEventListener('animationend', function() {
+                this.style.animation = '';
+            });
+        });
+
+        // Click sfx
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('a') && !e.target.closest('button')) {
+                const bubble = document.createElement('div');
+                bubble.className = 'sfx';
+                bubble.textContent = ['VROOM!', 'ZOOM!', 'POW!', 'BANG!'][Math.floor(Math.random() * 4)];
+                bubble.style.left = e.pageX + 'px';
+                bubble.style.top = e.pageY + 'px';
+                bubble.style.position = 'absolute';
+                bubble.style.animation = 'float 0.6s ease-out forwards';
+                document.body.appendChild(bubble);
+                setTimeout(() => bubble.remove(), 600);
+            }
+        });
+
+        // Fallback: ensure product-card clicks always navigate to their parent link (fixes Chrome cases)
+        document.querySelectorAll('.product-card').forEach(card => {
+            const outerLink = card.closest('a');
+            if (!outerLink) return;
+            card.addEventListener('click', (ev) => {
+                if (ev.target.closest('a') || ev.target.closest('button')) return;
+                window.location.href = outerLink.href;
+            });
+        });
+    </script>
+
+</body>
+</html>
