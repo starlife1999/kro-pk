@@ -222,7 +222,7 @@ app.post('/api/orders', async (req, res) => {
     }
 
     const stockKey = item.size;
-    const available = product.sizes?.[stockKey] ?? 0;
+    const available = product.sizes?.get(stockKey) ?? 0;
     console.log(`Stock check for ${item.slug} size ${stockKey}: requested ${item.qty}, available ${available}`);
     if (available < item.qty) {
       stockErrors.push({ slug: item.slug, size: stockKey, available });
