@@ -4,7 +4,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const Resend = require('resend');
+const { Resend } = require('resend');
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
