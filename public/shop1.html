@@ -1020,7 +1020,7 @@ body::before {
 
 <!-- STICKY NAV -->
 <nav class="site-nav">
-    <a href="shop.html" class="nav-logo">KRO PK</a>
+    <a href="shop1.html" class="nav-logo">KRO PK</a>
     <div class="nav-right">
         <a href="#" class="nav-link" onclick="openSubModal(); return false;">Newsletter</a>
         <a href="cart.html" class="cart-icon-btn">
@@ -1296,16 +1296,19 @@ body::before {
     }
 
     // ─── SUBSCRIPTION ENGINE ───────────────────────────────────
-    // Sends subscriber data to Formspree (free email form service)
-    // Replace YOUR_FORM_ID with your Formspree form ID from formspree.io
-    const FORMSPREE_URL = 'https://formspree.io/f/YOUR_FORM_ID';
+    // Sends subscriber data to FormSubmit (free email form service)
+    const FORMSPREE_URL = 'https://formsubmit.co/orders@kropk.com';
 
     async function sendToFormspree(data) {
         try {
+            const formData = new FormData();
+            for (const [key, value] of Object.entries(data)) {
+                formData.append(key, value);
+            }
+
             const res = await fetch(FORMSPREE_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(data)
+                body: formData
             });
             return res.ok;
         } catch {
