@@ -4,7 +4,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const Resend = require('resend');
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
@@ -21,18 +21,8 @@ if (!process.env.MONGODB_URI) {
   console.warn('Warning: MONGODB_URI not set. Using default local mongodb://localhost:27017/kro_pk_store');
 }
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  tls: { rejectUnauthorized: false },
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
-console.log('Email config:', { user: process.env.EMAIL_USER, passSet: !!process.env.EMAIL_PASS });
+const resend = new Resend(process.env.RESEND_API_KEY);
+console.log('Email config:', { from: process.env.EMAIL_FROM || 'onboarding@resend.dev', owner: OWNER_EMAIL, resendKeySet: !!process.env.RESEND_API_KEY });
 
 app.use(express.json());
 app.use(cookieParser());
@@ -139,10 +129,21 @@ function createOrderEmail(order) {
   ).join('\n');
 
   return {
-    from: process.env.EMAIL_USER,
+    from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
     to: OWNER_EMAIL,
     subject: `New order ${order.orderNumber}`,
-    text: `New order received:\n\nOrder number: ${order.orderNumber}\nCustomer: ${order.customer.name}\nPhone: ${order.customer.phone}\nAddress: ${order.customer.address}, ${order.customer.city}, ${order.customer.state}\n\nItems:\n${items}\n\nTotal: ₦${order.total.toLocaleString('en-NG')}\n\nStatus: ${order.status}\n\nPlease review the admin dashboard to process this order.`,
+    html: `
+      <h2>New order received</h2>
+      <p><strong>Order number:</strong> ${order.orderNumber}</p>
+      <p><strong>Customer:</strong> ${order.customer.name}</p>
+      <p><strong>Phone:</strong> ${order.customer.phone}</p>
+      <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city}, ${order.customer.state}</p>
+      <h3>Items:</h3>
+      <pre>${items}</pre>
+      <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
+      <p><strong>Status:</strong> ${order.status}</p>
+      <p>Please review the admin dashboard to process this order.</p>
+    `,
   };
 }
 
@@ -269,10 +270,15 @@ app.post('/api/orders', async (req, res) => {
 
     const mail = createOrderEmail(order[0]);
     console.log('Sending order email:', { to: mail.to, subject: mail.subject });
-    transporter.sendMail(mail).then(info => {
-      console.log('Email sent successfully:', info.messageId);
+    
+    resend.emails.send(mail).then(result => {
+      if (result.error) {
+        console.error('Email send failed:', result.error);
+      } else {
+        console.log('Email sent successfully:', result.data.id);
+      }
     }).catch(err => {
-      console.error('Email send failed:', err.message);
+      console.error('Email send error:', err.message);
     });
 
     res.status(201).json({ message: 'Order placed successfully', orderNumber });
