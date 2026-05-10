@@ -29,6 +29,8 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+console.log('Email config:', { user: process.env.EMAIL_USER, passSet: !!process.env.EMAIL_PASS });
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -263,7 +265,12 @@ app.post('/api/orders', async (req, res) => {
     session.endSession();
 
     const mail = createOrderEmail(order[0]);
-    transporter.sendMail(mail).catch(err => console.error('Email error:', err));
+    console.log('Sending order email:', { to: mail.to, subject: mail.subject });
+    transporter.sendMail(mail).then(info => {
+      console.log('Email sent successfully:', info.messageId);
+    }).catch(err => {
+      console.error('Email send failed:', err.message);
+    });
 
     res.status(201).json({ message: 'Order placed successfully', orderNumber });
   } catch (err) {
