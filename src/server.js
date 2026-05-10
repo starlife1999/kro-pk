@@ -21,8 +21,11 @@ if (!process.env.MONGODB_URI) {
   console.warn('Warning: MONGODB_URI not set. Using default local mongodb://localhost:27017/kro_pk_store');
 }
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
+const transporter = nodemailer.createTransporter({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  tls: { rejectUnauthorized: false },
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
