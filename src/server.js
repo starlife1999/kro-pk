@@ -193,6 +193,7 @@ app.get('/api/products/:slug', async (req, res) => {
 });
 
 app.post('/api/orders', async (req, res) => {
+  console.log('Order request body:', JSON.stringify(req.body, null, 2));
   const { customer, items } = req.body;
   if (!customer || !items || !Array.isArray(items) || !items.length) {
     return res.status(400).json({ message: 'Customer and items are required' });
@@ -214,6 +215,7 @@ app.post('/api/orders', async (req, res) => {
     }
 
     const product = await Product.findOne({ slug: item.slug });
+    console.log(`Product ${item.slug}:`, { found: !!product, active: product?.active, sizes: product?.sizes });
     if (!product || !product.active) {
       stockErrors.push({ slug: item.slug, message: 'Product unavailable' });
       continue;
@@ -221,6 +223,7 @@ app.post('/api/orders', async (req, res) => {
 
     const stockKey = item.size;
     const available = product.sizes?.[stockKey] ?? 0;
+    console.log(`Stock check for ${item.slug} size ${stockKey}: requested ${item.qty}, available ${available}`);
     if (available < item.qty) {
       stockErrors.push({ slug: item.slug, size: stockKey, available });
       continue;
