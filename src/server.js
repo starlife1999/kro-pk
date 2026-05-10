@@ -137,12 +137,38 @@ function createOrderEmail(order) {
       <p><strong>Order number:</strong> ${order.orderNumber}</p>
       <p><strong>Customer:</strong> ${order.customer.name}</p>
       <p><strong>Phone:</strong> ${order.customer.phone}</p>
+      <p><strong>Email:</strong> ${order.customer.email || 'Not provided'}</p>
       <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city}, ${order.customer.state}</p>
       <h3>Items:</h3>
       <pre>${items}</pre>
       <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
       <p><strong>Status:</strong> ${order.status}</p>
       <p>Please review the admin dashboard to process this order.</p>
+    `,
+  };
+}
+
+function createCustomerConfirmationEmail(order) {
+  const items = order.items.map(item =>
+    `• ${item.name} / ${item.size} × ${item.qty} = ₦${item.price.toLocaleString('en-NG')}`
+  ).join('\n');
+
+  return {
+    from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+    to: order.customer.email,
+    subject: `Your KRO PK order ${order.orderNumber}`,
+    html: `
+      <h2>Thanks for your order!</h2>
+      <p>Your order number is <strong>${order.orderNumber}</strong>.</p>
+      <p>We will contact you soon to confirm payment and delivery.</p>
+      <h3>Order details</h3>
+      <p><strong>Name:</strong> ${order.customer.name}</p>
+      <p><strong>Phone:</strong> ${order.customer.phone}</p>
+      <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city}, ${order.customer.state}</p>
+      <h3>Items</h3>
+      <pre>${items}</pre>
+      <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
+      <p>We will reach out soon with payment and delivery details.</p>
     `,
   };
 }
@@ -205,7 +231,7 @@ app.post('/api/orders', async (req, res) => {
     return res.status(400).json({ message: 'Customer and items are required' });
   }
 
-  const missingFields = ['name', 'phone', 'address', 'city', 'state'].filter(f => !customer[f]?.toString().trim());
+  const missingFields = ['name', 'phone', 'email', 'address', 'city', 'state'].filter(f => !customer[f]?.toString().trim());
   if (missingFields.length) {
     return res.status(400).json({ message: 'All customer fields are required' });
   }
@@ -268,17 +294,30 @@ app.post('/api/orders', async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    const mail = createOrderEmail(order[0]);
-    console.log('Sending order email:', { to: mail.to, subject: mail.subject });
-    
-    resend.emails.send(mail).then(result => {
+    const ownerMail = createOrderEmail(order[0]);
+    const customerMail = createCustomerConfirmationEmail(order[0]);
+
+    console.log('Sending owner email:', { to: ownerMail.to, subject: ownerMail.subject });
+    console.log('Sending customer email:', { to: customerMail.to, subject: customerMail.subject });
+
+    resend.emails.send(ownerMail).then(result => {
       if (result.error) {
-        console.error('Email send failed:', result.error);
+        console.error('Owner email send failed:', result.error);
       } else {
-        console.log('Email sent successfully:', result.data.id);
+        console.log('Owner email sent successfully:', result.data.id);
       }
     }).catch(err => {
-      console.error('Email send error:', err.message);
+      console.error('Owner email send error:', err.message);
+    });
+
+    resend.emails.send(customerMail).then(result => {
+      if (result.error) {
+        console.error('Customer email send failed:', result.error);
+      } else {
+        console.log('Customer confirmation email sent successfully:', result.data.id);
+      }
+    }).catch(err => {
+      console.error('Customer email send error:', err.message);
     });
 
     res.status(201).json({ message: 'Order placed successfully', orderNumber });

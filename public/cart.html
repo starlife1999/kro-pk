@@ -627,13 +627,14 @@ async function handleCheckout() {
 
     const name = document.getElementById('f-name')?.value?.trim();
     const phone = document.getElementById('f-phone')?.value?.trim();
+    const email = document.getElementById('f-email')?.value?.trim();
     const address = document.getElementById('f-address')?.value?.trim();
     const city = document.getElementById('f-city')?.value?.trim();
     const state = document.getElementById('f-state')?.value?.trim();
 
-    if (!name || !phone || !address || !city || !state) {
+    if (!name || !phone || !email || !address || !city || !state) {
         showToast('FILL ALL FIELDS!');
-        ['f-name','f-phone','f-address','f-city','f-state'].forEach(id => {
+        ['f-name','f-phone','f-email','f-address','f-city','f-state'].forEach(id => {
             const el = document.getElementById(id);
             if (el && !el.value.trim()) el.style.borderColor = 'var(--red)';
         });
@@ -641,7 +642,7 @@ async function handleCheckout() {
     }
 
     const payload = {
-        customer: { name, phone, address, city, state },
+        customer: { name, phone, email, address, city, state },
         items: cart.map(item => ({ slug: item.id, size: item.size, qty: item.qty, price: item.price }))
     };
 
@@ -772,6 +773,10 @@ function render() {
                         <label>Phone Number</label>
                         <input type="tel" id="f-phone" placeholder="08XXXXXXXXX" oninput="this.style.borderColor='#334155'">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="f-email" placeholder="you@example.com" oninput="this.style.borderColor='#334155'">
                 </div>
                 <div class="form-group">
                     <label>Delivery Address</label>
