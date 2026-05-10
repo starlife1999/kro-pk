@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KRO PK Tee — KRO PK</title>
+    <title>PK Thermal — KRO PK</title>
     <link rel="icon" type="image/png" href="favicon.png.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="site.css">
     <style>
         * {
             margin: 0;
@@ -31,18 +32,38 @@
             overflow-x: hidden;
         }
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-            background-size: 8px 8px;
-            pointer-events: none;
-            z-index: 1;
-        }
+      body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 8px 8px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Remove halftone from product images */
+.image-section {
+    position: relative;
+    z-index: 10000;
+}
+
+.main-image-panel img {
+    position: relative;
+    z-index: 10001;
+}
+.main-image-panel::before {
+    content: none !important;
+}
+
+.main-image-panel {
+    position: relative;
+    z-index: 1;
+}
+
 
         .back-link {
             position: fixed;
@@ -157,7 +178,7 @@
 
         .product-badge {
             display: inline-block;
-            background: var(--navy-light);
+            background: var(--blue);
             color: var(--white);
             font-family: 'Permanent Marker', cursive;
             padding: 0.5rem 1.5rem;
@@ -255,37 +276,6 @@
             0% { transform: translateX(-50%) scale(0); }
             50% { transform: translateX(-50%) scale(1.2); }
             100% { transform: translateX(-50%) scale(1); }
-        }
-
-        .whatsapp-cta {
-            display: block;
-            width: 100%;
-            padding: 1.5rem;
-            background: var(--red);
-            color: var(--white);
-            font-family: 'Bangers', cursive;
-            font-size: 1.5rem;
-            border: var(--outline);
-            text-align: center;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 6px 6px 0 rgba(0,0,0,0.3);
-            margin-bottom: 1rem;
-        }
-
-        .whatsapp-cta:hover {
-            background: var(--yellow);
-            color: var(--navy);
-            transform: translateY(-3px);
-            box-shadow: 8px 8px 0 var(--red);
-        }
-
-        .whatsapp-number {
-            font-family: 'Comic Neue', cursive;
-            font-size: 1rem;
-            color: #94a3b8;
-            text-align: center;
         }
 
         .details-grid {
@@ -414,42 +404,47 @@
 </head>
 <body>
 
+    <header class="site-header">
+        <a href="shop.html" class="site-logo">KRO PK<span>DROP 2026</span></a>
+        <div class="site-actions">
+            <a class="shop-link" href="shop.html">SHOP</a>
+            <a class="cart-link" href="cart.html">CART <span class="cart-badge">0</span></a>
+        </div>
+    </header>
+
     <a href="shop.html" class="back-link">← BACK TO DROP</a>
 
     <section class="product-hero">
         
-        <div class="image-section">
-            <div class="main-image-panel">
-                <div class="main-image-placeholder">
-                    <div class="placeholder-text">KRO<br>PK<br>TEE</div>
-                </div>
-                <div class="zoom-hint">CLICK TO ZOOM</div>
-            </div>
+      <div class="image-section">
+    <div class="main-image-panel">
+        <img src="pk-thermal.jpg" alt="PK Thermal Longsleeve" style="width: 100%; height: 100%; object-fit: cover;">
+        <div class="zoom-hint">CLICK TO ZOOM</div>
+    </div>
 
-            <div class="thumbnail-grid">
-                <div class="thumb-panel">
-                    <div class="thumb-placeholder">1</div>
-                </div>
-                <div class="thumb-panel">
-                    <div class="thumb-placeholder">2</div>
-                </div>
-                <div class="thumb-panel">
-                    <div class="thumb-placeholder">3</div>
-                </div>
-            </div>
+    <div class="thumbnail-grid">
+        <div class="thumb-panel">
+            <div class="thumb-placeholder">1</div>
         </div>
-
+        <div class="thumb-panel">
+            <div class="thumb-placeholder">2</div>
+        </div>
+        <div class="thumb-panel">
+            <div class="thumb-placeholder">3</div>
+        </div>
+    </div>
+</div>
         <div class="info-section">
-            <div class="product-badge">CORE</div>
+            <div class="product-badge">NEW</div>
             
-            <h1 class="product-title">KRO PK TEE</h1>
+            <h1 class="product-title">PK THERMAL</h1>
             
-            <div class="product-price">₦10,000</div>
+            <div class="product-price">₦20,000</div>
             
             <p class="product-desc">
-                Essential core logo tee. Heavyweight cotton. Boxy fit. 
-                Classic KRO PK chest hit. The foundation piece. 
-                Wear it solo or layer it up. No cap.
+                Long sleeve waffle thermal. Heavyweight cotton blend. 
+                "KEEP ROCKING" vertical print on left sleeve. 
+                Layer it up or wear solo. Essential for the squad.
             </p>
 
             <div class="size-section">
@@ -462,19 +457,16 @@
                 </div>
             </div>
 
-            <a href="https://wa.me/2348151288021?text=Hi%20KRO%20PK!%20I%20want%20to%20order%20the%20KRO%20PK%20Tee%20in%20size%20L" class="whatsapp-cta" id="orderBtn">
-                ORDER ON WHATSAPP →
-            </a>
-            <div class="whatsapp-number">DM @ 08151288021 to cop</div>
+            <button class="add-cart-button" type="button" onclick="addToCart('pk-thermal','PK THERMAL',20000,selectedSize,'pk-thermal.jpg')">ADD TO CART</button>
 
             <div class="details-grid">
                 <div class="detail-item">
                     <div class="detail-label">MATERIAL</div>
-                    <div class="detail-value">Heavyweight Cotton</div>
+                    <div class="detail-value">Waffle Cotton Blend</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">FIT</div>
-                    <div class="detail-value">Boxy Street Fit</div>
+                    <div class="detail-value">Relaxed Layer Fit</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">DROP</div>
@@ -500,18 +492,18 @@
                 </div>
             </a>
 
-            <a href="pk-thermal.html" class="mini-card">
-                <div class="mini-image">THERMAL</div>
-                <div class="mini-info">
-                    <div class="mini-name">PK THERMAL</div>
-                    <div class="mini-price">₦20,000</div>
-                </div>
-            </a>
-
             <a href="beanie.html" class="mini-card">
                 <div class="mini-image">BEANIE</div>
                 <div class="mini-info">
                     <div class="mini-name">KRO PK BEANIE</div>
+                    <div class="mini-price">₦10,000</div>
+                </div>
+            </a>
+
+            <a href="kro-tee.html" class="mini-card">
+                <div class="mini-image">TEE</div>
+                <div class="mini-info">
+                    <div class="mini-name">KRO PK TEE</div>
                     <div class="mini-price">₦10,000</div>
                 </div>
             </a>
@@ -541,10 +533,7 @@
             
             btn.classList.add('selected');
             selectedSize = size;
-            
-            const orderBtn = document.getElementById('orderBtn');
-            const message = `Hi KRO PK! I want to order the KRO PK Tee in size ${size}`;
-            orderBtn.href = `https://wa.me/2348151288021?text=${encodeURIComponent(message)}`;
+            checkProductAvailability('pk-thermal');
             
             const pop = document.createElement('div');
             pop.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUp 0.5s ease-out forwards; z-index: 9999;';
@@ -561,7 +550,20 @@
                 }, 300);
             });
         });
-    </script>
 
+        async function checkProductAvailability(slug) {
+            try {
+                const product = await getProductBySlug(slug);
+                if (!product) return;
+                setAddCartButtonState(isSizeInStock(product, selectedSize));
+            } catch (err) {
+                console.error('Product availability check failed', err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => checkProductAvailability('pk-thermal'));
+    </script>
+    <script src="site.js"></script>
 </body>
 </html>
+

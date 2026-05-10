@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — KRO PK</title>
+  <style>
+    body { margin:0; font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI, sans-serif; background:#0f172a; color:#f8fafc; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.5rem; background:#090f1f; border-bottom:1px solid #334155; }
+    .topbar h1 { margin:0; font-size:1.2rem; letter-spacing:.05em; }
+    .topbar button { padding:.8rem 1rem; border:none;border-radius:999px;background:#ef4444;color:#fff;cursor:pointer; }
+    .hero { padding:1rem 1.5rem; display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+    .stat-card { background:#111827; border:1px solid #334155; padding:1rem 1.2rem; border-radius:18px; }
+    .stat-card h2 { margin:0 0 .5rem;font-size:1.1rem;color:#fbbf24; }
+    .stat-card p { margin:0;font-size:2rem; }
+    .layout { display:grid; gap:1.5rem; padding:0 1.5rem 2rem; grid-template-columns: 1.45fr .95fr; }
+    .panel { background:#111827; border:1px solid #334155; border-radius:18px; padding:1.25rem; }
+    .panel h2 { margin:0 0 1rem;font-size:1.1rem;color:#fbbf24; }
+    .tabs { display:flex; gap:.5rem; }
+    .tab { padding:.75rem 1rem; border-radius:999px; cursor:pointer; border:1px solid transparent; }
+    .tab.active { border-color:#fbbf24; background:rgba(251,191,36,.1); }
+    .orders-filter { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; flex-wrap:wrap; }
+    .orders-filter select { padding:.75rem 1rem; border-radius:12px; border:1px solid #334155; background:#0f172a; color:#fff; }
+    .orders-table { width:100%; border-collapse:collapse; }
+    .orders-table th, .orders-table td { padding:.85rem .75rem; border-bottom:1px solid #334155; text-align:left; }
+    .orders-table th { color:#94a3b8; font-size:.9rem; }
+    .badge { display:inline-flex; align-items:center; gap:.4rem; padding:.4rem .65rem; border-radius:999px; font-size:.8rem; text-transform:capitalize; }
+    .badge.pending { background:rgba(239,68,68,.14); color:#f87171; }
+    .badge.confirmed { background:rgba(59,130,246,.14); color:#60a5fa; }
+    .badge.shipped { background:rgba(251,191,36,.14); color:#fbbf24; }
+    .badge.delivered { background:rgba(34,197,94,.14); color:#86efac; }
+    .grid-card { display:grid; gap:1rem; }
+    .product-card { border:1px solid #334155; border-radius:18px; background:#0f172a; padding:1rem; }
+    .product-card h3 { margin:0 0 .5rem; }
+    .product-row { display:grid; grid-template-columns:1fr auto; gap:.75rem; align-items:center; }
+    .stock-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem; }
+    .stock-input { width:100%; padding:.7rem 1rem; border-radius:12px; border:1px solid #334155; background:#090f1f; color:#fff; }
+    .product-actions { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+    .product-actions button { border:none;padding:.75rem 1rem;border-radius:999px;cursor:pointer;background:#2563eb;color:#fff; }
+    .product-actions label { display:inline-flex; align-items:center; gap:.5rem; cursor:pointer; }
+    .product-actions input[type=checkbox] { accent-color:#fbbf24; }
+    .order-details { margin-top:1rem; font-size:.95rem; line-height:1.6; }
+    .order-details strong { color:#fbbf24; }
+    .hidden { display:none; }
+    .error-box { color:#f87171; margin:.75rem 0; }
+    .success-box { color:#34d399; margin:.75rem 0; }
+    .btn-small { font-size:.85rem; padding:.6rem 1rem; border-radius:999px; background:#0ea5e9; border:none;color:#fff; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>KRO PK Admin Dashboard</h1>
+    <button id="logoutBtn">Logout</button>
+  </div>
+  <section class="hero">
+    <div class="stat-card"><h2>Total orders</h2><p id="statOrders">0</p></div>
+    <div class="stat-card"><h2>Pending</h2><p id="statPending">0</p></div>
+    <div class="stat-card"><h2>Total revenue</h2><p id="statRevenue">₦0</p></div>
+  </section>
+  <div class="layout">
+    <div class="panel">
+      <div class="tabs"><div class="tab active" data-tab="orders">Orders</div><div class="tab" data-tab="inventory">Inventory</div><div class="tab" data-tab="products">Products</div></div>
+      <div id="ordersPanel">
+        <div class="orders-filter"><label>Status</label><select id="orderStatusFilter"><option value="">All</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option></select></div>
+        <div class="table-wrap"><table class="orders-table"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Action</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+        <div id="orderDetail" class="order-details hidden"></div>
+      </div>
+      <div id="inventoryPanel" class="hidden">
+        <div id="inventoryGrid" class="grid-card"></div>
+      </div>
+      <div id="productsPanel" class="hidden">
+        <div class="orders-filter"><button class="btn-small" id="showAddProductBtn">New product</button></div>
+        <div id="productForm" class="panel hidden">
+          <h2>Add new product</h2>
+          <div class="stock-grid">
+            <div>
+              <label style="font-size:.8rem;color:#94a3b8;">Name</label>
+              <input class="stock-input" id="newProductName" type="text" placeholder="Product name">
+            </div>
+            <div>
+              <label style="font-size:.8rem;color:#94a3b8;">Price</label>
+              <input class="stock-input" id="newProductPrice" type="number" min="0" placeholder="10000">
+            </div>
+            <div>
+              <label style="font-size:.8rem;color:#94a3b8;">Tag</label>
+              <input class="stock-input" id="newProductTag" type="text" placeholder="NEW">
+            </div>
+            <div>
+              <label style="font-size:.8rem;color:#94a3b8;">Image filename</label>
+              <input class="stock-input" id="newProductImage" type="text" placeholder="product.png">
+            </div>
+            <div>
+              <label style="font-size:.8rem;color:#94a3b8;">Active</label>
+              <input type="checkbox" id="newProductActive" checked>
+            </div>
+          </div>
+          <div style="margin-top:1rem;">
+            <label style="font-size:.8rem;color:#94a3b8;">Description</label>
+            <textarea class="stock-input" id="newProductDescription" style="height:120px; width:100%; resize:none;" placeholder="Product description"></textarea>
+          </div>
+          <button id="createProductBtn" class="btn-small" style="margin-top:1rem;">Create product</button>
+        </div>
+        <div id="productsGrid" class="grid-card"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Order details</h2>
+      <div id="orderSummary" class="order-details">Select an order to see full details and update status.</div>
+    </div>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PK Thermal — KRO PK</title>
+    <title>KRO PK Jorts — KRO PK</title>
     <link rel="icon" type="image/png" href="favicon.png.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="site.css">
     <style>
         * {
             margin: 0;
@@ -31,39 +32,37 @@
             overflow-x: hidden;
         }
 
-      body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-    background-size: 8px 8px;
-    pointer-events: none;
-    z-index: 1;
-}
+        /* Halftone overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+            background-size: 8px 8px;
+            pointer-events: none;
+            z-index: 1;
+        }
 
-/* Remove halftone from product images */
-.image-section {
-    position: relative;
-    z-index: 10000;
-}
+        /* Remove halftone from ALL product images - STRONGER FIX */
+        .image-section {
+            position: relative;
+            z-index: 10000;
+        }
 
-.main-image-panel img {
-    position: relative;
-    z-index: 10001;
-}
-.main-image-panel::before {
-    content: none !important;
-}
+        .main-image-panel img {
+            position: relative;
+            z-index: 10001 !important;
+        }
 
-.main-image-panel {
-    position: relative;
-    z-index: 1;
-}
+        .thumb-panel img {
+            position: relative;
+            z-index: 10001 !important;
+        }
 
-
+        /* Back button */
         .back-link {
             position: fixed;
             top: 20px;
@@ -85,6 +84,7 @@
             box-shadow: 6px 6px 0 var(--yellow);
         }
 
+        /* Product Hero */
         .product-hero {
             min-height: 100vh;
             display: grid;
@@ -96,6 +96,7 @@
             margin: 0 auto;
         }
 
+        /* Image Side */
         .image-section {
             position: relative;
         }
@@ -107,23 +108,6 @@
             overflow: hidden;
             aspect-ratio: 1;
             position: relative;
-        }
-
-        .main-image-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--navy-light) 0%, #0f172a 100%);
-        }
-
-        .placeholder-text {
-            font-family: 'Bangers', cursive;
-            font-size: 5rem;
-            color: var(--white);
-            opacity: 0.2;
-            text-align: center;
         }
 
         .zoom-hint {
@@ -138,6 +122,7 @@
             font-size: 0.9rem;
         }
 
+        /* Thumbnail Panels */
         .thumbnail-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -159,18 +144,12 @@
             transform: scale(1.05);
         }
 
-        .thumb-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Bangers', cursive;
-            font-size: 1.5rem;
-            color: var(--white);
-            opacity: 0.3;
+        .thumb-panel.active {
+            border-color: var(--red);
+            border-width: 3px;
         }
 
+        /* Info Side */
         .info-section {
             position: relative;
         }
@@ -218,6 +197,7 @@
             border-left: 4px solid var(--red);
         }
 
+        /* Size Selection */
         .size-section {
             margin-bottom: 2rem;
         }
@@ -277,37 +257,7 @@
             100% { transform: translateX(-50%) scale(1); }
         }
 
-        .whatsapp-cta {
-            display: block;
-            width: 100%;
-            padding: 1.5rem;
-            background: var(--red);
-            color: var(--white);
-            font-family: 'Bangers', cursive;
-            font-size: 1.5rem;
-            border: var(--outline);
-            text-align: center;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 6px 6px 0 rgba(0,0,0,0.3);
-            margin-bottom: 1rem;
-        }
-
-        .whatsapp-cta:hover {
-            background: var(--yellow);
-            color: var(--navy);
-            transform: translateY(-3px);
-            box-shadow: 8px 8px 0 var(--red);
-        }
-
-        .whatsapp-number {
-            font-family: 'Comic Neue', cursive;
-            font-size: 1rem;
-            color: #94a3b8;
-            text-align: center;
-        }
-
+        /* Details Grid */
         .details-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -334,6 +284,7 @@
             font-size: 1rem;
         }
 
+        /* You May Also Like */
         .also-like {
             padding: 4rem;
             background: var(--navy-light);
@@ -396,6 +347,7 @@
             color: var(--yellow);
         }
 
+        /* Footer */
         footer {
             background: #020617;
             padding: 2rem;
@@ -410,6 +362,7 @@
             margin-bottom: 1rem;
         }
 
+        /* Mobile */
         @media (max-width: 968px) {
             .product-hero {
                 grid-template-columns: 1fr;
@@ -434,41 +387,48 @@
 </head>
 <body>
 
+    <!-- Back to Catalogue -->
     <a href="shop.html" class="back-link">← BACK TO DROP</a>
 
+    <!-- Product Hero -->
     <section class="product-hero">
         
-      <div class="image-section">
-    <div class="main-image-panel">
-        <img src="pk-thermal.jpg" alt="PK Thermal Longsleeve" style="width: 100%; height: 100%; object-fit: cover;">
-        <div class="zoom-hint">CLICK TO ZOOM</div>
-    </div>
+        <!-- Image Side -->
+        <div class="image-section">
+            <div class="main-image-panel">
+                <img id="mainImage" src="jorts-front.png" alt="KRO PK Jorts" style="width: 100%; height: 100%; object-fit: cover;">
+                <div class="zoom-hint">CLICK TO ZOOM</div>
+            </div>
 
-    <div class="thumbnail-grid">
-        <div class="thumb-panel">
-            <div class="thumb-placeholder">1</div>
+            <!-- Thumbnails -->
+            <div class="thumbnail-grid">
+                <div class="thumb-panel active" onclick="changeImage('jorts-front.png', this)">
+                    <img src="jorts-front.png" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="thumb-panel" onclick="changeImage('jorts-back.png', this)">
+                    <img src="jorts-back.png" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="thumb-panel" style="opacity: 0.3; pointer-events: none;">
+                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Bangers', cursive; color: var(--white); font-size: 1.5rem;">—</div>
+                </div>
+            </div>
         </div>
-        <div class="thumb-panel">
-            <div class="thumb-placeholder">2</div>
-        </div>
-        <div class="thumb-panel">
-            <div class="thumb-placeholder">3</div>
-        </div>
-    </div>
-</div>
+
+        <!-- Info Side -->
         <div class="info-section">
             <div class="product-badge">NEW</div>
             
-            <h1 class="product-title">PK THERMAL</h1>
+            <h1 class="product-title">KRO PK JORTS</h1>
             
-            <div class="product-price">₦20,000</div>
+            <div class="product-price">₦17,000</div>
             
             <p class="product-desc">
-                Long sleeve waffle thermal. Heavyweight cotton blend. 
-                "KEEP ROCKING" vertical print on left sleeve. 
-                Layer it up or wear solo. Essential for the squad.
+                Joggers material jorts. Knee length. Heavy weight. 
+                Racing patch detail. Summer essential, year-round attitude.
+                Keep rocking in comfort.
             </p>
 
+            <!-- Size Selection -->
             <div class="size-section">
                 <label class="size-label">SELECT SIZE:</label>
                 <div class="size-buttons">
@@ -479,19 +439,17 @@
                 </div>
             </div>
 
-            <a href="https://wa.me/2348151288021?text=Hi%20KRO%20PK!%20I%20want%20to%20order%20the%20PK%20Thermal%20in%20size%20L" class="whatsapp-cta" id="orderBtn">
-                ORDER ON WHATSAPP →
-            </a>
-            <div class="whatsapp-number">DM @ 08151288021 to cop</div>
+            <button class="add-cart-button" type="button" onclick="addToCart('jorts','KRO PK JORTS',17000,selectedSize,'jorts-front.png')">ADD TO CART</button>
 
+            <!-- Details -->
             <div class="details-grid">
                 <div class="detail-item">
                     <div class="detail-label">MATERIAL</div>
-                    <div class="detail-value">Waffle Cotton Blend</div>
+                    <div class="detail-value">Heavyweight Joggers Fabric</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">FIT</div>
-                    <div class="detail-value">Relaxed Layer Fit</div>
+                    <div class="detail-value">Relaxed Knee Length</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">DROP</div>
@@ -505,10 +463,12 @@
         </div>
     </section>
 
+    <!-- You May Also Like -->
     <section class="also-like">
         <h2 class="also-title">YOU MAY ALSO LIKE</h2>
         
         <div class="mini-grid">
+            <!-- IPK Starboy Polo -->
             <a href="ipk-starboy-polo.html" class="mini-card">
                 <div class="mini-image">POLO</div>
                 <div class="mini-info">
@@ -517,6 +477,16 @@
                 </div>
             </a>
 
+            <!-- PK Thermal -->
+            <a href="pk-thermal.html" class="mini-card">
+                <div class="mini-image">THERMAL</div>
+                <div class="mini-info">
+                    <div class="mini-name">PK THERMAL</div>
+                    <div class="mini-price">₦20,000</div>
+                </div>
+            </a>
+
+            <!-- Beanie -->
             <a href="beanie.html" class="mini-card">
                 <div class="mini-image">BEANIE</div>
                 <div class="mini-info">
@@ -525,19 +495,12 @@
                 </div>
             </a>
 
+            <!-- KRO PK Tee -->
             <a href="kro-tee.html" class="mini-card">
                 <div class="mini-image">TEE</div>
                 <div class="mini-info">
                     <div class="mini-name">KRO PK TEE</div>
                     <div class="mini-price">₦10,000</div>
-                </div>
-            </a>
-
-            <a href="stargirl-top.html" class="mini-card">
-                <div class="mini-image">STAR</div>
-                <div class="mini-info">
-                    <div class="mini-name">STARGIRL TOP</div>
-                    <div class="mini-price">₦12,000</div>
                 </div>
             </a>
         </div>
@@ -552,17 +515,17 @@
         let selectedSize = 'L';
 
         function selectSize(btn, size) {
+            // Remove selected from all
             document.querySelectorAll('.size-btn').forEach(b => {
                 b.classList.remove('selected');
             });
             
+            // Add to clicked
             btn.classList.add('selected');
             selectedSize = size;
+            checkProductAvailability('jorts');
             
-            const orderBtn = document.getElementById('orderBtn');
-            const message = `Hi KRO PK! I want to order the PK Thermal in size ${size}`;
-            orderBtn.href = `https://wa.me/2348151288021?text=${encodeURIComponent(message)}`;
-            
+            // Play pop sound effect (visual)
             const pop = document.createElement('div');
             pop.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUp 0.5s ease-out forwards; z-index: 9999;';
             pop.textContent = 'POP!';
@@ -570,16 +533,32 @@
             setTimeout(() => pop.remove(), 500);
         }
 
-        document.querySelectorAll('.thumb-panel').forEach((thumb, index) => {
-            thumb.addEventListener('click', function() {
-                this.style.borderColor = '#fbbf24';
-                setTimeout(() => {
-                    this.style.borderColor = '';
-                }, 300);
+        // Change main image when thumbnail clicked
+        function changeImage(imageSrc, thumbElement) {
+            // Update main image
+            document.getElementById('mainImage').src = imageSrc;
+            
+            // Remove active class from all thumbnails
+            document.querySelectorAll('.thumb-panel').forEach(thumb => {
+                thumb.classList.remove('active');
             });
-        });
-    </script>
+            
+            // Add active class to clicked thumbnail
+            thumbElement.classList.add('active');
+        }
 
+        async function checkProductAvailability(slug) {
+            try {
+                const product = await getProductBySlug(slug);
+                if (!product) return;
+                setAddCartButtonState(isSizeInStock(product, selectedSize));
+            } catch (err) {
+                console.error('Product availability check failed', err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => checkProductAvailability('jorts'));
+    </script>
+    <script src="site.js"></script>
 </body>
 </html>
-

@@ -1,0 +1,208 @@
+:root {
+    --navy: #0f172a;
+    --navy-light: #1e293b;
+    --white: #f8fafc;
+    --red: #ef4444;
+    --yellow: #fbbf24;
+    --gray: #94a3b8;
+}
+
+body {
+    font-family: 'Comic Neue', cursive;
+}
+
+.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    background: rgba(15, 23, 42, 0.98);
+    border-bottom: 3px solid var(--white);
+    transition: transform 0.3s ease;
+    transform: translateY(0);
+}
+
+.site-header.hidden {
+    transform: translateY(-100%);
+}
+
+.site-logo {
+    font-family: 'Bangers', cursive;
+    color: var(--white);
+    font-size: 1.9rem;
+    text-decoration: none;
+    letter-spacing: 0.08em;
+}
+
+.site-logo span {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--yellow);
+    font-family: 'Permanent Marker', cursive;
+    margin-top: 0.2rem;
+}
+
+.site-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cart-link,
+.newsletter-link,
+.shop-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--navy-light);
+    color: var(--white);
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--white);
+    text-decoration: none;
+    font-family: 'Permanent Marker', cursive;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.cart-link:hover,
+.newsletter-link:hover,
+.shop-link:hover {
+    transform: translateY(-2px);
+    background: var(--yellow);
+    color: var(--navy);
+}
+
+.cart-badge {
+    min-width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--red);
+    color: var(--white);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    padding: 0 0.4rem;
+    font-family: 'Bangers', cursive;
+}
+
+.newsletter-panel {
+    margin-top: 4rem;
+    background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(30,41,59,0.97));
+    border: 3px solid var(--white);
+    padding: 2.5rem;
+    border-radius: 24px;
+    display: grid;
+    gap: 1rem;
+}
+
+.newsletter-panel h2 {
+    font-family: 'Bangers', cursive;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    color: var(--yellow);
+    margin-bottom: 0.5rem;
+}
+
+.newsletter-panel p {
+    color: var(--gray);
+    line-height: 1.7;
+    font-size: 1rem;
+}
+
+.newsletter-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+}
+
+.newsletter-input {
+    border: 2px solid var(--white);
+    padding: 1rem 1.2rem;
+    background: rgba(15,23,42,0.95);
+    color: var(--white);
+    font-size: 1rem;
+    outline: none;
+}
+
+.newsletter-input::placeholder {
+    color: var(--gray);
+}
+
+.newsletter-submit {
+    background: var(--red);
+    color: var(--white);
+    border: 2px solid var(--white);
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    font-family: 'Bangers', cursive;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.newsletter-submit:hover {
+    transform: translateY(-2px);
+    background: var(--yellow);
+    color: var(--navy);
+}
+
+.add-cart-button {
+    display: inline-flex;
+    justify-content: center;
+    width: 100%;
+    padding: 1rem 1rem;
+    background: var(--yellow);
+    color: var(--navy);
+    font-family: 'Bangers', cursive;
+    font-size: 1rem;
+    border: 2px solid var(--white);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.add-cart-button:hover {
+    transform: translateY(-2px);
+    background: #f3d16b;
+}
+
+@media (max-width: 768px) {
+    .site-header {
+        padding: 1rem 1rem;
+    }
+
+    .newsletter-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Comic Neue', cursive;
+    margin: 0;
+    padding: 0;
+}
+
+/* Improve button hover effects */
+.cta-button:hover,
+.add-cart-button:hover,
+.shop-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--red);
+}
+
+/* Better focus states */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--yellow);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}

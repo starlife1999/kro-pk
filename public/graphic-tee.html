@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphic Tee — KRO PK</title>
+    <link rel="icon" type="image/png" href="favicon.png.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="site.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #0f172a;
+            --navy-light: #1e293b;
+            --white: #f8fafc;
+            --red: #ef4444;
+            --yellow: #fbbf24;
+            --outline: 3px solid var(--white);
+        }
+
+        body {
+            font-family: 'Comic Neue', cursive;
+            background: var(--navy);
+            color: var(--white);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+            background-size: 8px 8px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.1rem;
+            color: var(--white);
+            text-decoration: none;
+            background: var(--navy-light);
+            padding: 0.8rem 1.5rem;
+            border: var(--outline);
+            box-shadow: 4px 4px 0 var(--red);
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 6px 6px 0 var(--yellow);
+        }
+
+        .product-hero {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            padding: 6rem 4rem 4rem;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .image-section {
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-image-panel {
+            border: var(--outline);
+            background: var(--navy-light);
+            box-shadow: 8px 8px 0 var(--red);
+            overflow: hidden;
+            aspect-ratio: 1;
+            position: relative;
+        }
+
+        .main-image-panel img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .zoom-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: var(--yellow);
+            color: var(--navy);
+            font-family: 'Bangers', cursive;
+            padding: 0.5rem 1rem;
+            border: var(--outline);
+            font-size: 0.9rem;
+        }
+
+        .info-section {
+            position: relative;
+        }
+
+        .product-badge {
+            display: inline-block;
+            background: var(--red);
+            color: var(--white);
+            font-family: 'Permanent Marker', cursive;
+            padding: 0.5rem 1.5rem;
+            border: var(--outline);
+            transform: rotate(-3deg);
+            margin-bottom: 1.5rem;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+        }
+
+        .product-title {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(3rem, 6vw, 5rem);
+            line-height: 0.9;
+            text-shadow: 4px 4px 0 var(--red);
+            margin-bottom: 1rem;
+            transform: rotate(-2deg);
+        }
+
+        .product-price {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 2.5rem;
+            color: var(--yellow);
+            margin-bottom: 0.5rem;
+        }
+
+        .product-desc {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #cbd5e1;
+            margin-bottom: 2rem;
+            padding-left: 1.5rem;
+            border-left: 4px solid var(--red);
+        }
+
+        .size-section {
+            margin-bottom: 2rem;
+        }
+
+        .size-label {
+            font-family: 'Bangers', cursive;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .size-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .size-btn {
+            width: 60px;
+            height: 60px;
+            background: var(--navy-light);
+            border: var(--outline);
+            color: var(--white);
+            font-family: 'Bangers', cursive;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .size-btn:hover {
+            background: var(--yellow);
+            color: var(--navy);
+            transform: scale(1.1);
+        }
+
+        .size-btn.selected {
+            background: var(--red);
+            box-shadow: 4px 4px 0 var(--white);
+        }
+
+        .size-btn.selected::after {
+            content: 'POP!';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Bangers', cursive;
+            font-size: 0.9rem;
+            color: var(--yellow);
+            animation: popUp 0.3s ease-out;
+        }
+
+        @keyframes popUp {
+            0% { transform: translateX(-50%) scale(0); }
+            50% { transform: translateX(-50%) scale(1.2); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem;
+            padding-top: 3rem;
+            border-top: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .detail-item {
+            background: var(--navy-light);
+            padding: 1rem;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .detail-label {
+            font-family: 'Bangers', cursive;
+            color: var(--yellow);
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+        }
+
+        footer {
+            background: #020617;
+            padding: 2rem;
+            text-align: center;
+            border-top: var(--outline);
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-logo {
+            font-family: 'Bangers', cursive;
+            font-size: 2rem;
+            color: var(--white);
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 968px) {
+            .product-hero {
+                grid-template-columns: 1fr;
+                padding: 6rem 1.5rem 3rem;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .product-hero { padding: 5rem 1rem 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <a href="shop.html" class="site-logo">KRO PK<span>DROP 2026</span></a>
+        <div class="site-actions">
+            <a class="shop-link" href="shop.html">SHOP</a>
+            <a class="cart-link" href="cart.html">CART <span class="cart-badge">0</span></a>
+        </div>
+    </header>
+
+    <a href="shop.html" class="back-link">← BACK TO DROP</a>
+
+    <section class="product-hero">
+        <div class="image-section">
+            <div class="main-image-panel">
+                <img src="graphic-tee.png" alt="KRO PK Graphic Tee">
+                <div class="zoom-hint">CLICK TO ZOOM</div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="product-badge">NEW DROP</div>
+            <h1 class="product-title">GRAPHIC TEE</h1>
+            <div class="product-price">₦12,000</div>
+            <p class="product-desc">Heavyweight cotton. Dramatic motorsport graphic on the chest. Boxy fit. Everyday flex.</p>
+
+            <div class="size-section">
+                <label class="size-label">SELECT SIZE:</label>
+                <div class="size-buttons">
+                    <button class="size-btn" onclick="selectSize(this, 'S')">S</button>
+                    <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                    <button class="size-btn selected" onclick="selectSize(this, 'L')">L</button>
+                    <button class="size-btn" onclick="selectSize(this, 'XL')">XL</button>
+                </div>
+            </div>
+
+            <button class="add-cart-button" type="button" onclick="addToCart('graphic-tee','KRO PK GRAPHIC TEE',12000,selectedSize,'graphic-tee.png')">ADD TO CART</button>
+
+            <div class="details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">MATERIAL</div>
+                    <div class="detail-value">100% Heavy Cotton</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">FIT</div>
+                    <div class="detail-value">Boxy street fit</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">DROP</div>
+                    <div class="detail-value">Motorsport 2026</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">SHIPPING</div>
+                    <div class="detail-value">Nationwide (2-3 days)</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-logo">KRO PK</div>
+        <div style="color: #64748b; font-family: 'Permanent Marker';">KEEP ROCKING © 2026</div>
+    </footer>
+
+    <script>
+        let selectedSize = 'L';
+
+        function selectSize(btn, size) {
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedSize = size;
+            checkProductAvailability('graphic-tee');
+            const pop = document.createElement('div');
+            pop.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUp 0.5s ease-out forwards; z-index: 9999;';
+            pop.textContent = 'POP!';
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 500);
+        }
+
+        async function checkProductAvailability(slug) {
+            try {
+                const product = await getProductBySlug(slug);
+                if (!product) return;
+                setAddCartButtonState(isSizeInStock(product, selectedSize));
+            } catch (err) {
+                console.error('Product availability check failed', err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => checkProductAvailability('graphic-tee'));
+    </script>
+    <script src="site.js"></script>
+</body>
+</html>
