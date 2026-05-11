@@ -22,7 +22,6 @@ if (!process.env.MONGODB_URI) {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-console.log('Email config:', { from: process.env.EMAIL_FROM || 'onboarding@resend.dev', owner: OWNER_EMAIL, resendKeySet: !!process.env.RESEND_API_KEY });
 
 app.use(express.json());
 app.use(cookieParser());
@@ -225,7 +224,6 @@ app.get('/api/products/:slug', async (req, res) => {
 });
 
 app.post('/api/orders', async (req, res) => {
-  console.log('Order request body:', JSON.stringify(req.body, null, 2));
   const { customer, items } = req.body;
   if (!customer || !items || !Array.isArray(items) || !items.length) {
     return res.status(400).json({ message: 'Customer and items are required' });
@@ -247,7 +245,6 @@ app.post('/api/orders', async (req, res) => {
     }
 
     const product = await Product.findOne({ slug: item.slug });
-    console.log(`Product ${item.slug}:`, { found: !!product, active: product?.active, sizes: product?.sizes });
     if (!product || !product.active) {
       stockErrors.push({ slug: item.slug, message: 'Product unavailable' });
       continue;
@@ -255,7 +252,6 @@ app.post('/api/orders', async (req, res) => {
 
     const stockKey = item.size;
     const available = product.sizes?.get(stockKey) ?? 0;
-    console.log(`Stock check for ${item.slug} size ${stockKey}: requested ${item.qty}, available ${available}`);
     if (available < item.qty) {
       stockErrors.push({ slug: item.slug, size: stockKey, available });
       continue;
@@ -297,27 +293,12 @@ app.post('/api/orders', async (req, res) => {
     const ownerMail = createOrderEmail(order[0]);
     const customerMail = createCustomerConfirmationEmail(order[0]);
 
-    console.log('Sending owner email:', { to: ownerMail.to, subject: ownerMail.subject });
-    console.log('Sending customer email:', { to: customerMail.to, subject: customerMail.subject });
-
-    resend.emails.send(ownerMail).then(result => {
-      if (result.error) {
-        console.error('Owner email send failed:', result.error);
-      } else {
-        console.log('Owner email sent successfully:', result.data.id);
-      }
-    }).catch(err => {
-      console.error('Owner email send error:', err.message);
+    resend.emails.send(ownerMail).catch(err => {
+      console.error('Owner email send error:', err.message || err);
     });
 
-    resend.emails.send(customerMail).then(result => {
-      if (result.error) {
-        console.error('Customer email send failed:', result.error);
-      } else {
-        console.log('Customer confirmation email sent successfully:', result.data.id);
-      }
-    }).catch(err => {
-      console.error('Customer email send error:', err.message);
+    resend.emails.send(customerMail).catch(err => {
+      console.error('Customer email send error:', err.message || err);
     });
 
     res.status(201).json({ message: 'Order placed successfully', orderNumber });

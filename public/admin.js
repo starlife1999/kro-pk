@@ -2,6 +2,7 @@ const orderBody = document.getElementById('ordersBody');
 const orderDetail = document.getElementById('orderDetail');
 const orderSummary = document.getElementById('orderSummary');
 const statusFilter = document.getElementById('orderStatusFilter');
+const exportCsvBtn = document.getElementById('exportCsvBtn');
 const tabs = document.querySelectorAll('.tab');
 const ordersPanel = document.getElementById('ordersPanel');
 const inventoryPanel = document.getElementById('inventoryPanel');
@@ -56,6 +57,33 @@ const loadOrders = async () => {
   });
 };
 
+const exportOrdersCsv = () => {
+  if (!orders.length) return;
+  const headers = ['Order Number','Name','Email','Phone','Status','Total','City','State','Address','Created At'];
+  const rows = orders.map(order => [
+    order.orderNumber,
+    order.customer.name,
+    order.customer.email || '',
+    order.customer.phone || '',
+    order.status,
+    order.total,
+    order.customer.city || '',
+    order.customer.state || '',
+    order.customer.address || '',
+    new Date(order.createdAt).toLocaleString('en-NG')
+  ]);
+  const csv = [headers, ...rows].map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `orders-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 const showOrderDetails = async id => {
   selectedOrder = await fetchJson(`/api/admin/orders/${id}`);
   const itemsHtml = selectedOrder.items.map(item => `<li>${item.name} / ${item.size} × ${item.qty} = ${formatPrice(item.price)}</li>`).join('');
@@ -64,6 +92,7 @@ const showOrderDetails = async id => {
     <div><strong>Order</strong>: ${selectedOrder.orderNumber}</div>
     <div><strong>Status</strong>: <span class="badge ${selectedOrder.status}">${selectedOrder.status}</span></div>
     <div><strong>Customer</strong>: ${selectedOrder.customer.name}</div>
+    <div><strong>Email</strong>: ${escapeHtml(selectedOrder.customer.email || 'N/A')}</div>
     <div><strong>Phone</strong>: ${selectedOrder.customer.phone}</div>
     <div><strong>Delivery</strong>: ${selectedOrder.customer.address}, ${selectedOrder.customer.city}, ${selectedOrder.customer.state}</div>
     <div><strong>Total</strong>: ${formatPrice(selectedOrder.total)}</div>
@@ -262,6 +291,7 @@ const logout = async () => {
 };
 
 statusFilter.addEventListener('change', loadOrders);
+exportCsvBtn?.addEventListener('click', exportOrdersCsv);
 logoutBtn.addEventListener('click', logout);
 tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 showAddProductBtn.addEventListener('click', () => productForm.classList.toggle('hidden'));
