@@ -4,6 +4,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const https = require('https');
 const { Resend } = require('resend');
 
 const Product = require('./models/Product');
@@ -138,6 +139,7 @@ function createOrderEmail(order) {
       <p><strong>Phone:</strong> ${order.customer.phone}</p>
       <p><strong>Email:</strong> ${order.customer.email || 'Not provided'}</p>
       <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city}, ${order.customer.state}</p>
+      <p><strong>Paystack ref:</strong> ${order.paystackReference || 'N/A'}</p>
       <h3>Items:</h3>
       <pre>${items}</pre>
       <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
@@ -159,6 +161,7 @@ function createCustomerConfirmationEmail(order) {
     html: `
       <h2>Thanks for your order!</h2>
       <p>Your order number is <strong>${order.orderNumber}</strong>.</p>
+      <p>Payment reference: <strong>${order.paystackReference || 'N/A'}</strong></p>
       <p>We will contact you soon to confirm payment and delivery.</p>
       <h3>Order details</h3>
       <p><strong>Name:</strong> ${order.customer.name}</p>
@@ -223,10 +226,18 @@ app.get('/api/products/:slug', async (req, res) => {
   res.json(product);
 });
 
+app.get('/api/config/paystack', (req, res) => {
+  const publicKey = process.env.PAYSTACK_PUBLIC_KEY;
+  if (!publicKey) {
+    return res.status(500).json({ message: 'PAYSTACK_PUBLIC_KEY is not configured' });
+  }
+  return res.json({ publicKey });
+});
+
 app.post('/api/orders', async (req, res) => {
-  const { customer, items } = req.body;
-  if (!customer || !items || !Array.isArray(items) || !items.length) {
-    return res.status(400).json({ message: 'Customer and items are required' });
+  const { customer, items, paystackReference } = req.body;
+  if (!customer || !items || !Array.isArray(items) || !items.length || !paystackReference) {
+    return res.status(400).json({ message: 'Customer, items and paystackReference are required' });
   }
 
   const missingFields = ['name', 'phone', 'email', 'address', 'city', 'state'].filter(f => !customer[f]?.toString().trim());
@@ -267,6 +278,18 @@ app.post('/api/orders', async (req, res) => {
     return res.status(409).json({ message: 'Stock validation failed', errors: stockErrors });
   }
 
+  const paystackData = await verifyPaystackPayment(paystackReference);
+  const expectedAmount = total * 100;
+  if (!paystackData || paystackData.status !== 'success') {
+    return res.status(402).json({ message: 'Paystack payment not successful' });
+  }
+  if (paystackData.amount !== expectedAmount) {
+    return res.status(400).json({ message: 'Paystack amount mismatch' });
+  }
+  if (String(paystackData.currency).toUpperCase() !== 'NGN') {
+    return res.status(400).json({ message: 'Paystack payment must be in NGN' });
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -285,7 +308,7 @@ app.post('/api/orders', async (req, res) => {
 
     const nextSeq = await getNextOrderSequence();
     const orderNumber = buildOrderNumber(nextSeq);
-    const order = await Order.create([{ orderNumber, customer, items: preparedItems, total }], { session });
+    const order = await Order.create([{ orderNumber, customer, items: preparedItems, total, paystackReference, paymentStatus: paystackData.status }], { session });
 
     await session.commitTransaction();
     session.endSession();
@@ -309,6 +332,44 @@ app.post('/api/orders', async (req, res) => {
     return res.status(500).json({ message: 'Unable to process order', error: err.message });
   }
 });
+
+async function verifyPaystackPayment(reference) {
+  return new Promise((resolve, reject) => {
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!secretKey) {
+      return reject(new Error('PAYSTACK_SECRET_KEY is not configured'));
+    }
+
+    const options = {
+      hostname: 'api.paystack.co',
+      path: `/transaction/verify/${encodeURIComponent(reference)}`,
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        'Content-Type': 'application/json'
+      }
+    };
+
+    const req = https.request(options, res => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const payload = JSON.parse(data);
+          if (!payload || !payload.status) {
+            return reject(new Error(payload?.message || 'Paystack verification failed'));
+          }
+          resolve(payload.data);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.end();
+  });
+}
 
 app.get('/api/admin/orders', authMiddleware, async (req, res) => {
   const { status } = req.query;

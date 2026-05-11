@@ -23,6 +23,8 @@ const orderSchema = new mongoose.Schema({
   customer: { type: customerSchema, required: true },
   items: { type: [orderItemSchema], required: true },
   total: { type: Number, required: true },
+  paystackReference: { type: String, required: true, unique: true },
+  paymentStatus: { type: String, default: 'pending' },
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'shipped', 'delivered'],

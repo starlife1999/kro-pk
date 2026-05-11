@@ -555,10 +555,114 @@
 <script>
 // ─── CART ENGINE ────────────────────────────────────────────────
 const CART_KEY = 'kro_pk_cart';
+let PAYSTACK_PUBLIC_KEY = null;
+let paystackReadyPromise = null;
 
 function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; }
     catch { return []; }
+}
+
+async function getPaystackPublicKey() {
+    if (PAYSTACK_PUBLIC_KEY) return PAYSTACK_PUBLIC_KEY;
+    const res = await fetch('/api/config/paystack', { cache: 'no-store' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.publicKey) {
+        throw new Error(data?.message || 'Paystack public key unavailable');
+    }
+    PAYSTACK_PUBLIC_KEY = data.publicKey;
+    return PAYSTACK_PUBLIC_KEY;
+}
+
+function loadPaystackInlineScript() {
+    if (window.PaystackPop) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[data-paystack-inline="true"]');
+        if (existing) {
+            existing.addEventListener('load', () => resolve(), { once: true });
+            existing.addEventListener('error', () => reject(new Error('Failed to load Paystack script')), { once: true });
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://js.paystack.co/v1/inline.js';
+        script.async = true;
+        script.dataset.paystackInline = 'true';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Paystack script'));
+        document.head.appendChild(script);
+    });
+}
+
+async function ensurePaystackReady() {
+    if (paystackReadyPromise) return paystackReadyPromise;
+    paystackReadyPromise = (async () => {
+        await loadPaystackInlineScript();
+        await getPaystackPublicKey();
+        if (!window.PaystackPop) {
+            throw new Error('PaystackPop is not available (script may be blocked)');
+        }
+    })();
+    return paystackReadyPromise;
+}
+
+async function payWithPaystack(payload, totalAmount) {
+    await ensurePaystackReady();
+
+    const handler = window.PaystackPop.setup({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: payload.customer.email,
+        amount: Math.round(totalAmount * 100),
+        currency: 'NGN',
+        reference: `KROPK-${Date.now()}`,
+        metadata: {
+            customer: {
+                name: payload.customer.name,
+                phone: payload.customer.phone,
+            }
+        },
+        callback: async function(response) {
+            if (!response?.reference) {
+                showToast('Payment failed. No reference received.');
+                return;
+            }
+
+            try {
+                const result = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...payload, paystackReference: response.reference })
+                });
+                const data = await result.json();
+                if (!result.ok) {
+                    showToast(data.message || 'Order failed after payment.');
+                    return;
+                }
+
+                saveCart([]);
+                updateCartBadge();
+                render();
+                showToast(`ORDER PLACED ${data.orderNumber}`);
+                const layout = document.getElementById('cart-layout');
+                layout.innerHTML = `
+                    <div class="empty-cart">
+                        <div class="empty-icon">✅</div>
+                        <h2>ORDER CONFIRMED</h2>
+                        <p>Your order ${data.orderNumber} is in our system.<br>We will contact you shortly with payment details.</p>
+                        <a href="shop1.html" class="shop-btn">← BACK TO SHOP</a>
+                    </div>`;
+            } catch (err) {
+                console.error(err);
+                showToast('Unable to send order after payment.');
+            }
+        },
+        onClose: function() {
+            showToast('Payment window closed. Order not completed.');
+        }
+    });
+
+    handler.openIframe();
 }
 
 function saveCart(cart) {
@@ -647,42 +751,11 @@ async function handleCheckout() {
     };
 
     try {
-        const response = await fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-        if (!response.ok) {
-            const message = result.message || 'Order failed.';
-            if (result.errors) {
-                const details = result.errors.map(err => {
-                    if (err.message) return err.message;
-                    return `${err.slug} size ${err.size} only has ${err.available} left`;
-                }).join(', ');
-                showToast(`${message} ${details}`);
-            } else {
-                showToast(message);
-            }
-            return;
-        }
-
-        saveCart([]);
-        updateCartBadge();
-        render();
-        showToast(`ORDER PLACED ${result.orderNumber}`);
-        const layout = document.getElementById('cart-layout');
-        layout.innerHTML = `
-            <div class="empty-cart">
-                <div class="empty-icon">✅</div>
-                <h2>ORDER CONFIRMED</h2>
-                <p>Your order ${result.orderNumber} is in our system.<br>We will contact you shortly with payment details.</p>
-                <a href="shop1.html" class="shop-btn">← BACK TO SHOP</a>
-            </div>`;
+        const total = cart.reduce((s,i) => s + i.price * i.qty, 0);
+        await payWithPaystack(payload, total);
     } catch (err) {
         console.error(err);
-        showToast('Unable to place order. Try again.');
+        showToast(err?.message || 'Unable to process payment. Try again.');
     }
 }
 
