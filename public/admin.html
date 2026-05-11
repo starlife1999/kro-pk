@@ -59,7 +59,13 @@
   </section>
   <div class="layout">
     <div class="panel">
-      <div class="tabs"><div class="tab active" data-tab="orders">Orders</div><div class="tab" data-tab="inventory">Inventory</div><div class="tab" data-tab="products">Products</div></div>
+      <div class="tabs">
+        <div class="tab active" data-tab="orders">Orders</div>
+        <div class="tab" data-tab="inventory">Inventory</div>
+        <div class="tab" data-tab="products">Products</div>
+        <div class="tab" data-tab="promocodes">Promo codes</div>
+        <div class="tab" data-tab="broadcasts">Broadcasts</div>
+      </div>
       <div id="ordersPanel">
         <div class="orders-filter"><label>Status</label><select id="orderStatusFilter"><option value="">All</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option></select><button class="btn-small" id="exportCsvBtn">Export CSV</button></div>
         <div class="table-wrap"><table class="orders-table"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Action</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
@@ -101,6 +107,40 @@
           <button id="createProductBtn" class="btn-small" style="margin-top:1rem;">Create product</button>
         </div>
         <div id="productsGrid" class="grid-card"></div>
+      </div>
+
+      <div id="promoCodesPanel" class="hidden">
+        <div class="orders-filter" style="justify-content:space-between;">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;">
+            <label style="color:#94a3b8;">Create promo</label>
+            <input id="newPromoCode" class="stock-input" style="width:160px" placeholder="KEEPROCKING">
+            <input id="newPromoPercent" class="stock-input" style="width:140px" type="number" min="1" max="100" placeholder="10">
+            <label style="display:inline-flex;align-items:center;gap:.5rem;"><input id="newPromoActive" type="checkbox" checked> Active</label>
+            <button class="btn-small" id="createPromoBtn">Create</button>
+          </div>
+        </div>
+        <div id="promoCodesGrid" class="grid-card"></div>
+      </div>
+
+      <div id="broadcastsPanel" class="hidden">
+        <div class="panel" style="margin-bottom:1rem;">
+          <h2>Send newsletter broadcast</h2>
+          <div style="display:grid;gap:1rem;">
+            <div>
+              <label style="font-size:.8rem;color:#94a3b8;">Subject</label>
+              <input id="broadcastSubject" class="stock-input" placeholder="New drop alert">
+            </div>
+            <div>
+              <label style="font-size:.8rem;color:#94a3b8;">Message</label>
+              <textarea id="broadcastBody" class="stock-input" style="height:160px;width:100%;resize:none;" placeholder="Write your message..."></textarea>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+              <button class="btn-small" id="sendBroadcastBtn">Send broadcast</button>
+              <span id="subscriberCountLabel" style="color:#94a3b8;font-size:.95rem;"></span>
+            </div>
+          </div>
+        </div>
+        <div id="broadcastsGrid" class="grid-card"></div>
       </div>
     </div>
     <div class="panel">

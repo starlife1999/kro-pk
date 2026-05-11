@@ -557,6 +557,7 @@
 const CART_KEY = 'kro_pk_cart';
 let PAYSTACK_PUBLIC_KEY = null;
 let paystackReadyPromise = null;
+let appliedPromo = null;
 
 function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; }
@@ -748,11 +749,15 @@ async function handleCheckout() {
 
     const payload = {
         customer: { name, phone, email, address, city, state },
-        items: cart.map(item => ({ slug: item.id, size: item.size, qty: item.qty, price: item.price }))
+        items: cart.map(item => ({ slug: item.id, size: item.size, qty: item.qty, price: item.price })),
+        promoCode: appliedPromo?.code || ''
     };
 
     try {
-        const total = cart.reduce((s,i) => s + i.price * i.qty, 0);
+        const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
+        const total = appliedPromo
+            ? Math.round(subtotal * (1 - (Number(appliedPromo.discountPercent) || 0) / 100))
+            : subtotal;
         await payWithPaystack(payload, total);
     } catch (err) {
         console.error(err);
@@ -895,16 +900,27 @@ function render() {
 
 function applyPromo() {
     const code = document.getElementById('promo-input')?.value?.trim().toUpperCase();
-    if (code === 'KEEPROCKING') {
-        showToast('10% OFF APPLIED! 🔥');
-        const cart = getCart();
-        const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
-        const discounted = Math.round(subtotal * 0.9);
-        const el = document.getElementById('total-display');
-        if (el) el.textContent = '₦' + discounted.toLocaleString('en-NG') + ' (-10%)';
-    } else {
-        showToast('INVALID CODE!');
-    }
+    if (!code) { showToast('ENTER A CODE'); return; }
+
+    fetch(`/api/promo/validate?code=${encodeURIComponent(code)}`, { cache: 'no-store' })
+        .then(async res => {
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.message || 'Invalid promo code');
+            return body;
+        })
+        .then(data => {
+            appliedPromo = { code: data.code, discountPercent: data.discountPercent };
+            const cart = getCart();
+            const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
+            const discounted = Math.round(subtotal * (1 - (Number(data.discountPercent) || 0) / 100));
+            const el = document.getElementById('total-display');
+            if (el) el.textContent = '₦' + discounted.toLocaleString('en-NG') + ` (-${data.discountPercent}%)`;
+            showToast(`${data.discountPercent}% OFF APPLIED! 🔥`);
+        })
+        .catch(err => {
+            appliedPromo = null;
+            showToast(err?.message || 'INVALID CODE!');
+        });
 }
 
 // Update cart icon count badge in other pages

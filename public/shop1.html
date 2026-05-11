@@ -1247,6 +1247,11 @@ body::before {
         const email = document.getElementById('banner-email').value.trim();
         if (!email) return;
         saveSubscriber(email);
+        await fetch('/api/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, name: '' })
+        }).catch(() => {});
         await sendToFormspree({ email, source: 'banner', brand: 'KRO PK' });
         document.getElementById('banner-email').value = '';
         showToast('🔥 YOU\'RE IN THE CREW!');
@@ -1257,6 +1262,11 @@ body::before {
         const email = document.getElementById('footer-email').value.trim();
         if (!email) return;
         saveSubscriber(email);
+        await fetch('/api/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, name: '' })
+        }).catch(() => {});
         await sendToFormspree({ email, source: 'footer', brand: 'KRO PK' });
         document.getElementById('footer-email').value = '';
         showToast('🔥 SUBSCRIBED! KEEP ROCKING!');
@@ -1268,6 +1278,11 @@ body::before {
         const email = document.getElementById('modal-email').value.trim();
         if (!email) return;
         saveSubscriber(email, name);
+        await fetch('/api/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, name })
+        }).catch(() => {});
         await sendToFormspree({ email, name, source: 'modal', brand: 'KRO PK' });
         closeSubModal();
         showToast(`🚀 WELCOME TO THE CREW, ${name.toUpperCase() || 'FAM'}!`);

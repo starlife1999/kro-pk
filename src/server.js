@@ -6,10 +6,15 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const https = require('https');
 const { Resend } = require('resend');
+const fs = require('fs');
+const multer = require('multer');
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
 const Counter = require('./models/Counter');
+const PromoCode = require('./models/PromoCode');
+const Subscriber = require('./models/Subscriber');
+const Broadcast = require('./models/Broadcast');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +32,24 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+      const safeBase = String(file.originalname || 'upload').replace(/[^a-zA-Z0-9._-]+/g, '-');
+      const ext = path.extname(safeBase) || '';
+      const base = path.basename(safeBase, ext);
+      cb(null, `${base}-${Date.now()}${ext}`);
+    }
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
 
 async function connectDB() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kro_pk_store', {
@@ -175,6 +198,32 @@ function createCustomerConfirmationEmail(order) {
   };
 }
 
+function createCustomerShippedEmail(order) {
+  return {
+    from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+    to: order.customer.email,
+    subject: `Your KRO PK order ${order.orderNumber} is on the way`,
+    html: `
+      <h2>Your order is on the way 🚚</h2>
+      <p>Good news — your order <strong>${order.orderNumber}</strong> has been shipped.</p>
+      <p>We’ll reach out if we need anything else. Thank you for shopping KRO PK.</p>
+    `,
+  };
+}
+
+function createCustomerDeliveredEmail(order) {
+  return {
+    from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+    to: order.customer.email,
+    subject: `Delivered: KRO PK order ${order.orderNumber}`,
+    html: `
+      <h2>Delivered ✅</h2>
+      <p>Your order <strong>${order.orderNumber}</strong> has been delivered.</p>
+      <p>Thanks for rocking with us. If you love it, tell a friend.</p>
+    `,
+  };
+}
+
 function authMiddleware(req, res, next) {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ message: 'Authentication required' });
@@ -237,8 +286,35 @@ app.get('/api/config/paystack', (req, res) => {
   return res.json({ publicKey });
 });
 
+app.get('/api/promo/validate', async (req, res) => {
+  const code = String(req.query.code || '').trim().toUpperCase();
+  if (!code) return res.status(400).json({ message: 'Promo code is required' });
+  const promo = await PromoCode.findOne({ code, active: true }).lean();
+  if (!promo) return res.status(404).json({ message: 'Invalid promo code' });
+  return res.json({ code: promo.code, discountPercent: promo.discountPercent });
+});
+
+app.post('/api/subscribe', async (req, res) => {
+  const name = String(req.body?.name || '').trim();
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+
+  const existing = await Subscriber.findOne({ email });
+  if (existing) {
+    if (!existing.active) {
+      existing.active = true;
+      if (name) existing.name = name;
+      await existing.save();
+    }
+    return res.status(200).json({ message: 'Subscribed', subscriber: { email: existing.email, name: existing.name } });
+  }
+
+  const subscriber = await Subscriber.create({ email, name, active: true });
+  return res.status(201).json({ message: 'Subscribed', subscriber: { email: subscriber.email, name: subscriber.name } });
+});
+
 app.post('/api/orders', async (req, res) => {
-  const { customer, items, paystackReference } = req.body;
+  const { customer, items, paystackReference, promoCode } = req.body;
   if (!customer || !items || !Array.isArray(items) || !items.length || !paystackReference) {
     return res.status(400).json({ message: 'Customer, items and paystackReference are required' });
   }
@@ -281,8 +357,23 @@ app.post('/api/orders', async (req, res) => {
     return res.status(409).json({ message: 'Stock validation failed', errors: stockErrors });
   }
 
+  let discountPercent = 0;
+  let appliedPromoCode = '';
+  const promo = String(promoCode || '').trim().toUpperCase();
+  if (promo) {
+    const promoDoc = await PromoCode.findOne({ code: promo, active: true }).lean();
+    if (!promoDoc) {
+      return res.status(400).json({ message: 'Invalid promo code' });
+    }
+    discountPercent = Number(promoDoc.discountPercent) || 0;
+    appliedPromoCode = promoDoc.code;
+  }
+
+  const totalBeforeDiscount = total;
+  const discountedTotal = discountPercent > 0 ? Math.round(total * (1 - discountPercent / 100)) : total;
+
   const paystackData = await verifyPaystackPayment(paystackReference);
-  const expectedAmount = total * 100;
+  const expectedAmount = discountedTotal * 100;
   if (!paystackData || paystackData.status !== 'success') {
     return res.status(402).json({ message: 'Paystack payment not successful' });
   }
@@ -311,7 +402,17 @@ app.post('/api/orders', async (req, res) => {
 
     const nextSeq = await getNextOrderSequence();
     const orderNumber = buildOrderNumber(nextSeq);
-    const order = await Order.create([{ orderNumber, customer, items: preparedItems, total, paystackReference, paymentStatus: paystackData.status }], { session });
+    const order = await Order.create([{
+      orderNumber,
+      customer,
+      items: preparedItems,
+      totalBeforeDiscount: discountPercent > 0 ? totalBeforeDiscount : null,
+      promoCode: appliedPromoCode,
+      discountPercent,
+      total: discountedTotal,
+      paystackReference,
+      paymentStatus: paystackData.status
+    }], { session });
 
     await session.commitTransaction();
     session.endSession();
@@ -393,9 +494,102 @@ app.put('/api/admin/orders/:id/status', authMiddleware, async (req, res) => {
   if (!['pending', 'confirmed', 'shipped', 'delivered'].includes(status)) {
     return res.status(400).json({ message: 'Invalid status' });
   }
+  const existing = await Order.findById(req.params.id).lean();
+  if (!existing) return res.status(404).json({ message: 'Order not found' });
+
   const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).lean();
   if (!order) return res.status(404).json({ message: 'Order not found' });
+
+  const prevStatus = existing.status;
+  const nextStatus = order.status;
+  const customerEmail = order.customer?.email;
+  if (customerEmail && prevStatus !== nextStatus) {
+    if (nextStatus === 'shipped') {
+      resend.emails.send(createCustomerShippedEmail(order)).catch(err => {
+        console.error('Customer shipped email send error:', err.message || err);
+      });
+    }
+    if (nextStatus === 'delivered') {
+      resend.emails.send(createCustomerDeliveredEmail(order)).catch(err => {
+        console.error('Customer delivered email send error:', err.message || err);
+      });
+    }
+  }
+
   res.json(order);
+});
+
+// ─── ADMIN: PROMO CODES ─────────────────────────────────────────
+app.get('/api/admin/promocodes', authMiddleware, async (_req, res) => {
+  const codes = await PromoCode.find().sort({ createdAt: -1 }).lean();
+  res.json(codes);
+});
+
+app.post('/api/admin/promocodes', authMiddleware, async (req, res) => {
+  const code = String(req.body?.code || '').trim().toUpperCase();
+  const discountPercent = Number(req.body?.discountPercent);
+  const active = req.body?.active === false ? false : true;
+  if (!code || !discountPercent) return res.status(400).json({ message: 'Code and discountPercent are required' });
+  const promo = await PromoCode.create({ code, discountPercent, active });
+  res.status(201).json(promo);
+});
+
+app.patch('/api/admin/promocodes/:id', authMiddleware, async (req, res) => {
+  const update = {};
+  if (req.body.code !== undefined) update.code = String(req.body.code || '').trim().toUpperCase();
+  if (req.body.discountPercent !== undefined) update.discountPercent = Number(req.body.discountPercent);
+  if (typeof req.body.active === 'boolean') update.active = req.body.active;
+  const promo = await PromoCode.findByIdAndUpdate(req.params.id, { $set: update }, { new: true }).lean();
+  if (!promo) return res.status(404).json({ message: 'Promo code not found' });
+  res.json(promo);
+});
+
+app.delete('/api/admin/promocodes/:id', authMiddleware, async (req, res) => {
+  const result = await PromoCode.findByIdAndDelete(req.params.id);
+  if (!result) return res.status(404).json({ message: 'Promo code not found' });
+  res.json({ message: 'Deleted' });
+});
+
+// ─── ADMIN: BROADCASTS ─────────────────────────────────────────
+app.get('/api/admin/broadcasts', authMiddleware, async (_req, res) => {
+  const broadcasts = await Broadcast.find().sort({ createdAt: -1 }).lean();
+  res.json(broadcasts);
+});
+
+app.get('/api/admin/subscribers', authMiddleware, async (_req, res) => {
+  const subscribers = await Subscriber.find().sort({ createdAt: -1 }).lean();
+  res.json(subscribers);
+});
+
+app.post('/api/admin/broadcasts', authMiddleware, async (req, res) => {
+  const subject = String(req.body?.subject || '').trim();
+  const body = String(req.body?.body || '').trim();
+  if (!subject || !body) return res.status(400).json({ message: 'Subject and body are required' });
+
+  const subscribers = await Subscriber.find({ active: true }).lean();
+  const recipientCount = subscribers.length;
+  const broadcast = await Broadcast.create({ subject, body, recipientCount, sentAt: new Date() });
+
+  const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+  await Promise.allSettled(subscribers.map(s => {
+    return resend.emails.send({
+      from,
+      to: s.email,
+      subject,
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;">${body.replace(/\n/g, '<br>')}</div>`
+    });
+  }));
+
+  res.status(201).json({ message: 'Broadcast sent', broadcastId: broadcast._id, recipientCount });
+});
+
+// ─── ADMIN: PRODUCT IMAGE UPLOAD ───────────────────────────────
+app.post('/api/admin/products/:slug/image', authMiddleware, upload.single('image'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+  const imagePath = `uploads/${req.file.filename}`;
+  const product = await Product.findOneAndUpdate({ slug: req.params.slug }, { $set: { image: imagePath } }, { new: true }).lean();
+  if (!product) return res.status(404).json({ message: 'Product not found' });
+  res.status(201).json({ message: 'Uploaded', image: imagePath, product });
 });
 
 app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {

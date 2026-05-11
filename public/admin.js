@@ -9,6 +9,13 @@ const inventoryPanel = document.getElementById('inventoryPanel');
 const inventoryGrid = document.getElementById('inventoryGrid');
 const productsPanel = document.getElementById('productsPanel');
 const productsGrid = document.getElementById('productsGrid');
+const promoCodesPanel = document.getElementById('promoCodesPanel');
+const promoCodesGrid = document.getElementById('promoCodesGrid');
+const broadcastsPanel = document.getElementById('broadcastsPanel');
+const broadcastsGrid = document.getElementById('broadcastsGrid');
+const createPromoBtn = document.getElementById('createPromoBtn');
+const sendBroadcastBtn = document.getElementById('sendBroadcastBtn');
+const subscriberCountLabel = document.getElementById('subscriberCountLabel');
 const showAddProductBtn = document.getElementById('showAddProductBtn');
 const productForm = document.getElementById('productForm');
 const statOrders = document.getElementById('statOrders');
@@ -213,6 +220,10 @@ const loadProducts = async () => {
           <label style="font-size:.8rem;color:#94a3b8;">Image</label>
           <input class="stock-input product-image" value="${escapeHtml(product.image || '')}">
         </div>
+        <div>
+          <label style="font-size:.8rem;color:#94a3b8;">Upload image</label>
+          <input class="stock-input product-image-file" type="file" accept="image/*">
+        </div>
       </div>
       <div style="margin-top:1rem;">
         <label style="font-size:.8rem;color:#94a3b8;">Description</label>
@@ -224,6 +235,33 @@ const loadProducts = async () => {
       </div>
     </div>
   `).join('');
+
+  productsGrid.querySelectorAll('.product-image-file').forEach(input => {
+    input.addEventListener('change', async e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const card = e.target.closest('.product-card');
+      const slug = card.dataset.slug;
+      const form = new FormData();
+      form.append('image', file);
+      try {
+        const res = await fetch(`/api/admin/products/${encodeURIComponent(slug)}/image`, {
+          method: 'POST',
+          credentials: 'include',
+          body: form
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.message || 'Upload failed');
+        card.querySelector('.product-image').value = body.image || '';
+        showMessage('Image uploaded');
+      } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Image upload failed');
+      } finally {
+        e.target.value = '';
+      }
+    });
+  });
 
   productsGrid.querySelectorAll('.save-product').forEach(btn => {
     btn.addEventListener('click', async event => {
@@ -292,6 +330,123 @@ const switchTab = tabName => {
   ordersPanel.classList.toggle('hidden', tabName !== 'orders');
   inventoryPanel.classList.toggle('hidden', tabName !== 'inventory');
   productsPanel.classList.toggle('hidden', tabName !== 'products');
+  promoCodesPanel.classList.toggle('hidden', tabName !== 'promocodes');
+  broadcastsPanel.classList.toggle('hidden', tabName !== 'broadcasts');
+};
+
+const loadPromoCodes = async () => {
+  const codes = await fetchJson('/api/admin/promocodes', { credentials: 'include' });
+  promoCodesGrid.innerHTML = codes.map(code => `
+    <div class="product-card" data-id="${code._id}">
+      <div class="product-row">
+        <div>
+          <label style="font-size:.8rem;color:#94a3b8;">Code</label>
+          <input class="stock-input promo-code" value="${escapeHtml(code.code)}">
+        </div>
+        <div style="text-align:right;color:#94a3b8;font-size:.95rem;">${code.active ? 'Active' : 'Inactive'}</div>
+      </div>
+      <div class="stock-grid" style="margin-top:.75rem;">
+        <div>
+          <label style="font-size:.8rem;color:#94a3b8;">Discount %</label>
+          <input class="stock-input promo-percent" type="number" min="1" max="100" value="${code.discountPercent ?? 0}">
+        </div>
+        <div style="display:flex;align-items:end;gap:.75rem;">
+          <label style="display:inline-flex;align-items:center;gap:.5rem;">
+            <input type="checkbox" class="promo-active" ${code.active ? 'checked' : ''}> Active
+          </label>
+        </div>
+      </div>
+      <div class="product-actions" style="margin-top:1rem;">
+        <button class="btn-small promo-save">Save</button>
+        <button class="btn-small promo-delete" style="background:#ef4444;">Delete</button>
+      </div>
+    </div>
+  `).join('');
+
+  promoCodesGrid.querySelectorAll('.promo-save').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const card = e.target.closest('.product-card');
+      const id = card.dataset.id;
+      const payload = {
+        code: card.querySelector('.promo-code').value.trim(),
+        discountPercent: Number(card.querySelector('.promo-percent').value),
+        active: card.querySelector('.promo-active').checked
+      };
+      await fetchJson(`/api/admin/promocodes/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      showMessage('Promo code updated');
+      await loadPromoCodes();
+    });
+  });
+
+  promoCodesGrid.querySelectorAll('.promo-delete').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const card = e.target.closest('.product-card');
+      const id = card.dataset.id;
+      await fetchJson(`/api/admin/promocodes/${id}`, { method: 'DELETE', credentials: 'include' });
+      showMessage('Promo code deleted');
+      await loadPromoCodes();
+    });
+  });
+};
+
+const createPromoCode = async () => {
+  const code = document.getElementById('newPromoCode').value.trim();
+  const discountPercent = Number(document.getElementById('newPromoPercent').value);
+  const active = document.getElementById('newPromoActive').checked;
+  await fetchJson('/api/admin/promocodes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ code, discountPercent, active })
+  });
+  document.getElementById('newPromoCode').value = '';
+  document.getElementById('newPromoPercent').value = '';
+  document.getElementById('newPromoActive').checked = true;
+  showMessage('Promo code created');
+  await loadPromoCodes();
+};
+
+const loadBroadcasts = async () => {
+  const broadcasts = await fetchJson('/api/admin/broadcasts', { credentials: 'include' });
+  broadcastsGrid.innerHTML = broadcasts.map(b => `
+    <div class="product-card">
+      <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div style="font-weight:700;">${escapeHtml(b.subject)}</div>
+        <div style="color:#94a3b8;font-size:.9rem;">${b.sentAt ? new Date(b.sentAt).toLocaleString() : 'Draft'}</div>
+      </div>
+      <div style="margin-top:.5rem;color:#94a3b8;font-size:.95rem;">Recipients: ${b.recipientCount ?? 0}</div>
+    </div>
+  `).join('') || '<div style="color:#94a3b8;">No broadcasts yet.</div>';
+};
+
+const updateSubscriberCount = async () => {
+  try {
+    const subs = await fetchJson('/api/admin/subscribers', { credentials: 'include' });
+    subscriberCountLabel.textContent = `${subs.length} subscribers`;
+  } catch {
+    subscriberCountLabel.textContent = '';
+  }
+};
+
+const sendBroadcast = async () => {
+  const subject = document.getElementById('broadcastSubject').value.trim();
+  const body = document.getElementById('broadcastBody').value.trim();
+  const res = await fetchJson('/api/admin/broadcasts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ subject, body })
+  });
+  showMessage(`Broadcast sent to ${res.recipientCount || 0}`);
+  document.getElementById('broadcastSubject').value = '';
+  document.getElementById('broadcastBody').value = '';
+  await loadBroadcasts();
+  await updateSubscriberCount();
 };
 
 const showMessage = msg => {
@@ -313,6 +468,8 @@ logoutBtn.addEventListener('click', logout);
 tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 showAddProductBtn.addEventListener('click', () => productForm.classList.toggle('hidden'));
 document.getElementById('createProductBtn').addEventListener('click', createProduct);
+createPromoBtn?.addEventListener('click', () => createPromoCode().catch(err => showMessage(err.message)));
+sendBroadcastBtn?.addEventListener('click', () => sendBroadcast().catch(err => showMessage(err.message)));
 
 const init = async () => {
   try {
@@ -320,6 +477,9 @@ const init = async () => {
     await loadOrders();
     await loadInventory();
     await loadProducts();
+    await loadPromoCodes();
+    await loadBroadcasts();
+    await updateSubscriberCount();
   } catch (err) {
     if (err.message.includes('Authentication')) {
       window.location.href = '/admin/login';
