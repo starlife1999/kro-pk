@@ -1113,92 +1113,7 @@ body::before {
 
     <!-- Catalogue -->
     <section class="catalogue">
-        <div class="product-grid">
-            
-           <!-- IPK Starboy Polo -->
-<div class="product-card panel" onclick="window.location.href='ipk-starboy-polo.html'" style="cursor:pointer">
-    <div class="product-tag bestseller">HOT!</div>
-    <div class="product-image-placeholder">
-        <img src="ipk-polo-front.png" alt="IPK Starboy Polo" style="width: 100%; height: 100%; object-fit: cover;">
-    </div>
-    <div class="product-info">
-        <h3 class="product-name">IPK STARBOY POLO</h3>
-        <div class="product-price">₦25,000</div>
-        <p class="product-desc">Black motorsport polo. Over Drive shoulders. Starboy chest hit. Racing stripes.</p>
-        <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAddToCart('ipk-polo','IPK STARBOY POLO',25000,'ipk-polo-front.png')">🛒 ADD TO CART</button>
-    </div>
-</div>
-
-         <!-- PK Thermal -->
-<div class="product-card panel" onclick="window.location.href='pk-thermal.html'" style="cursor:pointer">
-    <div class="product-tag new">NEW</div>
-    <div class="product-image-placeholder">
-        <img src="pk-thermal.jpg" alt="PK Thermal" style="width: 100%; height: 100%; object-fit: cover;">
-    </div>
-    <div class="product-info">
-        <h3 class="product-name">PK THERMAL</h3>
-        <div class="product-price">₦20,000</div>
-        <p class="product-desc">Long sleeve thermal. Waffle texture. Sleeve graphics. Layer essential.</p>
-        <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAddToCart('pk-thermal','PK THERMAL',20000,'pk-thermal.jpg')">🛒 ADD TO CART</button>
-    </div>
-</div>
-
-        <!-- Jorts -->
-<div class="product-card panel" onclick="window.location.href='jorts.html'" style="cursor:pointer">
-    <div class="product-tag new">NEW</div>
-    <div class="product-image-placeholder">
-        <img src="jorts-front.png" alt="KRO PK Jorts" style="width: 100%; height: 100%; object-fit: cover;">
-    </div>
-    <div class="product-info">
-        <h3 class="product-name">KRO PK JORTS</h3>
-        <div class="product-price">₦17,000</div>
-        <p class="product-desc">Joggers material jorts. Knee length. Heavy weight. Racing patch. Summer essential.</p>
-        <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAddToCart('jorts','KRO PK JORTS',17000,'jorts-front.png')">🛒 ADD TO CART</button>
-    </div>
-</div>
-
-           <!-- Beanie -->
-<div class="product-card panel" onclick="window.location.href='beanie.html'" style="cursor:pointer">
-    <div class="product-image-placeholder">
-        <img src="beanie-front.png" alt="KRO PK Beanie" style="width: 100%; height: 100%; object-fit: cover;">
-    </div>
-    <div class="product-info">
-        <h3 class="product-name">KRO PK BEANIE</h3>
-        <div class="product-price">₦10,000</div>
-        <p class="product-desc">Cuffed beanie. Embroidered logo. Winter essential. Keep rocking.</p>
-        <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAddToCart('beanie','KRO PK BEANIE',10000,'beanie-front.png')">🛒 ADD TO CART</button>
-    </div>
-</div>
-
-            <!-- KRO PK Graphic Tee -->
-<div class="product-card panel" onclick="window.location.href='graphic-tee.html'" style="cursor:pointer">
-    <div class="product-tag new">NEW</div>
-    <div class="product-image-placeholder">
-        <img src="graphic-tee.png" alt="KRO PK Graphic Tee" style="width: 100%; height: 100%; object-fit: cover;">
-    </div>
-    <div class="product-info">
-        <h3 class="product-name">KRO PK GRAPHIC TEE</h3>
-        <div class="product-price">₦12,000</div>
-        <p class="product-desc">Heavyweight cotton. Motorsport graphic print. Box fit. Everyday essential.</p>
-        <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAddToCart('graphic-tee','KRO PK GRAPHIC TEE',12000,'graphic-tee.png')">🛒 ADD TO CART</button>
-    </div>
-</div>
-
-           <!-- KRO PK Core Tee -->
-<div class="product-card panel" onclick="window.location.href='kro-tee.html'" style="cursor:pointer">
-    <div class="product-image-placeholder">
-        <div class="placeholder-graphic">KRO<br>TEE</div>
-    </div>
-    <div class="product-info">
-        <h3 class="product-name">KRO PK TEE</h3>
-        <div class="product-price">₦10,000</div>
-        <p class="product-desc">Core logo tee. Heavy cotton. Box fit. Essential.</p>
-        <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAddToCart('kro-tee','KRO PK TEE',10000,'')">🛒 ADD TO CART</button>
-    </div>
-</div>
-
-
-        </div>
+        <div class="product-grid" id="productGrid"></div>
     </section>
 
     <!-- Marquee -->
@@ -1401,8 +1316,48 @@ body::before {
         });
     });
 
+    async function loadProducts() {
+        const container = document.getElementById('productGrid');
+        if (!container) return;
+        container.innerHTML = '<div style="color:#f8fafc;padding:2rem;text-align:center;">Loading products...</div>';
+        try {
+            const res = await fetch('/api/products', { cache: 'no-store' });
+            const products = await res.json();
+            if (!Array.isArray(products) || !products.length) {
+                container.innerHTML = '<div style="color:#f8fafc;padding:2rem;text-align:center;">No products available.</div>';
+                return;
+            }
+
+            container.innerHTML = products.map(product => {
+                const isSoldOut = !product.active || Object.values(product.sizes || {}).every(value => Number(value) <= 0);
+                const tagClass = String(product.tag || '').toUpperCase() === 'HOT!' ? 'bestseller' : (product.tag ? 'new' : '');
+                const tags = product.tag ? `<div class="product-tag ${tagClass}">${product.tag}</div>` : '';
+                const imageContent = product.image
+                    ? `<img src="${product.image}" alt="${product.name}" style="width: 100%; height: 100%; object-fit: cover;">`
+                    : `<div class="placeholder-graphic">${String(product.name || '').split(' ').slice(0,2).map(w => w?.[0] || '').join('')}</div>`;
+
+                return `
+                    <div class="product-card panel" onclick="window.location.href='${product.slug}.html'" style="cursor:pointer">
+                        ${tags}
+                        <div class="product-image-placeholder">${imageContent}</div>
+                        <div class="product-info">
+                            <h3 class="product-name">${product.name}</h3>
+                            <div class="product-price">₦${Number(product.price || 0).toLocaleString('en-NG')}</div>
+                            <p class="product-desc">${product.description || ''}</p>
+                            <button class="add-to-cart-btn" ${isSoldOut ? 'disabled style="opacity:.45;cursor:not-allowed;"' : ''} onclick="event.stopPropagation(); quickAddToCart('${product.slug}','${String(product.name || '').replace(/'/g, '\\\'')}',${Number(product.price || 0)},'${product.image || ''}')">${isSoldOut ? 'SOLD OUT' : '🛒 ADD TO CART'}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = '<div style="color:#ef4444;padding:2rem;text-align:center;">Unable to load products.</div>';
+        }
+    }
+
     // Init
     updateCartBadge();
+    loadProducts();
     </script>
 
 </body>
