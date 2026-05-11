@@ -776,7 +776,7 @@ body::before {
             const container = document.getElementById('productGrid');
             container.innerHTML = '<div style="color:#f8fafc;padding:2rem;text-align:center;">Loading products...</div>';
             try {
-                const products = await fetch('/api/products').then(r => r.json());
+                const products = await fetch('/api/products', { cache: 'no-store' }).then(r => r.json());
                 if (!products.length) {
                     container.innerHTML = '<div style="color:#f8fafc;padding:2rem;text-align:center;">No products available.</div>';
                     return;

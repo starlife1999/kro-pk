@@ -212,17 +212,20 @@ app.post('/api/admin/logout', authMiddleware, (req, res) => {
 
 app.get('/api/products/all', authMiddleware, async (req, res) => {
   const products = await Product.find().sort({ createdAt: 1 }).lean();
+  res.set('Cache-Control', 'no-store');
   res.json(products);
 });
 
 app.get('/api/products', async (req, res) => {
   const products = await Product.find().sort({ createdAt: 1 }).lean();
+  res.set('Cache-Control', 'no-store');
   res.json(products);
 });
 
 app.get('/api/products/:slug', async (req, res) => {
   const product = await Product.findOne({ slug: req.params.slug }).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
+  res.set('Cache-Control', 'no-store');
   res.json(product);
 });
 

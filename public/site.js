@@ -40,7 +40,7 @@ function formatPrice(value) {
 
 async function getProductBySlug(slug) {
     try {
-        const response = await fetch(`/api/products/${encodeURIComponent(slug)}`);
+        const response = await fetch(`/api/products/${encodeURIComponent(slug)}`, { cache: 'no-store' });
         if (!response.ok) return null;
         return await response.json();
     } catch (err) {
