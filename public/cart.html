@@ -622,19 +622,20 @@ async function payWithPaystack(payload, totalAmount) {
                 phone: payload.customer.phone,
             }
         },
-        callback: async function(response) {
-            if (!response?.reference) {
+        callback: function(response) {
+            if (!response || !response.reference) {
                 showToast('Payment failed. No reference received.');
                 return;
             }
 
-            try {
+            (async () => {
                 const result = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...payload, paystackReference: response.reference })
                 });
-                const data = await result.json();
+
+                const data = await result.json().catch(() => ({}));
                 if (!result.ok) {
                     showToast(data.message || 'Order failed after payment.');
                     return;
@@ -652,10 +653,10 @@ async function payWithPaystack(payload, totalAmount) {
                         <p>Your order ${data.orderNumber} is in our system.<br>We will contact you shortly with payment details.</p>
                         <a href="shop1.html" class="shop-btn">← BACK TO SHOP</a>
                     </div>`;
-            } catch (err) {
+            })().catch(err => {
                 console.error(err);
                 showToast('Unable to send order after payment.');
-            }
+            });
         },
         onClose: function() {
             showToast('Payment window closed. Order not completed.');
