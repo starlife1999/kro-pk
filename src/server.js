@@ -399,6 +399,7 @@ app.put('/api/admin/orders/:id/status', authMiddleware, async (req, res) => {
 });
 
 app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
+  console.log('[admin] PATCH /api/admin/products/:slug', req.params.slug, req.body);
   const { sizes, active, name, price, description, tag, image } = req.body;
   const update = {};
   if (sizes && typeof sizes === 'object') {
@@ -416,8 +417,10 @@ app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
   if (description !== undefined) update.description = description.trim();
   if (tag !== undefined) update.tag = tag.trim();
   if (image !== undefined) update.image = image.trim();
+  console.log('[admin] product update $set', req.params.slug, update);
   const product = await Product.findOneAndUpdate({ slug: req.params.slug }, { $set: update }, { new: true }).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
+  console.log('[admin] updated product', { slug: product.slug, price: product.price, active: product.active, tag: product.tag });
   res.json(product);
 });
 

@@ -21,12 +21,16 @@ let products = [];
 let selectedOrder = null;
 
 const fetchJson = async (url, options = {}) => {
+  console.log('[admin] request', url, options);
   const res = await fetch(url, options);
+  const raw = await res.text();
+  let body = {};
+  try { body = raw ? JSON.parse(raw) : {}; } catch { body = { raw }; }
+  console.log('[admin] response', url, res.status, body);
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || 'Request failed');
+    throw new Error(body.message || `Request failed (${res.status})`);
   }
-  return res.json();
+  return body;
 };
 
 const formatPrice = value => `₦${Number(value).toLocaleString('en-NG')}`;
@@ -157,23 +161,30 @@ const loadInventory = async () => {
     `;
   }).join('');
 
-  document.querySelectorAll('.save-product').forEach(btn => {
+  inventoryGrid.querySelectorAll('.save-product').forEach(btn => {
     btn.addEventListener('click', async event => {
-      const card = event.target.closest('.product-card');
-      const slug = card.dataset.slug;
-      const sizes = {};
-      card.querySelectorAll('.stock-input').forEach(input => {
-        if (input.dataset.size) sizes[input.dataset.size] = Number(input.value || 0);
-      });
-      const active = card.querySelector('input[type="checkbox"]').checked;
-      await fetchJson(`/api/admin/products/${slug}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ sizes, active })
-      });
-      showMessage('Product stock updated');
-      await loadInventory();
+      try {
+        const card = event.target.closest('.product-card');
+        const slug = card.dataset.slug;
+        const sizes = {};
+        card.querySelectorAll('.stock-input').forEach(input => {
+          if (input.dataset.size) sizes[input.dataset.size] = Number(input.value || 0);
+        });
+        const active = card.querySelector('input[type="checkbox"]').checked;
+        const payload = { sizes, active };
+        console.log('[admin] inventory save payload', slug, payload);
+        await fetchJson(`/api/admin/products/${slug}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+        showMessage('Product stock updated');
+        await loadInventory();
+      } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Unable to save inventory changes');
+      }
     });
   });
 };
@@ -214,27 +225,33 @@ const loadProducts = async () => {
     </div>
   `).join('');
 
-  document.querySelectorAll('.save-product').forEach(btn => {
+  productsGrid.querySelectorAll('.save-product').forEach(btn => {
     btn.addEventListener('click', async event => {
-      const card = event.target.closest('.product-card');
-      const slug = card.dataset.slug;
-      const payload = {
-        name: card.querySelector('.product-name').value.trim(),
-        price: Number(card.querySelector('.product-price').value),
-        description: card.querySelector('.product-desc').value.trim(),
-        tag: card.querySelector('.product-tag').value.trim(),
-        image: card.querySelector('.product-image').value.trim(),
-        active: card.querySelector('.product-active').checked
-      };
-      await fetchJson(`/api/admin/products/${slug}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-      });
-      showMessage('Product updated');
-      await loadProducts();
-      await loadInventory();
+      try {
+        const card = event.target.closest('.product-card');
+        const slug = card.dataset.slug;
+        const payload = {
+          name: card.querySelector('.product-name').value.trim(),
+          price: Number(card.querySelector('.product-price').value),
+          description: card.querySelector('.product-desc').value.trim(),
+          tag: card.querySelector('.product-tag').value.trim(),
+          image: card.querySelector('.product-image').value.trim(),
+          active: card.querySelector('.product-active').checked
+        };
+        console.log('[admin] products save payload', slug, payload);
+        await fetchJson(`/api/admin/products/${slug}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+        showMessage('Product updated');
+        await loadProducts();
+        await loadInventory();
+      } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Unable to save product changes');
+      }
     });
   });
 };
