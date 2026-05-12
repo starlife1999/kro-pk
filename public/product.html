@@ -290,6 +290,7 @@
       cursor: pointer;
     }
     .back-to-primary:hover { background: var(--yellow); color: var(--navy); }
+  </style>
 </head>
 <body class="product-page">
   <header class="site-header">
@@ -494,6 +495,7 @@
   }
 
   async function init() {
+    try {
     const slug = getQuerySlug();
     if (!slug) {
       renderError('Missing product slug. Use a link like product.html?slug=ipk-starboy-polo');
@@ -578,6 +580,10 @@
     wireEvents();
     updateMainImageUI();
     await refreshAddButton();
+    } catch (err) {
+      console.error(err);
+      renderError('Something went wrong loading this product. Please try again or go back to the shop.');
+    }
   }
 
   if (document.readyState === 'loading') {

@@ -272,7 +272,12 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.get('/api/products/:slug', async (req, res) => {
-  const slug = decodeURIComponent(req.params.slug);
+  let slug;
+  try {
+    slug = decodeURIComponent(req.params.slug);
+  } catch {
+    return res.status(400).json({ message: 'Invalid slug' });
+  }
   const product = await Product.findOne({ slug }).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
   res.set('Cache-Control', 'no-store');
