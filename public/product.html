@@ -279,16 +279,22 @@
       .mini-grid { grid-template-columns: repeat(2, 1fr); }
       .also-like { padding: 3rem 1.5rem; }
     }
-    @media (max-width: 480px) {
-      .mini-grid { grid-template-columns: 1fr; }
+    .back-to-primary {
+      margin-top: 0.75rem;
+      font-family: 'Bangers', cursive;
+      font-size: 1rem;
+      padding: 0.5rem 1rem;
+      background: var(--navy-light);
+      color: var(--yellow);
+      border: 2px solid var(--yellow);
+      cursor: pointer;
     }
-  </style>
+    .back-to-primary:hover { background: var(--yellow); color: var(--navy); }
 </head>
-<body>
+<body class="product-page">
   <header class="site-header">
     <a href="shop1.html" class="site-logo">KRO PK<span>DROP 2026</span></a>
     <div class="site-actions">
-      <a class="shop-link" href="shop1.html">SHOP</a>
       <a class="cart-link" href="cart.html">CART <span class="cart-badge">0</span></a>
     </div>
   </header>
@@ -340,18 +346,15 @@
     return size === 'ONE SIZE' ? 'OS' : size;
   }
 
-  function collectImageUrls(product) {
-    const urls = [];
-    const pushUrl = u => {
-      const t = String(u || '').trim();
-      if (!t || urls.includes(t)) return;
-      urls.push(t);
-    };
-    if (Array.isArray(product.images)) {
-      product.images.forEach(entry => String(entry).split('|').forEach(part => pushUrl(part.trim())));
-    }
-    if (product.image) String(product.image).split('|').forEach(part => pushUrl(part.trim()));
-    return urls;
+  function primaryUrl(product) {
+    const raw = String(product && product.image || '').trim();
+    if (!raw) return '';
+    return raw.split('|')[0].trim();
+  }
+
+  function galleryUrls(product) {
+    if (!product || !Array.isArray(product.images)) return [];
+    return product.images.map(s => String(s).trim()).filter(Boolean).slice(0, 4);
   }
 
   function pickDefaultSize(sizes, displaySizes) {
@@ -385,20 +388,30 @@
 
   document.getElementById('zoomModal').addEventListener('click', closeZoom);
 
-  let state = { slug: '', product: null, selectedSize: 'L', gallery: [], mainIndex: 0 };
+  let state = {
+    slug: '',
+    product: null,
+    selectedSize: 'L',
+    primaryUrl: '',
+    galleryUrls: [],
+    mainDisplayUrl: ''
+  };
 
-  function syncMainImage() {
+  function updateMainImageUI() {
     const main = document.getElementById('mainImage');
-    if (!main || main.tagName !== 'IMG') return;
-    const thumbs = state.gallery.filter(Boolean);
-    const url = thumbs[state.mainIndex] || '';
-    if (url) main.src = url;
-  }
-
-  function setThumbActive(idx) {
-    document.querySelectorAll('#thumbRow .thumb-panel').forEach((el, i) => {
-      el.classList.toggle('active', i === idx);
+    if (main && main.tagName === 'IMG' && state.mainDisplayUrl) {
+      main.src = state.mainDisplayUrl;
+    }
+    document.querySelectorAll('#thumbRow .thumb-panel').forEach(el => {
+      const i = Number(el.dataset.galleryIndex);
+      const url = state.galleryUrls[i];
+      el.classList.toggle('active', url === state.mainDisplayUrl);
     });
+    const btn = document.getElementById('showPrimaryBtn');
+    if (btn) {
+      const show = state.primaryUrl && state.galleryUrls.length && state.mainDisplayUrl !== state.primaryUrl;
+      btn.style.display = show ? 'inline-block' : 'none';
+    }
   }
 
   async function refreshAddButton() {
@@ -420,12 +433,20 @@
       });
     });
 
-    document.querySelectorAll('#thumbRow .thumb-panel').forEach((thumb, idx) => {
+    document.querySelectorAll('#thumbRow .thumb-panel').forEach(thumb => {
       thumb.addEventListener('click', () => {
-        state.mainIndex = idx;
-        syncMainImage();
-        setThumbActive(idx);
+        const i = Number(thumb.dataset.galleryIndex);
+        if (Number.isNaN(i) || !state.galleryUrls[i]) return;
+        state.mainDisplayUrl = state.galleryUrls[i];
+        updateMainImageUI();
       });
+    });
+
+    document.getElementById('showPrimaryBtn')?.addEventListener('click', () => {
+      if (state.primaryUrl) {
+        state.mainDisplayUrl = state.primaryUrl;
+        updateMainImageUI();
+      }
     });
 
     const mainPanel = document.querySelector('.main-image-panel');
@@ -441,8 +462,8 @@
       addBtn.addEventListener('click', () => {
         const p = state.product;
         if (!p) return;
-        const img = state.gallery[0] || p.image || '';
-        addToCart(state.slug, p.name, p.price, state.selectedSize, img);
+        const cartImg = state.primaryUrl || state.galleryUrls[0] || '';
+        addToCart(state.slug, p.name, p.price, state.selectedSize, cartImg);
       });
     }
   }
@@ -486,12 +507,13 @@
       return;
     }
     state.product = product;
-    state.gallery = collectImageUrls(product);
+    state.primaryUrl = primaryUrl(product);
+    state.galleryUrls = galleryUrls(product);
+    state.mainDisplayUrl = state.primaryUrl || state.galleryUrls[0] || '';
 
     const sizes = normalizeSizes(product);
     const displaySizes = sizesToDisplay(sizes);
     state.selectedSize = pickDefaultSize(sizes, displaySizes);
-    state.mainIndex = 0;
 
     document.title = escapeHtml(product.name) + ' — KRO PK';
 
@@ -511,16 +533,20 @@
         (disabled ? ' disabled' : '') + '>' + escapeHtml(sizeButtonLabel(sz)) + '</button>';
     }).join('');
 
-    const thumbs = state.gallery.filter(Boolean);
-    const thumbRow = thumbs.length > 1
-      ? '<div class="thumbnail-grid" id="thumbRow">' + thumbs.map((url, i) =>
-          '<div class="thumb-panel' + (i === 0 ? ' active' : '') + '">' +
+    const gu = state.galleryUrls;
+    const backBtn = state.primaryUrl && gu.length
+      ? '<button type="button" class="back-to-primary" id="showPrimaryBtn" style="display:none">Primary photo</button>'
+      : '';
+    const thumbRow = gu.length
+      ? '<div class="thumbnail-grid" id="thumbRow">' + gu.map((url, i) => {
+          const active = state.mainDisplayUrl === url ? ' active' : '';
+          return '<div class="thumb-panel' + active + '" data-gallery-index="' + i + '">' +
             '<img src="' + escapeHtml(url) + '" alt="" style="width:100%;height:100%;object-fit:cover;">' +
-          '</div>'
-        ).join('') + '</div>'
+            '</div>';
+        }).join('') + '</div>' + backBtn
       : '<div class="thumbnail-grid" id="thumbRow" style="display:none"></div>';
 
-    const mainSrc = thumbs[0] || '';
+    const mainSrc = state.mainDisplayUrl;
     const mainImgTag = mainSrc
       ? '<img id="mainImage" src="' + escapeHtml(mainSrc) + '" alt="' + escapeHtml(product.name) + '" style="width:100%;height:100%;object-fit:cover;">'
       : '<div id="mainImage" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:Bangers,cursive;font-size:2rem;color:#64748b;">NO IMAGE</div>';
@@ -550,6 +576,7 @@
       '<footer><div class="footer-logo">KRO PK</div><div style="color:#64748b;font-family:Permanent Marker;">KEEP ROCKING © 2026</div></footer>';
 
     wireEvents();
+    updateMainImageUI();
     await refreshAddButton();
   }
 

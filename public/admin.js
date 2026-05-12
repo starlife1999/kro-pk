@@ -3,6 +3,7 @@ const orderDetail = document.getElementById('orderDetail');
 const orderSummary = document.getElementById('orderSummary');
 const statusFilter = document.getElementById('orderStatusFilter');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
+const deleteAllOrdersBtn = document.getElementById('deleteAllOrdersBtn');
 const tabs = document.querySelectorAll('.tab');
 const ordersPanel = document.getElementById('ordersPanel');
 const inventoryPanel = document.getElementById('inventoryPanel');
@@ -117,10 +118,12 @@ const showOrderDetails = async id => {
         <option value="delivered">delivered</option>
       </select>
       <button id="saveStatusBtn" class="btn-small">Save</button>
+      <button id="deleteOrderBtn" class="btn-small" style="background:#b91c1c;">Delete order</button>
     </div>
   `;
   document.getElementById('statusSelect').value = selectedOrder.status;
   document.getElementById('saveStatusBtn').addEventListener('click', saveOrderStatus);
+  document.getElementById('deleteOrderBtn').addEventListener('click', deleteSelectedOrder);
 };
 
 const saveOrderStatus = async () => {
@@ -134,6 +137,37 @@ const saveOrderStatus = async () => {
   await loadOrders();
   await loadStats();
   showMessage('Order status updated');
+};
+
+const deleteSelectedOrder = async () => {
+  if (!selectedOrder) return;
+  if (!window.confirm(`Delete order ${selectedOrder.orderNumber} permanently? This cannot be undone.`)) return;
+  try {
+    await fetchJson(`/api/admin/orders/${selectedOrder._id}`, { method: 'DELETE', credentials: 'include' });
+    selectedOrder = null;
+    orderSummary.innerHTML = 'Select an order to see full details and update status.';
+    orderDetail.classList.add('hidden');
+    showMessage('Order deleted');
+    await loadOrders();
+    await loadStats();
+  } catch (err) {
+    showMessage(err.message || 'Delete failed');
+  }
+};
+
+const deleteAllOrders = async () => {
+  if (!window.confirm('Delete ALL orders from the database? This cannot be undone.')) return;
+  try {
+    const res = await fetchJson('/api/admin/orders/all', { method: 'DELETE', credentials: 'include' });
+    selectedOrder = null;
+    orderSummary.innerHTML = 'Select an order to see full details and update status.';
+    orderDetail.classList.add('hidden');
+    showMessage(`Deleted ${res.deletedCount ?? 0} orders`);
+    await loadOrders();
+    await loadStats();
+  } catch (err) {
+    showMessage(err.message || 'Delete failed');
+  }
 };
 
 const loadInventory = async () => {
@@ -198,8 +232,15 @@ const loadInventory = async () => {
 
 const loadProducts = async () => {
   products = await fetchJson('/api/products/all', { credentials: 'include' });
-  productsGrid.innerHTML = products.map(product => `
-    <div class="product-card" data-slug="${product.slug}">
+  productsGrid.innerHTML = products.map(product => {
+    const imgs = Array.isArray(product.images) ? product.images : [];
+    const galleryInputs = [0, 1, 2, 3].map(i => `
+            <div>
+              <label style="font-size:.8rem;color:#94a3b8;">Gallery ${i + 1} URL</label>
+              <input class="stock-input product-gallery-url" data-slot="${i}" value="${escapeHtml(imgs[i] || '')}" placeholder="uploads/...">
+            </div>`).join('');
+    return `
+    <div class="product-card" data-slug="${escapeHtml(product.slug)}">
       <div class="product-row">
         <div>
           <label style="font-size:.8rem;color:#94a3b8;">Name</label>
@@ -217,12 +258,17 @@ const loadProducts = async () => {
           <input class="stock-input product-tag" value="${escapeHtml(product.tag || '')}">
         </div>
         <div>
-          <label style="font-size:.8rem;color:#94a3b8;">Image</label>
+          <label style="font-size:.8rem;color:#94a3b8;">Primary image URL</label>
           <input class="stock-input product-image" value="${escapeHtml(product.image || '')}">
         </div>
         <div>
-          <label style="font-size:.8rem;color:#94a3b8;">Upload image</label>
+          <label style="font-size:.8rem;color:#94a3b8;">Upload primary</label>
           <input class="stock-input product-image-file" type="file" accept="image/*">
+        </div>
+        ${galleryInputs}
+        <div style="grid-column:1/-1;">
+          <label style="font-size:.8rem;color:#94a3b8;">Upload gallery (max 4 files, replaces gallery URLs below)</label>
+          <input class="stock-input product-gallery-files" type="file" accept="image/*" multiple>
         </div>
       </div>
       <div style="margin-top:1rem;">
@@ -233,8 +279,8 @@ const loadProducts = async () => {
         <label><input type="checkbox" class="product-active" ${product.active ? 'checked' : ''}> Active</label>
         <button class="save-product btn-small">Save</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   productsGrid.querySelectorAll('.product-image-file').forEach(input => {
     input.addEventListener('change', async e => {
@@ -254,11 +300,38 @@ const loadProducts = async () => {
         if (!res.ok) throw new Error(body.message || 'Upload failed');
         const updatedImage = body.product?.image ?? body.image ?? '';
         card.querySelector('.product-image').value = updatedImage;
-        showMessage('Image uploaded');
+        showMessage('Primary image uploaded');
         await loadProducts();
       } catch (err) {
         console.error(err);
         showMessage(err.message || 'Image upload failed');
+      } finally {
+        e.target.value = '';
+      }
+    });
+  });
+
+  productsGrid.querySelectorAll('.product-gallery-files').forEach(input => {
+    input.addEventListener('change', async e => {
+      const files = Array.from(e.target.files || []).slice(0, 4);
+      if (!files.length) return;
+      const card = e.target.closest('.product-card');
+      const slug = card.dataset.slug;
+      const form = new FormData();
+      files.forEach(f => form.append('gallery', f));
+      try {
+        const res = await fetch(`/api/admin/products/${encodeURIComponent(slug)}/gallery`, {
+          method: 'POST',
+          credentials: 'include',
+          body: form
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.message || 'Gallery upload failed');
+        showMessage('Gallery images uploaded');
+        await loadProducts();
+      } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Gallery upload failed');
       } finally {
         e.target.value = '';
       }
@@ -270,16 +343,21 @@ const loadProducts = async () => {
       try {
         const card = event.target.closest('.product-card');
         const slug = card.dataset.slug;
+        const galleryUrls = [0, 1, 2, 3].map(i => {
+          const inp = card.querySelector(`.product-gallery-url[data-slot="${i}"]`);
+          return inp ? inp.value.trim() : '';
+        }).filter(Boolean);
         const payload = {
           name: card.querySelector('.product-name').value.trim(),
           price: Number(card.querySelector('.product-price').value),
           description: card.querySelector('.product-desc').value.trim(),
           tag: card.querySelector('.product-tag').value.trim(),
           image: card.querySelector('.product-image').value.trim(),
+          images: galleryUrls.slice(0, 4),
           active: card.querySelector('.product-active').checked
         };
         console.log('[admin] products save payload', slug, payload);
-        await fetchJson(`/api/admin/products/${slug}`, {
+        await fetchJson(`/api/admin/products/${encodeURIComponent(slug)}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -466,6 +544,7 @@ const logout = async () => {
 
 statusFilter.addEventListener('change', loadOrders);
 exportCsvBtn?.addEventListener('click', exportOrdersCsv);
+deleteAllOrdersBtn?.addEventListener('click', () => deleteAllOrders().catch(err => showMessage(err.message)));
 logoutBtn.addEventListener('click', logout);
 tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 showAddProductBtn.addEventListener('click', () => productForm.classList.toggle('hidden'));

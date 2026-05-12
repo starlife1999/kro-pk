@@ -6,7 +6,16 @@ const productSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   price: { type: Number, required: true, min: 0 },
   image: { type: String, default: '' },
-  images: { type: [String], default: [] },
+  images: {
+    type: [String],
+    default: [],
+    validate: {
+      validator(v) {
+        return !Array.isArray(v) || v.length <= 4;
+      },
+      message: 'At most 4 gallery images'
+    }
+  },
   tag: { type: String, default: '' },
   sizes: {
     type: Map,

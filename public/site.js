@@ -231,7 +231,9 @@ function handleScroll() {
 
 document.addEventListener('DOMContentLoaded', () => {
     updateCartBadge();
-    updateHeader();
+    if (!document.body.classList.contains('product-page')) {
+        updateHeader();
+    }
     document.querySelectorAll('form[data-subscribe-form]').forEach(form => {
         form.addEventListener('submit', handleSubscribeForm);
     });

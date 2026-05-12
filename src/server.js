@@ -520,6 +520,20 @@ app.put('/api/admin/orders/:id/status', authMiddleware, async (req, res) => {
   res.json(order);
 });
 
+app.delete('/api/admin/orders/all', authMiddleware, async (_req, res) => {
+  const result = await Order.deleteMany({});
+  res.json({ message: 'All orders deleted', deletedCount: result.deletedCount });
+});
+
+app.delete('/api/admin/orders/:id', authMiddleware, async (req, res) => {
+  if (req.params.id === 'all') {
+    return res.status(400).json({ message: 'Use DELETE /api/admin/orders/all to remove all orders' });
+  }
+  const deleted = await Order.findByIdAndDelete(req.params.id);
+  if (!deleted) return res.status(404).json({ message: 'Order not found' });
+  res.json({ message: 'Order deleted' });
+});
+
 // ─── ADMIN: PROMO CODES ─────────────────────────────────────────
 app.get('/api/admin/promocodes', authMiddleware, async (_req, res) => {
   const codes = await PromoCode.find().sort({ createdAt: -1 }).lean();
@@ -598,10 +612,23 @@ app.post('/api/admin/products/:slug/image', authMiddleware, upload.single('image
   res.status(201).json({ message: 'Uploaded', image: imagePath, product });
 });
 
+app.post('/api/admin/products/:slug/gallery', authMiddleware, upload.array('gallery', 4), async (req, res) => {
+  const slug = decodeURIComponent(req.params.slug);
+  if (!req.files?.length) return res.status(400).json({ message: 'No files uploaded' });
+  const paths = req.files.slice(0, 4).map(f => `uploads/${f.filename}`);
+  const product = await Product.findOneAndUpdate(
+    { slug },
+    { $set: { images: paths } },
+    { new: true, runValidators: true }
+  ).lean();
+  if (!product) return res.status(404).json({ message: 'Product not found' });
+  res.status(201).json({ message: 'Gallery uploaded', images: paths, product });
+});
+
 app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
   const slugParam = decodeURIComponent(req.params.slug);
   console.log('[admin] PATCH /api/admin/products/:slug', slugParam, req.body);
-  const { sizes, active, name, price, description, tag, image } = req.body;
+  const { sizes, active, name, price, description, tag, image, images } = req.body;
   const update = {};
   if (sizes && typeof sizes === 'object') {
     for (const [key, value] of Object.entries(sizes)) {
@@ -618,15 +645,18 @@ app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
   if (description !== undefined) update.description = description.trim();
   if (tag !== undefined) update.tag = tag.trim();
   if (image !== undefined) update.image = image.trim();
+  if (Array.isArray(images)) {
+    update.images = images.map(s => String(s).trim()).filter(Boolean).slice(0, 4);
+  }
   console.log('[admin] product update $set', slugParam, update);
-  const product = await Product.findOneAndUpdate({ slug: slugParam }, { $set: update }, { new: true }).lean();
+  const product = await Product.findOneAndUpdate({ slug: slugParam }, { $set: update }, { new: true, runValidators: true }).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
   console.log('[admin] updated product', { slug: product.slug, price: product.price, active: product.active, tag: product.tag });
   res.json(product);
 });
 
 app.post('/api/admin/products', authMiddleware, async (req, res) => {
-  const { name, slug, description, price, tag, image, sizes, active } = req.body;
+  const { name, slug, description, price, tag, image, images, sizes, active } = req.body;
   if (!name || !price) {
     return res.status(400).json({ message: 'Name and price are required' });
   }
@@ -640,12 +670,17 @@ app.post('/api/admin/products', authMiddleware, async (req, res) => {
   const defaultSizes = { S: 0, M: 0, L: 0, XL: 0, 'ONE SIZE': 0 };
   const productSizes = { ...defaultSizes, ...(sizes && typeof sizes === 'object' ? sizes : {}) };
 
+  const gallery = Array.isArray(images)
+    ? images.map(s => String(s).trim()).filter(Boolean).slice(0, 4)
+    : [];
+
   const newProduct = await Product.create({
     slug: finalSlug,
     name: name.trim(),
     description: description?.trim() || '',
     price: Number(price),
     image: image?.trim() || '',
+    images: gallery,
     tag: tag?.trim() || '',
     sizes: productSizes,
     active: active === false ? false : true
