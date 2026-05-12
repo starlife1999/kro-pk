@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KRO PK — DROP 2026</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -213,6 +213,47 @@
             .enter-text {
                 font-size: 1.5rem;
                 padding: 1rem 2.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .brand {
+                top: max(1rem, env(safe-area-inset-top));
+                left: max(1rem, env(safe-area-inset-left));
+                right: max(1rem, env(safe-area-inset-right));
+                transform: none;
+                width: auto;
+            }
+            .brand-logo {
+                font-size: clamp(2rem, 12vw, 2.75rem);
+            }
+            .brand-drop {
+                font-size: 0.95rem;
+            }
+            .enter-btn {
+                bottom: max(18%, calc(4.5rem + env(safe-area-inset-bottom)));
+                left: 50%;
+                transform: translateX(-50%);
+                width: calc(100% - 2rem);
+                max-width: 20rem;
+            }
+            .enter-text {
+                font-size: 1.15rem;
+                padding: 0.85rem 1.25rem;
+                width: 100%;
+                text-align: center;
+                box-sizing: border-box;
+            }
+            .indicators {
+                bottom: max(0.75rem, env(safe-area-inset-bottom));
+                gap: 0.65rem;
+                flex-wrap: wrap;
+                justify-content: center;
+                max-width: calc(100vw - 1rem);
+            }
+
+            .enter-text:hover {
+                transform: translateY(-3px);
             }
         }
     </style>

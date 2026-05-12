@@ -180,6 +180,40 @@ body {
     }
 }
 
+@media (max-width: 480px) {
+    .site-header {
+        padding: 0.65rem max(0.75rem, env(safe-area-inset-left)) 0.65rem max(0.75rem, env(safe-area-inset-right));
+        padding-top: max(0.65rem, env(safe-area-inset-top));
+        flex-wrap: wrap;
+        row-gap: 0.35rem;
+        column-gap: 0.5rem;
+    }
+
+    .site-logo {
+        font-size: 1.35rem;
+        letter-spacing: 0.04em;
+        min-width: 0;
+        max-width: min(58vw, 11rem);
+        line-height: 1.05;
+    }
+
+    .site-logo span {
+        font-size: 0.68rem;
+    }
+
+    .site-actions {
+        gap: 0.5rem;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    .cart-link,
+    .shop-link {
+        padding: 0.55rem 0.7rem;
+        font-size: 0.82rem;
+    }
+}
+
 html {
     scroll-behavior: smooth;
 }

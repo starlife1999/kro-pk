@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Cart — KRO PK</title>
     <link rel="icon" type="image/png" href="favicon.png.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -528,8 +528,106 @@
         }
 
         @media (max-width: 480px) {
-            nav { padding: 0.8rem 1rem; }
-            .cart-layout { padding: 1rem 1rem 3rem; }
+            nav {
+                padding: 0.65rem max(0.65rem, env(safe-area-inset-left)) 0.65rem max(0.65rem, env(safe-area-inset-right));
+                padding-top: max(0.65rem, env(safe-area-inset-top));
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                row-gap: 0.35rem;
+            }
+
+            .nav-logo {
+                font-size: 1.35rem;
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+
+            .nav-back {
+                font-size: 0.78rem;
+                padding: 0.5rem 0.65rem;
+                line-height: 1.25;
+                white-space: normal;
+                text-align: center;
+                max-width: 100%;
+            }
+
+            .page-header {
+                padding: 1.75rem max(0.75rem, env(safe-area-inset-left)) 1.25rem max(0.75rem, env(safe-area-inset-right));
+            }
+
+            .page-header h1 {
+                font-size: clamp(2rem, 12vw, 3rem);
+            }
+
+            .cart-layout {
+                padding: 0.85rem max(0.65rem, env(safe-area-inset-left)) 2.5rem max(0.65rem, env(safe-area-inset-right));
+                gap: 1.25rem;
+            }
+
+            .cart-item {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                justify-items: center;
+                text-align: center;
+                padding: 1rem 0.75rem;
+            }
+
+            .cart-item-img {
+                width: 120px;
+                height: 120px;
+                margin: 0 auto;
+            }
+
+            .cart-item-details {
+                width: 100%;
+            }
+
+            .cart-item-details h3 {
+                font-size: 1.1rem;
+            }
+
+            .cart-item-controls {
+                width: 100%;
+                max-width: 280px;
+                justify-content: space-between;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                min-height: 48px;
+                font-size: 16px;
+            }
+
+            .checkout-btn {
+                font-size: 1.15rem;
+                padding: 1rem;
+            }
+
+            .summary-box {
+                padding: 1.1rem;
+            }
+
+            .promo-row {
+                flex-direction: column;
+            }
+
+            .promo-input {
+                border-right: 2px solid #334155;
+            }
+
+            .promo-btn {
+                width: 100%;
+            }
+
+            .toast {
+                left: max(0.65rem, env(safe-area-inset-left));
+                right: max(0.65rem, env(safe-area-inset-right));
+                bottom: max(0.75rem, env(safe-area-inset-bottom));
+                width: auto;
+                font-size: 1rem;
+                padding: 0.75rem 1rem;
+            }
         }
     </style>
 </head>

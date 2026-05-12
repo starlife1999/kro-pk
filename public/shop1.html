@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KRO PK — DROP 2026</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
@@ -1012,6 +1012,127 @@ body::before {
 
             .product-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .site-nav {
+                flex-wrap: wrap;
+                row-gap: 0.45rem;
+                padding: 0.55rem max(0.65rem, env(safe-area-inset-left)) 0.55rem max(0.65rem, env(safe-area-inset-right));
+                padding-top: max(0.55rem, env(safe-area-inset-top));
+            }
+
+            .site-nav .nav-logo {
+                font-size: 1.35rem;
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+
+            .nav-right {
+                gap: 0.45rem;
+                flex-shrink: 0;
+                margin-left: auto;
+            }
+
+            .nav-link {
+                font-size: 0.78rem;
+                white-space: nowrap;
+            }
+
+            .cart-icon-btn {
+                font-size: 0.78rem;
+                padding: 0.45rem 0.55rem;
+                letter-spacing: 0.02em;
+            }
+
+            .sub-banner {
+                padding: 0.85rem max(0.75rem, env(safe-area-inset-left)) 0.85rem max(0.75rem, env(safe-area-inset-right));
+                gap: 0.75rem;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .sub-banner-text {
+                font-size: 0.85rem;
+                text-align: center;
+            }
+
+            .sub-inline-form {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .sub-inline-input {
+                width: 100%;
+                border-right: 2px solid #334155;
+            }
+
+            .sub-inline-btn {
+                width: 100%;
+            }
+
+            .hero-mascot {
+                width: 160px;
+                height: 160px;
+            }
+
+            .product-grid {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 1.25rem;
+            }
+
+            .catalogue {
+                padding: 1.25rem max(0.75rem, env(safe-area-inset-left)) 2.5rem max(0.75rem, env(safe-area-inset-right));
+            }
+
+            .drop-section {
+                padding: 2.5rem max(0.5rem, env(safe-area-inset-left)) 2rem max(0.5rem, env(safe-area-inset-right));
+            }
+
+            .section-title {
+                padding: 0.4rem 1rem;
+                font-size: clamp(1.55rem, 9vw, 2.15rem);
+            }
+
+            .marquee span {
+                font-size: 1.2rem;
+                padding: 0 1rem;
+            }
+
+            .modal-box {
+                padding: 1.5rem 1.1rem;
+                max-height: min(90vh, 32rem);
+                overflow-y: auto;
+            }
+
+            .modal-box h2 {
+                font-size: 1.65rem;
+            }
+
+            .toast {
+                left: max(0.65rem, env(safe-area-inset-left));
+                right: max(0.65rem, env(safe-area-inset-right));
+                bottom: max(0.85rem, env(safe-area-inset-bottom));
+                width: auto;
+                font-size: 1rem;
+                padding: 0.75rem 1rem;
+            }
+
+            .sub-footer-section {
+                padding: 2.25rem max(0.75rem, env(safe-area-inset-left)) 2.5rem max(0.75rem, env(safe-area-inset-right));
+            }
+
+            .sub-footer-form {
+                flex-direction: column;
+            }
+
+            .sub-footer-btn {
+                width: 100%;
+            }
+
+            .sub-perks {
+                gap: 0.75rem 1rem;
             }
         }
     </style>
