@@ -252,8 +252,10 @@ const loadProducts = async () => {
         });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(body.message || 'Upload failed');
-        card.querySelector('.product-image').value = body.image || '';
+        const updatedImage = body.product?.image ?? body.image ?? '';
+        card.querySelector('.product-image').value = updatedImage;
         showMessage('Image uploaded');
+        await loadProducts();
       } catch (err) {
         console.error(err);
         showMessage(err.message || 'Image upload failed');

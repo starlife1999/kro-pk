@@ -272,7 +272,8 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.get('/api/products/:slug', async (req, res) => {
-  const product = await Product.findOne({ slug: req.params.slug }).lean();
+  const slug = decodeURIComponent(req.params.slug);
+  const product = await Product.findOne({ slug }).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
   res.set('Cache-Control', 'no-store');
   res.json(product);
@@ -586,14 +587,20 @@ app.post('/api/admin/broadcasts', authMiddleware, async (req, res) => {
 // ─── ADMIN: PRODUCT IMAGE UPLOAD ───────────────────────────────
 app.post('/api/admin/products/:slug/image', authMiddleware, upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+  const slug = decodeURIComponent(req.params.slug);
   const imagePath = `uploads/${req.file.filename}`;
-  const product = await Product.findOneAndUpdate({ slug: req.params.slug }, { $set: { image: imagePath } }, { new: true }).lean();
+  const product = await Product.findOneAndUpdate(
+    { slug },
+    { $set: { image: imagePath } },
+    { new: true, runValidators: true }
+  ).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
   res.status(201).json({ message: 'Uploaded', image: imagePath, product });
 });
 
 app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
-  console.log('[admin] PATCH /api/admin/products/:slug', req.params.slug, req.body);
+  const slugParam = decodeURIComponent(req.params.slug);
+  console.log('[admin] PATCH /api/admin/products/:slug', slugParam, req.body);
   const { sizes, active, name, price, description, tag, image } = req.body;
   const update = {};
   if (sizes && typeof sizes === 'object') {
@@ -611,8 +618,8 @@ app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
   if (description !== undefined) update.description = description.trim();
   if (tag !== undefined) update.tag = tag.trim();
   if (image !== undefined) update.image = image.trim();
-  console.log('[admin] product update $set', req.params.slug, update);
-  const product = await Product.findOneAndUpdate({ slug: req.params.slug }, { $set: update }, { new: true }).lean();
+  console.log('[admin] product update $set', slugParam, update);
+  const product = await Product.findOneAndUpdate({ slug: slugParam }, { $set: update }, { new: true }).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
   console.log('[admin] updated product', { slug: product.slug, price: product.price, active: product.active, tag: product.tag });
   res.json(product);

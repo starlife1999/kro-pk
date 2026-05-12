@@ -789,7 +789,7 @@ body::before {
                         : `<div class="placeholder-graphic">${product.name.split(' ').slice(0,2).map(text => text[0]).join('')}</div>`;
                     const availableSize = Object.entries(product.sizes || {}).find(([,qty]) => qty > 0)?.[0] || 'ONE SIZE';
                     return `
-                        <div class="product-card panel" onclick="window.location='${product.slug}.html'" style="text-decoration: none; color: inherit; display: block;">
+                        <div class="product-card panel" onclick="window.location='product.html?slug=${encodeURIComponent(product.slug)}'" style="text-decoration: none; color: inherit; display: block;">
                             ${tags}
                             <div class="product-image-placeholder">${imageContent}</div>
                             <div class="product-info">

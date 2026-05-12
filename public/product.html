@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product — KRO PK</title>
+  <link rel="icon" type="image/png" href="favicon.png.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="site.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --navy: #0f172a;
+      --navy-light: #1e293b;
+      --white: #f8fafc;
+      --red: #ef4444;
+      --yellow: #fbbf24;
+      --outline: 3px solid var(--white);
+    }
+    body {
+      font-family: 'Comic Neue', cursive;
+      background: var(--navy);
+      color: var(--white);
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 8px 8px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .image-section { position: relative; z-index: 10000; }
+    .main-image-panel img, .thumb-panel img { position: relative; z-index: 10001 !important; }
+    .back-link {
+      position: fixed;
+      top: 20px; left: 20px;
+      z-index: 100;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 1.1rem;
+      color: var(--white);
+      text-decoration: none;
+      background: var(--navy-light);
+      padding: 0.8rem 1.5rem;
+      border: var(--outline);
+      box-shadow: 4px 4px 0 var(--red);
+      transition: all 0.2s ease;
+    }
+    .back-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 6px 6px 0 var(--yellow);
+    }
+    .product-hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      padding: 6rem 4rem 4rem;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+    .main-image-panel {
+      border: var(--outline);
+      background: var(--navy-light);
+      box-shadow: 8px 8px 0 var(--red);
+      overflow: hidden;
+      aspect-ratio: 1;
+      position: relative;
+      cursor: zoom-in;
+    }
+    .zoom-hint {
+      position: absolute;
+      bottom: 20px; right: 20px;
+      background: var(--yellow);
+      color: var(--navy);
+      font-family: 'Bangers', cursive;
+      padding: 0.5rem 1rem;
+      border: var(--outline);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+    .thumbnail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .thumb-panel {
+      border: 2px solid var(--white);
+      aspect-ratio: 1;
+      background: var(--navy-light);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      overflow: hidden;
+    }
+    .thumb-panel:hover { border-color: var(--yellow); transform: scale(1.05); }
+    .thumb-panel.active { border-color: var(--red); border-width: 3px; }
+    .thumb-panel.disabled { opacity: 0.35; pointer-events: none; }
+    .product-badge {
+      display: inline-block;
+      background: var(--red);
+      color: var(--white);
+      font-family: 'Permanent Marker', cursive;
+      padding: 0.5rem 1.5rem;
+      border: var(--outline);
+      transform: rotate(-3deg);
+      margin-bottom: 1.5rem;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+    }
+    .product-title {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(2.2rem, 5vw, 4.5rem);
+      line-height: 0.95;
+      text-shadow: 4px 4px 0 var(--red);
+      margin-bottom: 1rem;
+      transform: rotate(-2deg);
+    }
+    .product-price {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 2.5rem;
+      color: var(--yellow);
+      margin-bottom: 0.5rem;
+    }
+    .product-desc {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+      padding-left: 1.5rem;
+      border-left: 4px solid var(--red);
+    }
+    .size-section { margin-bottom: 2rem; }
+    .size-label {
+      font-family: 'Bangers', cursive;
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+    .size-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .size-btn {
+      width: 60px; height: 60px;
+      background: var(--navy-light);
+      border: var(--outline);
+      color: var(--white);
+      font-family: 'Bangers', cursive;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .size-btn:hover:not(:disabled) {
+      background: var(--yellow);
+      color: var(--navy);
+      transform: scale(1.1);
+    }
+    .size-btn.selected {
+      background: var(--red);
+      box-shadow: 4px 4px 0 var(--white);
+    }
+    .size-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
+      padding-top: 3rem;
+      border-top: 2px solid rgba(255,255,255,0.1);
+    }
+    .detail-item {
+      background: var(--navy-light);
+      padding: 1rem;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .detail-label {
+      font-family: 'Bangers', cursive;
+      color: var(--yellow);
+      font-size: 0.9rem;
+      margin-bottom: 0.3rem;
+    }
+    .inactive-banner {
+      background: rgba(239, 68, 68, 0.2);
+      border: 2px solid var(--red);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      font-family: 'Bangers', cursive;
+      color: var(--yellow);
+    }
+    .also-like {
+      padding: 4rem;
+      background: var(--navy-light);
+      border-top: var(--outline);
+      position: relative;
+      z-index: 2;
+    }
+    .also-title {
+      font-family: 'Bangers', cursive;
+      font-size: 2.5rem;
+      text-align: center;
+      margin-bottom: 3rem;
+      text-shadow: 3px 3px 0 var(--red);
+    }
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .mini-card {
+      border: var(--outline);
+      background: var(--navy);
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: var(--white);
+    }
+    .mini-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 6px 6px 0 var(--yellow);
+    }
+    .mini-image {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, var(--navy-light) 0%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bangers', cursive;
+      font-size: 1.1rem;
+      border-bottom: var(--outline);
+      overflow: hidden;
+    }
+    .mini-image img { width: 100%; height: 100%; object-fit: cover; }
+    .mini-info { padding: 1rem; }
+    .mini-name { font-family: 'Bangers', cursive; font-size: 1.1rem; margin-bottom: 0.3rem; }
+    .mini-price { font-family: 'Permanent Marker', cursive; color: var(--yellow); }
+    footer {
+      background: #020617;
+      padding: 2rem;
+      text-align: center;
+      border-top: var(--outline);
+      position: relative;
+      z-index: 2;
+    }
+    .footer-logo { font-family: 'Bangers', cursive; font-size: 2rem; color: var(--white); margin-bottom: 1rem; }
+    #productRoot .load-state {
+      text-align: center;
+      padding: 6rem 2rem;
+      font-family: 'Bangers', cursive;
+      font-size: 1.5rem;
+      color: var(--yellow);
+      position: relative;
+      z-index: 2;
+    }
+    #zoomModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      background: rgba(0,0,0,0.92);
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      cursor: zoom-out;
+    }
+    #zoomModal.open { display: flex; }
+    #zoomModal img { max-width: 100%; max-height: 90vh; object-fit: contain; border: var(--outline); }
+    @media (max-width: 968px) {
+      .product-hero { grid-template-columns: 1fr; padding: 6rem 1.5rem 3rem; }
+      .mini-grid { grid-template-columns: repeat(2, 1fr); }
+      .also-like { padding: 3rem 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      .mini-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="shop1.html" class="site-logo">KRO PK<span>DROP 2026</span></a>
+    <div class="site-actions">
+      <a class="shop-link" href="shop1.html">SHOP</a>
+      <a class="cart-link" href="cart.html">CART <span class="cart-badge">0</span></a>
+    </div>
+  </header>
+  <a href="shop1.html" class="back-link">← BACK TO DROP</a>
+
+  <div id="productRoot">
+    <div class="load-state">LOADING DROP…</div>
+  </div>
+
+  <div id="zoomModal" aria-hidden="true">
+    <img id="zoomModalImg" src="" alt="">
+  </div>
+
+  <script src="site.js"></script>
+  <script>
+(function () {
+  const SIZE_ORDER = ['S', 'M', 'L', 'XL', 'ONE SIZE'];
+  const LETTERS = ['S', 'M', 'L', 'XL'];
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, ch =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
+  function getQuerySlug() {
+    const q = new URLSearchParams(window.location.search).get('slug');
+    return q && /^[a-z0-9-]+$/i.test(q) ? q.trim() : '';
+  }
+
+  function normalizeSizes(product) {
+    const raw = product && product.sizes;
+    if (!raw || typeof raw !== 'object') return {};
+    const out = {};
+    SIZE_ORDER.forEach(sz => {
+      const v = raw[sz];
+      out[sz] = v === undefined || v === null ? 0 : Number(v);
+    });
+    return out;
+  }
+
+  function sizesToDisplay(sizes) {
+    const letterHasStock = LETTERS.some(sz => (sizes[sz] || 0) > 0);
+    if (letterHasStock) return LETTERS;
+    if ((sizes['ONE SIZE'] || 0) > 0) return ['ONE SIZE'];
+    return LETTERS;
+  }
+
+  function sizeButtonLabel(size) {
+    return size === 'ONE SIZE' ? 'OS' : size;
+  }
+
+  function collectImageUrls(product) {
+    const urls = [];
+    const pushUrl = u => {
+      const t = String(u || '').trim();
+      if (!t || urls.includes(t)) return;
+      urls.push(t);
+    };
+    if (Array.isArray(product.images)) {
+      product.images.forEach(entry => String(entry).split('|').forEach(part => pushUrl(part.trim())));
+    }
+    if (product.image) String(product.image).split('|').forEach(part => pushUrl(part.trim()));
+    return urls;
+  }
+
+  function pickDefaultSize(sizes, displaySizes) {
+    const prefer = ['L', 'M', 'S', 'XL', 'ONE SIZE'];
+    for (const sz of prefer) {
+      if (displaySizes.includes(sz) && (sizes[sz] || 0) > 0) return sz;
+    }
+    return displaySizes[0] || 'L';
+  }
+
+  function renderError(msg) {
+    document.getElementById('productRoot').innerHTML =
+      '<div class="load-state">' + escapeHtml(msg) +
+      '<div style="margin-top:1.5rem;font-family:Comic Neue;font-size:1rem;"><a href="shop1.html" style="color:var(--yellow);">Back to shop</a></div></div>';
+  }
+
+  function openZoom(src) {
+    const modal = document.getElementById('zoomModal');
+    const img = document.getElementById('zoomModalImg');
+    img.src = src;
+    img.alt = '';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeZoom() {
+    const modal = document.getElementById('zoomModal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  document.getElementById('zoomModal').addEventListener('click', closeZoom);
+
+  let state = { slug: '', product: null, selectedSize: 'L', gallery: [], mainIndex: 0 };
+
+  function syncMainImage() {
+    const main = document.getElementById('mainImage');
+    if (!main || main.tagName !== 'IMG') return;
+    const thumbs = state.gallery.filter(Boolean);
+    const url = thumbs[state.mainIndex] || '';
+    if (url) main.src = url;
+  }
+
+  function setThumbActive(idx) {
+    document.querySelectorAll('#thumbRow .thumb-panel').forEach((el, i) => {
+      el.classList.toggle('active', i === idx);
+    });
+  }
+
+  async function refreshAddButton() {
+    const p = await getProductBySlug(state.slug);
+    if (p) state.product = p;
+    const sizes = normalizeSizes(state.product);
+    const inStock = state.product && state.product.active && (sizes[state.selectedSize] || 0) > 0;
+    setAddCartButtonState(!!inStock);
+  }
+
+  function wireEvents() {
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.selectedSize = btn.getAttribute('data-size');
+        refreshAddButton();
+      });
+    });
+
+    document.querySelectorAll('#thumbRow .thumb-panel').forEach((thumb, idx) => {
+      thumb.addEventListener('click', () => {
+        state.mainIndex = idx;
+        syncMainImage();
+        setThumbActive(idx);
+      });
+    });
+
+    const mainPanel = document.querySelector('.main-image-panel');
+    const mainImg = document.getElementById('mainImage');
+    if (mainPanel && mainImg && mainImg.tagName === 'IMG') {
+      mainPanel.addEventListener('click', () => {
+        if (mainImg.src) openZoom(mainImg.src);
+      });
+    }
+
+    const addBtn = document.querySelector('.add-cart-button');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const p = state.product;
+        if (!p) return;
+        const img = state.gallery[0] || p.image || '';
+        addToCart(state.slug, p.name, p.price, state.selectedSize, img);
+      });
+    }
+  }
+
+  async function loadRelated(currentSlug) {
+    try {
+      const res = await fetch('/api/products', { cache: 'no-store' });
+      const list = await res.json();
+      if (!Array.isArray(list)) return '';
+      const others = list.filter(p => p && p.slug && p.slug !== currentSlug && p.active).slice(0, 4);
+      return others.map(p => {
+        const href = 'product.html?slug=' + encodeURIComponent(p.slug);
+        const img = p.image
+          ? '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '">'
+          : escapeHtml((p.name || '').split(' ').slice(0, 2).map(w => w[0] || '').join(''));
+        return (
+          '<a href="' + href + '" class="mini-card">' +
+            '<div class="mini-image">' + img + '</div>' +
+            '<div class="mini-info">' +
+              '<div class="mini-name">' + escapeHtml(p.name) + '</div>' +
+              '<div class="mini-price">' + formatPrice(p.price) + '</div>' +
+            '</div></a>'
+        );
+      }).join('');
+    } catch {
+      return '';
+    }
+  }
+
+  async function init() {
+    const slug = getQuerySlug();
+    if (!slug) {
+      renderError('Missing product slug. Use a link like product.html?slug=ipk-starboy-polo');
+      return;
+    }
+    state.slug = slug;
+
+    const product = await getProductBySlug(slug);
+    if (!product) {
+      renderError('Product not found.');
+      return;
+    }
+    state.product = product;
+    state.gallery = collectImageUrls(product);
+
+    const sizes = normalizeSizes(product);
+    const displaySizes = sizesToDisplay(sizes);
+    state.selectedSize = pickDefaultSize(sizes, displaySizes);
+    state.mainIndex = 0;
+
+    document.title = escapeHtml(product.name) + ' — KRO PK';
+
+    const tagHtml = product.tag
+      ? '<div class="product-badge">' + escapeHtml(product.tag) + '</div>'
+      : '<div class="product-badge" style="visibility:hidden">TAG</div>';
+
+    const inactive = !product.active
+      ? '<div class="inactive-banner">This item is currently unavailable.</div>'
+      : '';
+
+    const sizeButtons = displaySizes.map(sz => {
+      const qty = sizes[sz] || 0;
+      const disabled = qty <= 0 || !product.active;
+      const sel = sz === state.selectedSize ? ' selected' : '';
+      return '<button type="button" class="size-btn' + sel + '" data-size="' + escapeHtml(sz) + '"' +
+        (disabled ? ' disabled' : '') + '>' + escapeHtml(sizeButtonLabel(sz)) + '</button>';
+    }).join('');
+
+    const thumbs = state.gallery.filter(Boolean);
+    const thumbRow = thumbs.length > 1
+      ? '<div class="thumbnail-grid" id="thumbRow">' + thumbs.map((url, i) =>
+          '<div class="thumb-panel' + (i === 0 ? ' active' : '') + '">' +
+            '<img src="' + escapeHtml(url) + '" alt="" style="width:100%;height:100%;object-fit:cover;">' +
+          '</div>'
+        ).join('') + '</div>'
+      : '<div class="thumbnail-grid" id="thumbRow" style="display:none"></div>';
+
+    const mainSrc = thumbs[0] || '';
+    const mainImgTag = mainSrc
+      ? '<img id="mainImage" src="' + escapeHtml(mainSrc) + '" alt="' + escapeHtml(product.name) + '" style="width:100%;height:100%;object-fit:cover;">'
+      : '<div id="mainImage" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:Bangers,cursive;font-size:2rem;color:#64748b;">NO IMAGE</div>';
+
+    const related = await loadRelated(slug);
+
+    document.getElementById('productRoot').innerHTML =
+      '<section class="product-hero">' +
+        '<div class="image-section">' +
+          '<div class="main-image-panel">' + mainImgTag +
+            '<div class="zoom-hint">CLICK TO ZOOM</div></div>' + thumbRow + '</div>' +
+        '<div class="info-section">' + inactive + tagHtml +
+          '<h1 class="product-title">' + escapeHtml(product.name) + '</h1>' +
+          '<div class="product-price">' + formatPrice(product.price) + '</div>' +
+          '<p class="product-desc">' + escapeHtml(product.description || '') + '</p>' +
+          '<div class="size-section">' +
+            '<label class="size-label">SELECT SIZE:</label>' +
+            '<div class="size-buttons">' + sizeButtons + '</div></div>' +
+          '<button class="add-cart-button" type="button">ADD TO CART</button>' +
+          '<div class="details-grid">' +
+            '<div class="detail-item"><div class="detail-label">DROP</div><div class="detail-value">Motorsport 2026</div></div>' +
+            '<div class="detail-item"><div class="detail-label">SHIPPING</div><div class="detail-value">Nationwide (2–3 days)</div></div>' +
+          '</div></div></section>' +
+      (related
+        ? '<section class="also-like"><h2 class="also-title">YOU MAY ALSO LIKE</h2><div class="mini-grid">' + related + '</div></section>'
+        : '') +
+      '<footer><div class="footer-logo">KRO PK</div><div style="color:#64748b;font-family:Permanent Marker;">KEEP ROCKING © 2026</div></footer>';
+
+    wireEvents();
+    await refreshAddButton();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+  </script>
+</body>
+</html>

@@ -1352,7 +1352,7 @@ body::before {
                     : `<div class="placeholder-graphic">${String(product.name || '').split(' ').slice(0,2).map(w => w?.[0] || '').join('')}</div>`;
 
                 return `
-                    <div class="product-card panel" onclick="window.location.href='${product.slug}.html'" style="cursor:pointer">
+                    <div class="product-card panel" onclick="window.location.href='product.html?slug=${encodeURIComponent(product.slug)}'" style="cursor:pointer">
                         ${tags}
                         <div class="product-image-placeholder">${imageContent}</div>
                         <div class="product-info">
