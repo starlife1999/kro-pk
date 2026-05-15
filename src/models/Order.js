@@ -25,6 +25,7 @@ const orderSchema = new mongoose.Schema({
   totalBeforeDiscount: { type: Number, default: null },
   promoCode: { type: String, default: '' },
   discountPercent: { type: Number, default: 0 },
+  deliveryCost: { type: Number, default: 0 },
   total: { type: Number, required: true },
   paystackReference: { type: String, required: true, unique: true },
   paymentStatus: { type: String, default: 'pending' },

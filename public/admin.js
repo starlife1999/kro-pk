@@ -106,7 +106,8 @@ const showOrderDetails = async id => {
     <div><strong>Customer</strong>: ${selectedOrder.customer.name}</div>
     <div><strong>Email</strong>: ${escapeHtml(selectedOrder.customer.email || 'N/A')}</div>
     <div><strong>Phone</strong>: ${selectedOrder.customer.phone}</div>
-    <div><strong>Delivery</strong>: ${selectedOrder.customer.address}, ${selectedOrder.customer.city}, ${selectedOrder.customer.state}</div>
+    <div><strong>Address</strong>: ${selectedOrder.customer.address}, ${selectedOrder.customer.city}, ${selectedOrder.customer.state}</div>
+    <div><strong>Delivery fee</strong>: ${formatPrice(selectedOrder.deliveryCost ?? 0)}</div>
     <div><strong>Total</strong>: ${formatPrice(selectedOrder.total)}</div>
     <div style="margin-top:1rem;"><strong>Items</strong><ul style="padding-left:1.2rem;">${itemsHtml}</ul></div>
     <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;">

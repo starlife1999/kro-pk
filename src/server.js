@@ -22,6 +22,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@kropk.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'password';
 const OWNER_EMAIL = process.env.OWNER_EMAIL || 'orders@kropk.com';
+/** Flat nationwide delivery in NGN (must match cart checkout). */
+const FLAT_DELIVERY_FEE_NGN = 4500;
 
 if (!process.env.MONGODB_URI) {
   console.warn('Warning: MONGODB_URI not set. Using default local mongodb://localhost:27017/kro_pk_store');
@@ -165,6 +167,7 @@ function createOrderEmail(order) {
       <p><strong>Paystack ref:</strong> ${order.paystackReference || 'N/A'}</p>
       <h3>Items:</h3>
       <pre>${items}</pre>
+      <p><strong>Delivery:</strong> ₦${(order.deliveryCost ?? 0).toLocaleString('en-NG')}</p>
       <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
       <p><strong>Status:</strong> ${order.status}</p>
       <p>Please review the admin dashboard to process this order.</p>
@@ -192,6 +195,7 @@ function createCustomerConfirmationEmail(order) {
       <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city}, ${order.customer.state}</p>
       <h3>Items</h3>
       <pre>${items}</pre>
+      <p><strong>Delivery:</strong> ₦${(order.deliveryCost ?? 0).toLocaleString('en-NG')}</p>
       <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
       <p>We will reach out soon with payment and delivery details.</p>
     `,
@@ -377,9 +381,10 @@ app.post('/api/orders', async (req, res) => {
 
   const totalBeforeDiscount = total;
   const discountedTotal = discountPercent > 0 ? Math.round(total * (1 - discountPercent / 100)) : total;
+  const grandTotal = discountedTotal + FLAT_DELIVERY_FEE_NGN;
 
   const paystackData = await verifyPaystackPayment(paystackReference);
-  const expectedAmount = discountedTotal * 100;
+  const expectedAmount = grandTotal * 100;
   if (!paystackData || paystackData.status !== 'success') {
     return res.status(402).json({ message: 'Paystack payment not successful' });
   }
@@ -415,7 +420,8 @@ app.post('/api/orders', async (req, res) => {
       totalBeforeDiscount: discountPercent > 0 ? totalBeforeDiscount : null,
       promoCode: appliedPromoCode,
       discountPercent,
-      total: discountedTotal,
+      deliveryCost: FLAT_DELIVERY_FEE_NGN,
+      total: grandTotal,
       paystackReference,
       paymentStatus: paystackData.status
     }], { session });

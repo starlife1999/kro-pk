@@ -653,6 +653,8 @@
 <script>
 // ─── CART ENGINE ────────────────────────────────────────────────
 const CART_KEY = 'kro_pk_cart';
+/** Must match server `FLAT_DELIVERY_FEE_NGN` (src/server.js). */
+const FLAT_DELIVERY_FEE_NGN = 4500;
 let PAYSTACK_PUBLIC_KEY = null;
 let paystackReadyPromise = null;
 let appliedPromo = null;
@@ -813,6 +815,8 @@ function buildWhatsAppMessage(cart, info) {
 ${lines}
 
 *SUBTOTAL:* ${formatPrice(total)}
+*DELIVERY:* ${formatPrice(FLAT_DELIVERY_FEE_NGN)}
+*TOTAL:* ${formatPrice(total + FLAT_DELIVERY_FEE_NGN)}
 
 *DELIVERY INFO:*
 Name: ${info.name}
@@ -853,9 +857,10 @@ async function handleCheckout() {
 
     try {
         const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
-        const total = appliedPromo
+        const afterPromo = appliedPromo
             ? Math.round(subtotal * (1 - (Number(appliedPromo.discountPercent) || 0) / 100))
             : subtotal;
+        const total = afterPromo + FLAT_DELIVERY_FEE_NGN;
         await payWithPaystack(payload, total);
     } catch (err) {
         console.error(err);
@@ -922,8 +927,8 @@ function render() {
                     <span>${formatPrice(subtotal)}</span>
                 </div>
                 <div class="summary-row">
-                    <span class="summary-label">Delivery</span>
-                    <span style="color:#94a3b8;font-size:0.9rem">Checkout will confirm your order</span>
+                    <span class="summary-label">Delivery (flat rate)</span>
+                    <span>${formatPrice(FLAT_DELIVERY_FEE_NGN)}</span>
                 </div>
                 <div class="summary-row">
                     <span class="summary-label">Promo Code</span>
@@ -935,7 +940,7 @@ function render() {
                 </div>
                 <div class="summary-row total">
                     <span>TOTAL</span>
-                    <span id="total-display">${formatPrice(subtotal)}</span>
+                    <span id="total-display">${formatPrice(subtotal + FLAT_DELIVERY_FEE_NGN)}</span>
                 </div>
             </div>
 
@@ -1011,8 +1016,9 @@ function applyPromo() {
             const cart = getCart();
             const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
             const discounted = Math.round(subtotal * (1 - (Number(data.discountPercent) || 0) / 100));
+            const grand = discounted + FLAT_DELIVERY_FEE_NGN;
             const el = document.getElementById('total-display');
-            if (el) el.textContent = '₦' + discounted.toLocaleString('en-NG') + ` (-${data.discountPercent}%)`;
+            if (el) el.textContent = formatPrice(grand) + ` (${data.discountPercent}% off items)`;
             showToast(`${data.discountPercent}% OFF APPLIED! 🔥`);
         })
         .catch(err => {
