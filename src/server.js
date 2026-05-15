@@ -167,7 +167,7 @@ function createOrderEmail(order) {
       <p><strong>Paystack ref:</strong> ${order.paystackReference || 'N/A'}</p>
       <h3>Items:</h3>
       <pre>${items}</pre>
-      <p><strong>Delivery:</strong> ₦${(order.deliveryCost ?? 0).toLocaleString('en-NG')}</p>
+      <p><strong>Delivery fee:</strong> ₦${(order.deliveryCost ?? 0).toLocaleString('en-NG')}</p>
       <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
       <p><strong>Status:</strong> ${order.status}</p>
       <p>Please review the admin dashboard to process this order.</p>
@@ -195,7 +195,7 @@ function createCustomerConfirmationEmail(order) {
       <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city}, ${order.customer.state}</p>
       <h3>Items</h3>
       <pre>${items}</pre>
-      <p><strong>Delivery:</strong> ₦${(order.deliveryCost ?? 0).toLocaleString('en-NG')}</p>
+      <p><strong>Delivery fee:</strong> ₦${(order.deliveryCost ?? 0).toLocaleString('en-NG')}</p>
       <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
       <p>We will reach out soon with payment and delivery details.</p>
     `,
