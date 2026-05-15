@@ -148,13 +148,21 @@ function buildOrderNumber(seq) {
   return `KRO-${year}-${String(seq).padStart(4, '0')}`;
 }
 
+/** Resend `from` with friendly name so clients show "KRO PK" instead of the mailbox only. */
+function resendFrom() {
+  const raw = (process.env.EMAIL_FROM || 'orders@kro-pk.shop').trim();
+  if (/<[^<\s]+@[^>\s]+>/.test(raw)) return raw;
+  if (/^[^\s<>]+@[^\s<>]+$/.test(raw)) return `KRO PK <${raw}>`;
+  return raw;
+}
+
 function createOrderEmail(order) {
   const items = order.items.map(item =>
     `• ${item.name} / ${item.size} × ${item.qty} = ₦${item.price.toLocaleString('en-NG')}`
   ).join('\n');
 
   return {
-    from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+    from: resendFrom(),
     to: OWNER_EMAIL,
     subject: `New order ${order.orderNumber}`,
     html: `
@@ -181,7 +189,7 @@ function createCustomerConfirmationEmail(order) {
   ).join('\n');
 
   return {
-    from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+    from: resendFrom(),
     to: order.customer.email,
     subject: `Your KRO PK order ${order.orderNumber}`,
     html: `
@@ -204,7 +212,7 @@ function createCustomerConfirmationEmail(order) {
 
 function createCustomerShippedEmail(order) {
   return {
-    from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+    from: resendFrom(),
     to: order.customer.email,
     subject: `Your KRO PK order ${order.orderNumber} is on the way`,
     html: `
@@ -217,7 +225,7 @@ function createCustomerShippedEmail(order) {
 
 function createCustomerDeliveredEmail(order) {
   return {
-    from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+    from: resendFrom(),
     to: order.customer.email,
     subject: `Delivered: KRO PK order ${order.orderNumber}`,
     html: `
@@ -596,10 +604,9 @@ app.post('/api/admin/broadcasts', authMiddleware, async (req, res) => {
   const recipientCount = subscribers.length;
   const broadcast = await Broadcast.create({ subject, body, recipientCount, sentAt: new Date() });
 
-  const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
   await Promise.allSettled(subscribers.map(s => {
     return resend.emails.send({
-      from,
+      from: resendFrom(),
       to: s.email,
       subject,
       html: `<div style="font-family:Arial,sans-serif;line-height:1.6;">${body.replace(/\n/g, '<br>')}</div>`
