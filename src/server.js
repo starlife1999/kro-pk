@@ -6,8 +6,9 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const https = require('https');
 const { Resend } = require('resend');
-const fs = require('fs');
 const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
@@ -35,21 +36,24 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (_req, file) => ({
+    folder: 'kro-pk/products',
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    public_id: `${String(file.fieldname || 'image').replace(/[^a-zA-Z0-9_-]+/g, '-')}-${Date.now()}`
+  })
+});
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadsDir),
-    filename: (_req, file, cb) => {
-      const safeBase = String(file.originalname || 'upload').replace(/[^a-zA-Z0-9._-]+/g, '-');
-      const ext = path.extname(safeBase) || '';
-      const base = path.basename(safeBase, ext);
-      cb(null, `${base}-${Date.now()}${ext}`);
-    }
-  }),
+  storage: cloudinaryStorage,
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
@@ -620,7 +624,7 @@ app.post('/api/admin/broadcasts', authMiddleware, async (req, res) => {
 app.post('/api/admin/products/:slug/image', authMiddleware, upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
   const slug = decodeURIComponent(req.params.slug);
-  const imagePath = `uploads/${req.file.filename}`;
+  const imagePath = req.file.path;
   const product = await Product.findOneAndUpdate(
     { slug },
     { $set: { image: imagePath } },
@@ -633,7 +637,7 @@ app.post('/api/admin/products/:slug/image', authMiddleware, upload.single('image
 app.post('/api/admin/products/:slug/gallery', authMiddleware, upload.array('gallery', 4), async (req, res) => {
   const slug = decodeURIComponent(req.params.slug);
   if (!req.files?.length) return res.status(400).json({ message: 'No files uploaded' });
-  const paths = req.files.slice(0, 4).map(f => `uploads/${f.filename}`);
+  const paths = req.files.slice(0, 4).map(f => f.path);
   const product = await Product.findOneAndUpdate(
     { slug },
     { $set: { images: paths } },
