@@ -439,6 +439,14 @@
     return product.images.map(s => String(s).trim()).filter(Boolean).slice(0, 4);
   }
 
+  function initialsFor(product) {
+    return String(product && product.name || 'KP')
+      .split(' ')
+      .slice(0, 2)
+      .map(word => word && word[0] || '')
+      .join('');
+  }
+
   function pickDefaultSize(sizes, displaySizes) {
     const prefer = ['L', 'M', 'S', 'XL', 'ONE SIZE'];
     for (const sz of prefer) {
@@ -496,6 +504,16 @@
     }
   }
 
+  function showMainImageFallback() {
+    const main = document.getElementById('mainImage');
+    if (!main || !state.product) return;
+    const fallback = document.createElement('div');
+    fallback.id = 'mainImage';
+    fallback.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:Bangers,cursive;font-size:2rem;color:#64748b;';
+    fallback.textContent = initialsFor(state.product) || 'NO IMAGE';
+    main.replaceWith(fallback);
+  }
+
   async function refreshAddButton() {
     const p = await getProductBySlug(state.slug);
     if (p) state.product = p;
@@ -522,6 +540,16 @@
         state.mainDisplayUrl = state.galleryUrls[i];
         updateMainImageUI();
       });
+    });
+
+    document.querySelectorAll('#thumbRow img').forEach(img => {
+      img.addEventListener('error', () => {
+        img.closest('.thumb-panel')?.remove();
+        if (!document.querySelector('#thumbRow .thumb-panel')) {
+          document.getElementById('thumbRow')?.setAttribute('style', 'display:none');
+          document.getElementById('showPrimaryBtn')?.setAttribute('style', 'display:none');
+        }
+      }, { once: true });
     });
 
     document.getElementById('showPrimaryBtn')?.addEventListener('click', () => {
@@ -559,8 +587,8 @@
       return others.map(p => {
         const href = 'product.html?slug=' + encodeURIComponent(p.slug);
         const img = p.image
-          ? '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '">'
-          : escapeHtml((p.name || '').split(' ').slice(0, 2).map(w => w[0] || '').join(''));
+          ? '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '" onerror="this.replaceWith(document.createTextNode(\'' + escapeHtml(initialsFor(p) || 'KP') + '\'))">'
+          : escapeHtml(initialsFor(p));
         return (
           '<a href="' + href + '" class="mini-card">' +
             '<div class="mini-image">' + img + '</div>' +
@@ -632,7 +660,7 @@
     const mainSrc = state.mainDisplayUrl;
     const mainImgTag = mainSrc
       ? '<img id="mainImage" src="' + escapeHtml(mainSrc) + '" alt="' + escapeHtml(product.name) + '" style="width:100%;height:100%;object-fit:cover;">'
-      : '<div id="mainImage" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:Bangers,cursive;font-size:2rem;color:#64748b;">NO IMAGE</div>';
+      : '<div id="mainImage" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:Bangers,cursive;font-size:2rem;color:#64748b;">' + escapeHtml(initialsFor(product) || 'NO IMAGE') + '</div>';
 
     const related = await loadRelated(slug);
 
@@ -659,6 +687,7 @@
       '<footer><div class="footer-logo">KRO PK</div><div style="color:#64748b;font-family:Permanent Marker;">KEEP ROCKING © 2026</div></footer>';
 
     wireEvents();
+    document.getElementById('mainImage')?.addEventListener('error', showMainImageFallback, { once: true });
     updateMainImageUI();
     await refreshAddButton();
     } catch (err) {
