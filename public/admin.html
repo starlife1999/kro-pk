@@ -51,6 +51,12 @@
     .analytics-card strong { font-size:1.5rem; color:#f8fafc; }
     .analytics-section { margin-top:1.25rem; }
     .analytics-section h3 { margin:0 0 .75rem; color:#fbbf24; font-size:1rem; }
+    .analytics-highlight-grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+    .chart-row { display:grid; gap:.65rem; }
+    .traffic-row { display:grid; grid-template-columns:90px 1fr auto; gap:.75rem; align-items:center; }
+    .traffic-bar { height:10px; border-radius:999px; background:#1e293b; overflow:hidden; }
+    .traffic-fill { height:100%; background:#fbbf24; border-radius:999px; }
+    .whatsapp-btn { background:#16a34a; color:#fff; border:none; border-radius:999px; padding:.55rem .8rem; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -123,20 +129,35 @@
         </div>
         <div class="analytics-section">
           <h3>Product performance</h3>
+          <div id="analyticsHighlights" class="analytics-highlight-grid" style="margin-bottom:1rem;"></div>
           <div class="table-wrap">
             <table class="orders-table">
-              <thead><tr><th>Product</th><th>Views</th><th>Adds to cart</th><th>Units sold</th><th>Revenue</th></tr></thead>
+              <thead><tr><th>Product</th><th>Views</th><th>Adds to cart</th><th>Units sold</th><th>Revenue</th><th>Conversion</th></tr></thead>
               <tbody id="analyticsProductsBody"></tbody>
             </table>
           </div>
         </div>
         <div class="analytics-section">
-          <h3>Cart activity</h3>
-          <div id="analyticsCart" class="analytics-grid"></div>
+          <h3>Customers</h3>
+          <div class="table-wrap">
+            <table class="orders-table">
+              <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Last activity</th><th>Cart items</th></tr></thead>
+              <tbody id="analyticsCustomersBody"></tbody>
+            </table>
+          </div>
         </div>
         <div class="analytics-section">
-          <h3>Checkout activity</h3>
-          <div id="analyticsCheckout" class="analytics-grid"></div>
+          <h3>Abandoned carts</h3>
+          <div class="table-wrap">
+            <table class="orders-table">
+              <thead><tr><th>User info</th><th>What they added</th><th>Time abandoned</th><th>Follow-up</th></tr></thead>
+              <tbody id="analyticsAbandonedBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="analytics-section">
+          <h3>Traffic</h3>
+          <div id="analyticsTraffic" class="chart-row"></div>
         </div>
       </div>
 

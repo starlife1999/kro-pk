@@ -734,7 +734,12 @@ async function payWithPaystack(payload, totalAmount) {
                 const result = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...payload, paystackReference: response.reference })
+                    body: JSON.stringify({
+                        ...payload,
+                        paystackReference: response.reference,
+                        visitorId: window.KroAnalytics?.visitorId || '',
+                        sessionId: window.KroAnalytics?.sessionId || ''
+                    })
                 });
 
                 const data = await result.json().catch(() => ({}));
@@ -744,6 +749,7 @@ async function payWithPaystack(payload, totalAmount) {
                 }
 
                 saveCart([]);
+                window.KroAnalytics?.updateProfile({ cartItems: [], checkedOut: true });
                 updateCartBadge();
                 render();
                 showToast(`ORDER PLACED ${data.orderNumber}`);
@@ -770,6 +776,22 @@ async function payWithPaystack(payload, totalAmount) {
 
 function saveCart(cart) {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    window.KroAnalytics?.updateProfile({ cartItems: cart });
+}
+
+let customerProfileTimer = null;
+function syncCustomerProfile() {
+    clearTimeout(customerProfileTimer);
+    customerProfileTimer = setTimeout(() => {
+        window.KroAnalytics?.updateProfile({
+            customer: {
+                name: document.getElementById('f-name')?.value?.trim() || '',
+                phone: document.getElementById('f-phone')?.value?.trim() || '',
+                email: document.getElementById('f-email')?.value?.trim() || ''
+            },
+            cartItems: getCart()
+        });
+    }, 250);
 }
 
 function showToast(msg) {
@@ -1057,6 +1079,12 @@ window.addEventListener('DOMContentLoaded', () => {
     window.KroAnalytics?.track('cart_view', {
         cartCount: getCart().reduce((sum, item) => sum + item.qty, 0)
     });
+    ['f-name', 'f-phone', 'f-email'].forEach(id => {
+        document.addEventListener('input', event => {
+            if (event.target?.id === id) syncCustomerProfile();
+        });
+    });
+    window.KroAnalytics?.updateProfile({ cartItems: getCart() });
 });
 render();
 updateCartBadge();

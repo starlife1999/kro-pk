@@ -17,6 +17,8 @@ const PromoCode = require('./models/PromoCode');
 const Subscriber = require('./models/Subscriber');
 const Broadcast = require('./models/Broadcast');
 const AnalyticsEvent = require('./models/AnalyticsEvent');
+const ShopperProfile = require('./models/ShopperProfile');
+const Visit = require('./models/Visit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -356,11 +358,73 @@ app.post('/api/analytics/events', async (req, res) => {
     metadata: req.body?.metadata && typeof req.body.metadata === 'object' ? req.body.metadata : {}
   });
 
+  const source = String(req.body?.source || '').trim().toLowerCase() || 'direct';
+  await ShopperProfile.findOneAndUpdate(
+    { visitorId },
+    {
+      $set: {
+        sessionId: String(req.body?.sessionId || '').trim(),
+        source,
+        lastActivityAt: new Date()
+      },
+      $setOnInsert: { visitorId }
+    },
+    { upsert: true }
+  );
+  if (type === 'page_view') {
+    await Visit.create({
+      visitorId,
+      sessionId: String(req.body?.sessionId || '').trim(),
+      source,
+      path: String(req.body?.path || '').trim()
+    });
+  }
+
   res.status(202).json({ accepted: true, id: event._id });
 });
 
+app.post('/api/analytics/profile', async (req, res) => {
+  const visitorId = String(req.body?.visitorId || '').trim();
+  if (!visitorId) return res.status(400).json({ message: 'visitorId is required' });
+  const cartItems = Array.isArray(req.body?.cartItems)
+    ? req.body.cartItems.map(item => ({
+        id: String(item.id || '').trim(),
+        name: String(item.name || '').trim(),
+        size: String(item.size || '').trim(),
+        qty: Number(item.qty || 0),
+        price: Number(item.price || 0),
+        img: String(item.img || '').trim()
+      })).filter(item => item.id && item.qty > 0)
+    : undefined;
+  const update = {
+    sessionId: String(req.body?.sessionId || '').trim(),
+    source: String(req.body?.source || '').trim().toLowerCase() || 'direct',
+    lastActivityAt: new Date()
+  };
+  if (req.body?.customer && typeof req.body.customer === 'object') {
+    update.customer = {
+      name: String(req.body.customer.name || '').trim(),
+      phone: String(req.body.customer.phone || '').trim(),
+      email: String(req.body.customer.email || '').trim().toLowerCase()
+    };
+  }
+  if (cartItems) {
+    update.cartItems = cartItems;
+    update.cartUpdatedAt = new Date();
+  }
+  if (req.body?.checkedOut === true) {
+    update.checkedOutAt = new Date();
+  }
+  const profile = await ShopperProfile.findOneAndUpdate(
+    { visitorId },
+    { $set: update, $setOnInsert: { visitorId } },
+    { upsert: true, new: true }
+  ).lean();
+  res.status(202).json({ accepted: true, profileId: profile._id });
+});
+
 app.post('/api/orders', async (req, res) => {
-  const { customer, items, paystackReference, promoCode } = req.body;
+  const { customer, items, paystackReference, promoCode, visitorId, sessionId } = req.body;
   if (!customer || !items || !Array.isArray(items) || !items.length || !paystackReference) {
     return res.status(400).json({ message: 'Customer, items and paystackReference are required' });
   }
@@ -459,11 +523,30 @@ app.post('/api/orders', async (req, res) => {
       deliveryCost: FLAT_DELIVERY_FEE_NGN,
       total: grandTotal,
       paystackReference,
-      paymentStatus: paystackData.status
+      paymentStatus: paystackData.status,
+      visitorId: String(visitorId || '').trim(),
+      sessionId: String(sessionId || '').trim()
     }], { session });
 
     await session.commitTransaction();
     session.endSession();
+
+    if (visitorId) {
+      await ShopperProfile.findOneAndUpdate(
+        { visitorId: String(visitorId).trim() },
+        {
+          $set: {
+            checkedOutAt: new Date(),
+            customer: {
+              name: String(customer.name || '').trim(),
+              phone: String(customer.phone || '').trim(),
+              email: String(customer.email || '').trim().toLowerCase()
+            },
+            lastActivityAt: new Date()
+          }
+        }
+      );
+    }
 
     const ownerMail = createOrderEmail(order[0]);
     const customerMail = createCustomerConfirmationEmail(order[0]);
@@ -745,29 +828,30 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
 });
 
 app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const abandonmentCutoff = new Date(Date.now() - 30 * 60 * 1000);
   const [
-    totalVisits,
+    todaysVisits,
     uniqueVisitors,
-    productViews,
-    addToCartEvents,
-    cartViews,
-    cartUpdates,
-    removals,
-    checkoutClicks,
-    orderSummary,
+    totalCarts,
+    checkoutClicksToday,
+    ordersToday,
+    revenueToday,
     productEventRows,
-    salesRows
+    salesRows,
+    customerRows,
+    abandonedRows,
+    trafficRows
   ] = await Promise.all([
-    AnalyticsEvent.countDocuments({ type: 'page_view' }),
-    AnalyticsEvent.distinct('visitorId').then(ids => ids.length),
-    AnalyticsEvent.countDocuments({ type: 'product_view' }),
-    AnalyticsEvent.countDocuments({ type: 'add_to_cart' }),
-    AnalyticsEvent.countDocuments({ type: 'cart_view' }),
-    AnalyticsEvent.countDocuments({ type: 'cart_update' }),
-    AnalyticsEvent.countDocuments({ type: 'remove_from_cart' }),
-    AnalyticsEvent.countDocuments({ type: 'checkout_click' }),
+    Visit.countDocuments({ createdAt: { $gte: todayStart } }),
+    ShopperProfile.countDocuments({}),
+    ShopperProfile.countDocuments({ cartItems: { $exists: true, $ne: [] } }),
+    AnalyticsEvent.countDocuments({ type: 'checkout_click', createdAt: { $gte: todayStart } }),
+    Order.countDocuments({ createdAt: { $gte: todayStart } }),
     Order.aggregate([
-      { $group: { _id: null, totalOrders: { $sum: 1 }, totalRevenue: { $sum: '$total' } } }
+      { $match: { createdAt: { $gte: todayStart } } },
+      { $group: { _id: null, totalRevenue: { $sum: '$total' } } }
     ]),
     AnalyticsEvent.aggregate([
       { $match: { type: { $in: ['product_view', 'add_to_cart'] }, productSlug: { $ne: '' } } },
@@ -781,7 +865,7 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
       },
       { $sort: { productViews: -1, addToCarts: -1, _id: 1 } }
     ]),
-    Order.aggregate([
+      Order.aggregate([
       { $unwind: '$items' },
       {
         $group: {
@@ -790,8 +874,28 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
           revenue: { $sum: { $multiply: ['$items.qty', '$items.price'] } }
         }
       }
-    ])
-  ]);
+      ]),
+      ShopperProfile.find({
+        $or: [
+          { 'customer.name': { $ne: '' } },
+          { 'customer.phone': { $ne: '' } },
+          { 'customer.email': { $ne: '' } }
+        ]
+      }).sort({ lastActivityAt: -1 }).limit(50).lean(),
+      ShopperProfile.find({
+        cartItems: { $exists: true, $ne: [] },
+        cartUpdatedAt: { $lte: abandonmentCutoff },
+        $expr: {
+          $or: [
+            { $eq: ['$checkedOutAt', null] },
+            { $lt: ['$checkedOutAt', '$cartUpdatedAt'] }
+          ]
+        }
+      }).sort({ cartUpdatedAt: -1 }).limit(50).lean(),
+      Visit.aggregate([
+        { $group: { _id: '$source', visits: { $sum: 1 } } }
+      ])
+    ]);
 
   const salesBySlug = new Map(salesRows.map(row => [row._id, row]));
   const productPerformance = productEventRows.map(row => ({
@@ -800,7 +904,10 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
     productViews: row.productViews,
     addToCarts: row.addToCarts,
     unitsSold: salesBySlug.get(row._id)?.unitsSold || 0,
-    revenue: salesBySlug.get(row._id)?.revenue || 0
+    revenue: salesBySlug.get(row._id)?.revenue || 0,
+    conversionRate: row.productViews > 0
+      ? Number((((salesBySlug.get(row._id)?.unitsSold || 0) / row.productViews) * 100).toFixed(1))
+      : 0
   }));
 
   salesRows.forEach(row => {
@@ -809,33 +916,43 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
         slug: row._id,
         name: row._id,
         productViews: 0,
-        addToCarts: 0,
-        unitsSold: row.unitsSold || 0,
-        revenue: row.revenue || 0
-      });
-    }
+          addToCarts: 0,
+          unitsSold: row.unitsSold || 0,
+          revenue: row.revenue || 0,
+          conversionRate: 0
+        });
+      }
+    });
+
+  const bySold = [...productPerformance].filter(product => product.unitsSold > 0).sort((a, b) => b.unitsSold - a.unitsSold || b.revenue - a.revenue);
+  const viewedProducts = productPerformance.filter(product => product.productViews > 0);
+  const byViews = [...viewedProducts].sort((a, b) => b.productViews - a.productViews);
+  const byAdds = [...productPerformance].filter(product => product.addToCarts > 0).sort((a, b) => b.addToCarts - a.addToCarts);
+  const byConversionAsc = [...viewedProducts].sort((a, b) => a.conversionRate - b.conversionRate || a.productViews - b.productViews);
+  const traffic = Object.fromEntries(['instagram', 'tiktok', 'snapchat', 'whatsapp', 'direct'].map(source => [source, 0]));
+  trafficRows.forEach(row => {
+    traffic[row._id || 'direct'] = row.visits;
   });
 
   res.json({
     overview: {
-      totalVisits,
+      todaysVisits,
       uniqueVisitors,
-      productViews,
-      orders: orderSummary[0]?.totalOrders || 0,
-      revenue: orderSummary[0]?.totalRevenue || 0
+      totalCarts,
+      checkoutClicks: checkoutClicksToday,
+      ordersToday,
+      revenue: revenueToday[0]?.totalRevenue || 0
     },
     productPerformance,
-    cartActivity: {
-      addToCartEvents,
-      cartViews,
-      cartUpdates,
-      removals
+    productHighlights: {
+      bestProduct: bySold[0] || null,
+      worstProduct: byConversionAsc[0] || null,
+      mostViewedProduct: byViews[0] || null,
+      mostAddedToCartProduct: byAdds[0] || null
     },
-    checkoutActivity: {
-      checkoutClicks,
-      orders: orderSummary[0]?.totalOrders || 0,
-      revenue: orderSummary[0]?.totalRevenue || 0
-    }
+    customers: customerRows,
+    abandonedCarts: abandonedRows,
+    traffic
   });
 });
 

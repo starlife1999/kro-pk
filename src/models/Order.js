@@ -28,6 +28,8 @@ const orderSchema = new mongoose.Schema({
   deliveryCost: { type: Number, default: 0 },
   total: { type: Number, required: true },
   paystackReference: { type: String, required: true, unique: true },
+  visitorId: { type: String, default: '', index: true },
+  sessionId: { type: String, default: '' },
   paymentStatus: { type: String, default: 'pending' },
   status: {
     type: String,

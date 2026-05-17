@@ -18,12 +18,19 @@
 
   const visitorId = getOrCreate(VISITOR_KEY, 'visitor', localStorage);
   const sessionId = getOrCreate(SESSION_KEY, 'session', sessionStorage);
+  const allowedSources = new Set(['instagram', 'tiktok', 'snapchat', 'whatsapp']);
+  const params = new URLSearchParams(window.location.search);
+  const incomingSource = String(params.get('source') || '').trim().toLowerCase();
+  const storedSource = localStorage.getItem('kro_pk_source');
+  const source = allowedSources.has(incomingSource) ? incomingSource : (storedSource || 'direct');
+  localStorage.setItem('kro_pk_source', source);
 
   function send(type, payload = {}) {
     const body = JSON.stringify({
       type,
       visitorId,
       sessionId,
+      source,
       path: window.location.pathname + window.location.search,
       ...payload
     });
@@ -44,7 +51,17 @@
   window.KroAnalytics = {
     visitorId,
     sessionId,
-    track: send
+    source,
+    track: send,
+    updateProfile(payload = {}) {
+      const body = JSON.stringify({ visitorId, sessionId, source, ...payload });
+      fetch('/api/analytics/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true
+      }).catch(() => {});
+    }
   };
 
   send('page_view');

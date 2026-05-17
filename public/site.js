@@ -14,6 +14,7 @@ function getCart() {
 
 function saveCart(cart) {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    window.KroAnalytics?.updateProfile({ cartItems: cart });
 }
 
 function trackEvent(type, payload = {}) {

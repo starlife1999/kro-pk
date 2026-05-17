@@ -12,9 +12,11 @@ const productsPanel = document.getElementById('productsPanel');
 const productsGrid = document.getElementById('productsGrid');
 const analyticsPanel = document.getElementById('analyticsPanel');
 const analyticsOverview = document.getElementById('analyticsOverview');
+const analyticsHighlights = document.getElementById('analyticsHighlights');
 const analyticsProductsBody = document.getElementById('analyticsProductsBody');
-const analyticsCart = document.getElementById('analyticsCart');
-const analyticsCheckout = document.getElementById('analyticsCheckout');
+const analyticsCustomersBody = document.getElementById('analyticsCustomersBody');
+const analyticsAbandonedBody = document.getElementById('analyticsAbandonedBody');
+const analyticsTraffic = document.getElementById('analyticsTraffic');
 const promoCodesPanel = document.getElementById('promoCodesPanel');
 const promoCodesGrid = document.getElementById('promoCodesGrid');
 const broadcastsPanel = document.getElementById('broadcastsPanel');
@@ -429,14 +431,29 @@ const renderMetricCards = metrics => metrics.map(metric => `
   </div>
 `).join('');
 
+const normalizeWhatsAppPhone = value => {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.startsWith('0')) return `234${digits.slice(1)}`;
+  return digits;
+};
+
 const loadAnalytics = async () => {
   const data = await fetchJson('/api/admin/analytics', { credentials: 'include' });
   analyticsOverview.innerHTML = renderMetricCards([
-    { label: 'Total site visits', value: data.overview.totalVisits ?? 0 },
+    { label: "Today's visits", value: data.overview.todaysVisits ?? 0 },
     { label: 'Unique visitors', value: data.overview.uniqueVisitors ?? 0 },
-    { label: 'Product page views', value: data.overview.productViews ?? 0 },
-    { label: 'Orders', value: data.overview.orders ?? 0 },
+    { label: 'Total carts', value: data.overview.totalCarts ?? 0 },
+    { label: 'Checkout clicks', value: data.overview.checkoutClicks ?? 0 },
+    { label: 'Orders today', value: data.overview.ordersToday ?? 0 },
     { label: 'Sales revenue', value: formatPrice(data.overview.revenue ?? 0) }
+  ]);
+
+  const highlights = data.productHighlights || {};
+  analyticsHighlights.innerHTML = renderMetricCards([
+    { label: 'Best product', value: escapeHtml(highlights.bestProduct?.name || '—') },
+    { label: 'Worst product', value: escapeHtml(highlights.worstProduct?.name || '—') },
+    { label: 'Most viewed product', value: escapeHtml(highlights.mostViewedProduct?.name || '—') },
+    { label: 'Most added-to-cart product', value: escapeHtml(highlights.mostAddedToCartProduct?.name || '—') }
   ]);
 
   analyticsProductsBody.innerHTML = (data.productPerformance || []).map(product => `
@@ -446,21 +463,52 @@ const loadAnalytics = async () => {
       <td>${product.addToCarts ?? 0}</td>
       <td>${product.unitsSold ?? 0}</td>
       <td>${formatPrice(product.revenue ?? 0)}</td>
+      <td>${product.conversionRate ?? 0}%</td>
     </tr>
-  `).join('') || '<tr><td colspan="5" style="color:#94a3b8;">No product activity yet.</td></tr>';
+  `).join('') || '<tr><td colspan="6" style="color:#94a3b8;">No product activity yet.</td></tr>';
 
-  analyticsCart.innerHTML = renderMetricCards([
-    { label: 'Add to cart events', value: data.cartActivity.addToCartEvents ?? 0 },
-    { label: 'Cart views', value: data.cartActivity.cartViews ?? 0 },
-    { label: 'Quantity changes', value: data.cartActivity.cartUpdates ?? 0 },
-    { label: 'Removed items', value: data.cartActivity.removals ?? 0 }
-  ]);
+  const cartText = items => (items || []).map(item => `${item.name || item.id} × ${item.qty || 0}`).join(', ') || '—';
+  analyticsCustomersBody.innerHTML = (data.customers || []).map(customer => `
+    <tr>
+      <td>${escapeHtml(customer.customer?.name || '—')}</td>
+      <td>${escapeHtml(customer.customer?.phone || '—')}</td>
+      <td>${escapeHtml(customer.customer?.email || '—')}</td>
+      <td>${customer.lastActivityAt ? new Date(customer.lastActivityAt).toLocaleString() : '—'}</td>
+      <td>${escapeHtml(cartText(customer.cartItems))}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="color:#94a3b8;">No customer activity yet.</td></tr>';
 
-  analyticsCheckout.innerHTML = renderMetricCards([
-    { label: 'Checkout clicks', value: data.checkoutActivity.checkoutClicks ?? 0 },
-    { label: 'Orders', value: data.checkoutActivity.orders ?? 0 },
-    { label: 'Sales revenue', value: formatPrice(data.checkoutActivity.revenue ?? 0) }
-  ]);
+  analyticsAbandonedBody.innerHTML = (data.abandonedCarts || []).map(cart => {
+    const customer = cart.customer || {};
+    const phone = normalizeWhatsAppPhone(customer.phone);
+    const message = encodeURIComponent(`Hi ${customer.name || 'there'}, you left these in your KRO PK cart: ${cartText(cart.cartItems)}. Need help completing your order?`);
+    return `
+      <tr>
+        <td>${escapeHtml(customer.name || '—')}<br><span style="color:#94a3b8;">${escapeHtml(customer.phone || customer.email || 'No contact yet')}</span></td>
+        <td>${escapeHtml(cartText(cart.cartItems))}</td>
+        <td>${cart.cartUpdatedAt ? new Date(cart.cartUpdatedAt).toLocaleString() : '—'}</td>
+        <td>${phone ? `<button class="whatsapp-btn" data-wa-url="https://wa.me/${phone}?text=${message}">WhatsApp</button>` : 'No phone'}</td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="4" style="color:#94a3b8;">No abandoned carts yet.</td></tr>';
+
+  analyticsAbandonedBody.querySelectorAll('[data-wa-url]').forEach(button => {
+    button.addEventListener('click', () => window.open(button.dataset.waUrl, '_blank', 'noopener'));
+  });
+
+  const traffic = data.traffic || {};
+  const totalTraffic = Object.values(traffic).reduce((sum, value) => sum + Number(value || 0), 0) || 1;
+  analyticsTraffic.innerHTML = ['instagram', 'tiktok', 'snapchat', 'whatsapp', 'direct'].map(source => {
+    const visits = traffic[source] || 0;
+    const pct = Math.round((visits / totalTraffic) * 100);
+    return `
+      <div class="traffic-row">
+        <span>${source[0].toUpperCase() + source.slice(1)}</span>
+        <div class="traffic-bar"><div class="traffic-fill" style="width:${pct}%"></div></div>
+        <strong>${visits}</strong>
+      </div>
+    `;
+  }).join('');
 };
 
 const loadPromoCodes = async () => {
