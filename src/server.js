@@ -1,5 +1,6 @@
 require('dotenv').config();
 const path = require('path');
+const fs = require('fs/promises');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
@@ -51,6 +52,48 @@ function escapeXml(value = '') {
     .replace(/'/g, '&apos;');
 }
 
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function absoluteSiteUrl(value = '') {
+  try {
+    return new URL(value || '/slideshow-1.jpg', `${SITE_URL}/`).href;
+  } catch {
+    return `${SITE_URL}/slideshow-1.jpg`;
+  }
+}
+
+function buildProductDescription(product) {
+  return `${product.description || 'Limited streetwear piece.'} Shop KRO PK streetwear and limited fashion drops made for the Keep Rocking mindset.`;
+}
+
+function buildProductJsonLd(product) {
+  const url = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
+  const image = absoluteSiteUrl(product.image);
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: buildProductDescription(product),
+    image: [image],
+    brand: { '@type': 'Brand', name: 'KRO PK' },
+    url,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'NGN',
+      price: Number(product.price || 0),
+      availability: product.active ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url
+    }
+  });
+}
+
 app.get('/robots.txt', (_req, res) => {
   res.type('text/plain');
   res.send([
@@ -73,7 +116,7 @@ app.get('/sitemap.xml', async (_req, res) => {
     const productUrls = products
       .filter(product => product.slug)
       .map(product => ({
-        loc: `${SITE_URL}/product.html?slug=${encodeURIComponent(product.slug)}`,
+        loc: `${SITE_URL}/products/${encodeURIComponent(product.slug)}`,
         lastmod: product.updatedAt ? new Date(product.updatedAt).toISOString() : null,
         priority: '0.8'
       }));
@@ -97,6 +140,29 @@ app.get('/sitemap.xml', async (_req, res) => {
     console.error('Failed to build sitemap', err);
     res.status(500).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><error>Unable to generate sitemap</error>');
   }
+});
+
+app.get('/products/:slug', async (req, res) => {
+  const product = await Product.findOne({ slug: req.params.slug, active: true }).lean();
+  if (!product) {
+    res.status(404).sendFile(path.join(__dirname, '..', 'public', 'error.htm'));
+    return;
+  }
+
+  const url = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
+  const description = buildProductDescription(product);
+  const image = absoluteSiteUrl(product.image);
+  let html = await fs.readFile(path.join(__dirname, '..', 'public', 'product.html'), 'utf8');
+  html = html
+    .replace('<title>Product | KRO PK Streetwear</title>', `<title>${escapeHtml(product.name)} | KRO PK Streetwear</title>`)
+    .replace('content="Shop KRO PK streetwear products, limited fashion drops, and bold everyday pieces made for the Keep Rocking mindset."', `content="${escapeHtml(description)}"`)
+    .replace('href="https://www.kro-pk.shop/product.html"', `href="${escapeHtml(url)}"`)
+    .replaceAll('content="Product | KRO PK Streetwear"', `content="${escapeHtml(product.name)} | KRO PK Streetwear"`)
+    .replaceAll('content="Explore KRO PK streetwear and limited fashion drops."', `content="${escapeHtml(description)}"`)
+    .replaceAll('content="https://www.kro-pk.shop/slideshow-1.jpg"', `content="${escapeHtml(image)}"`)
+    .replace('content="https://www.kro-pk.shop/product.html"', `content="${escapeHtml(url)}"`)
+    .replace('</head>', `  <script id="server-product-json-ld" type="application/ld+json">${buildProductJsonLd(product)}</script>\n</head>`);
+  res.type('html').send(html);
 });
 
 cloudinary.config({

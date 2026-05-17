@@ -17,12 +17,12 @@
   <meta name="twitter:title" content="Product | KRO PK Streetwear">
   <meta name="twitter:description" content="Explore KRO PK streetwear and limited fashion drops.">
   <meta name="twitter:image" content="https://www.kro-pk.shop/slideshow-1.jpg">
-  <link rel="icon" type="image/png" href="favicon.png.png">
-  <link rel="apple-touch-icon" href="favicon.png.png">
+  <link rel="icon" type="image/png" href="/favicon.png.png">
+  <link rel="apple-touch-icon" href="/favicon.png.png">
   <meta name="theme-color" content="#0f172a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="/site.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -390,12 +390,12 @@
 </head>
 <body class="product-page">
   <header class="site-header">
-    <a href="shop1.html" class="site-logo">KRO PK<span>DROP 2026</span></a>
+    <a href="/shop1.html" class="site-logo">KRO PK<span>DROP 2026</span></a>
     <div class="site-actions">
-      <a class="cart-link" href="cart.html">CART <span class="cart-badge">0</span></a>
+      <a class="cart-link" href="/cart.html">CART <span class="cart-badge">0</span></a>
     </div>
   </header>
-  <a href="shop1.html" class="back-link">← BACK TO DROP</a>
+  <a href="/shop1.html" class="back-link">← BACK TO DROP</a>
 
   <div id="productRoot">
     <div class="load-state">LOADING DROP…</div>
@@ -405,8 +405,8 @@
     <img id="zoomModalImg" src="" alt="">
   </div>
 
-  <script src="analytics.js"></script>
-  <script src="site.js"></script>
+  <script src="/analytics.js"></script>
+  <script src="/site.js"></script>
   <script>
 (function () {
   const SIZE_ORDER = ['S', 'M', 'L', 'XL', 'ONE SIZE'];
@@ -419,7 +419,9 @@
 
   function getQuerySlug() {
     const q = new URLSearchParams(window.location.search).get('slug');
-    return q && /^[a-z0-9-]+$/i.test(q) ? q.trim() : '';
+    if (q && /^[a-z0-9-]+$/i.test(q)) return q.trim();
+    const pathMatch = window.location.pathname.match(/^\/products\/([^/]+)\/?$/);
+    return pathMatch && /^[a-z0-9-]+$/i.test(pathMatch[1]) ? decodeURIComponent(pathMatch[1]) : '';
   }
 
   function normalizeSizes(product) {
@@ -447,12 +449,18 @@
   function primaryUrl(product) {
     const raw = String(product && product.image || '').trim();
     if (!raw) return '';
-    return raw.split('|')[0].trim();
+    return assetPath(raw.split('|')[0].trim());
   }
 
   function galleryUrls(product) {
     if (!product || !Array.isArray(product.images)) return [];
-    return product.images.map(s => String(s).trim()).filter(Boolean).slice(0, 4);
+    return product.images.map(s => assetPath(String(s).trim())).filter(Boolean).slice(0, 4);
+  }
+
+  function assetPath(url) {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url) || url.startsWith('/')) return url;
+    return '/' + url;
   }
 
   function initialsFor(product) {
@@ -474,7 +482,7 @@
   function renderError(msg) {
     document.getElementById('productRoot').innerHTML =
       '<div class="load-state">' + escapeHtml(msg) +
-      '<div style="margin-top:1.5rem;font-family:Comic Neue;font-size:1rem;"><a href="shop1.html" style="color:var(--yellow);">Back to shop</a></div></div>';
+      '<div style="margin-top:1.5rem;font-family:Comic Neue;font-size:1rem;"><a href="/shop1.html" style="color:var(--yellow);">Back to shop</a></div></div>';
   }
 
   function openZoom(src) {
@@ -601,9 +609,9 @@
       if (!Array.isArray(list)) return '';
       const others = list.filter(p => p && p.slug && p.slug !== currentSlug && p.active).slice(0, 4);
       return others.map(p => {
-        const href = 'product.html?slug=' + encodeURIComponent(p.slug);
+        const href = '/products/' + encodeURIComponent(p.slug);
         const img = p.image
-          ? '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name + ' by KRO PK streetwear') + '" onerror="this.replaceWith(document.createTextNode(\'' + escapeHtml(initialsFor(p) || 'KP') + '\'))">'
+          ? '<img src="' + escapeHtml(assetPath(p.image)) + '" alt="' + escapeHtml(p.name + ' by KRO PK streetwear') + '" onerror="this.replaceWith(document.createTextNode(\'' + escapeHtml(initialsFor(p) || 'KP') + '\'))">'
           : escapeHtml(initialsFor(p));
         return (
           '<a href="' + href + '" class="mini-card">' +
@@ -631,7 +639,7 @@
   }
 
   function updateProductSeo(product) {
-    const url = 'https://www.kro-pk.shop/product.html?slug=' + encodeURIComponent(product.slug);
+    const url = 'https://www.kro-pk.shop/products/' + encodeURIComponent(product.slug);
     const image = absoluteUrl(product.image || primaryUrl(product) || galleryUrls(product)[0]);
     const description = (product.description || 'Limited streetwear piece') + ' Shop KRO PK streetwear and limited fashion drops made for the Keep Rocking mindset.';
     document.title = product.name + ' | KRO PK Streetwear';
@@ -645,6 +653,7 @@
     setMeta('meta[name="twitter:description"]', description);
     setMeta('meta[name="twitter:image"]', image);
 
+    if (document.getElementById('server-product-json-ld')) return;
     document.getElementById('product-json-ld')?.remove();
     const jsonLd = document.createElement('script');
     jsonLd.id = 'product-json-ld';

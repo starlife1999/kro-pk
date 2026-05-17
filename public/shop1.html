@@ -1551,7 +1551,7 @@ body::before {
                     : `<div class="product-fallback">${initials || 'KP'}</div>`;
 
                 return `
-                    <div class="product-card panel" onclick="window.location.href='product.html?slug=${encodeURIComponent(product.slug)}'" style="cursor:pointer">
+                    <div class="product-card panel" onclick="window.location.href='/products/${encodeURIComponent(product.slug)}'" style="cursor:pointer">
                         ${tags}
                         <div class="product-image-placeholder">${imageContent}</div>
                         <div class="product-info">
