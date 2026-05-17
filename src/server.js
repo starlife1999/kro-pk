@@ -82,7 +82,14 @@ function buildProductJsonLd(product) {
     name: product.name,
     description: buildProductDescription(product),
     image: [image],
-    brand: { '@type': 'Brand', name: 'KRO PK' },
+    brand: {
+      '@type': 'Brand',
+      '@id': `${SITE_URL}/#brand`,
+      name: 'KRO PK',
+      category: 'Streetwear fashion brand'
+    },
+    category: 'Streetwear',
+    keywords: 'KRO PK streetwear brand, Nigerian streetwear brand, youth streetwear brand, limited fashion drops, Keep Rocking',
     url,
     offers: {
       '@type': 'Offer',
@@ -91,6 +98,19 @@ function buildProductJsonLd(product) {
       availability: product.active ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       url
     }
+  });
+}
+
+function buildProductBreadcrumbJsonLd(product) {
+  const url = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+      { '@type': 'ListItem', position: 2, name: 'Shop', item: `${SITE_URL}/shop1.html` },
+      { '@type': 'ListItem', position: 3, name: product.name, item: url }
+    ]
   });
 }
 
@@ -162,7 +182,7 @@ app.get('/products/:slug', async (req, res) => {
     .replaceAll('content="Explore KRO PK streetwear and limited fashion drops."', `content="${escapeHtml(description)}"`)
     .replaceAll('content="https://www.kro-pk.shop/slideshow-1.jpg"', `content="${escapeHtml(image)}"`)
     .replace('content="https://www.kro-pk.shop/product.html"', `content="${escapeHtml(url)}"`)
-    .replace('</head>', `  <script id="server-product-json-ld" type="application/ld+json">${buildProductJsonLd(product)}</script>\n</head>`);
+    .replace('</head>', `  <script id="server-product-json-ld" type="application/ld+json">${buildProductJsonLd(product)}</script>\n  <script id="server-product-breadcrumb-json-ld" type="application/ld+json">${buildProductBreadcrumbJsonLd(product)}</script>\n</head>`);
   res.type('html').send(html);
 });
 
