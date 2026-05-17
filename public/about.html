@@ -30,6 +30,10 @@
     "name": "About KRO PK",
     "url": "https://www.kro-pk.shop/about",
     "description": "KRO PK is a youth-driven streetwear brand built around effortless confidence, community, and limited fashion drops.",
+    "sameAs": [
+      "https://www.instagram.com/kro_pk1/",
+      "https://www.tiktok.com/@kro_pk"
+    ],
     "mainEntity": {
       "@type": "Organization",
       "@id": "https://www.kro-pk.shop/#organization",
@@ -43,7 +47,8 @@
         "name": "KRO PK"
       },
       "sameAs": [
-        "https://www.instagram.com/kro_pk1"
+        "https://www.instagram.com/kro_pk1/",
+        "https://www.tiktok.com/@kro_pk"
       ]
     }
   }
@@ -194,6 +199,7 @@
     .story-card:nth-child(2) { box-shadow: 6px 6px 0 var(--yellow); }
     .story-card:nth-child(3) { box-shadow: 6px 6px 0 var(--red); }
     .story-card h2,
+    .follow-movement h2,
     .closing h2 {
       font-family: 'Bangers', cursive;
       font-size: clamp(2rem, 5vw, 3.2rem);
@@ -229,6 +235,48 @@
       text-shadow: 2px 2px 0 var(--navy);
     }
     @keyframes scroll { to { transform: translateX(-50%); } }
+    .follow-movement {
+      margin: clamp(2rem, 5vw, 3rem) auto;
+      padding: clamp(1.5rem, 5vw, 2.5rem);
+      background: rgba(30, 41, 59, 0.9);
+      border: var(--outline);
+      box-shadow: 8px 8px 0 var(--red);
+      text-align: center;
+    }
+    .follow-movement p {
+      max-width: 680px;
+      margin: 0 auto;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+    .social-row {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.6rem;
+    }
+    .social-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 150px;
+      padding: 0.85rem 1.25rem;
+      border: 2px solid var(--white);
+      background: var(--navy-deep);
+      color: var(--white);
+      font-family: 'Bangers', cursive;
+      font-size: 1.05rem;
+      letter-spacing: 0.05em;
+      text-decoration: none;
+      transition: transform 0.2s, background 0.2s, color 0.2s;
+    }
+    .social-button:hover {
+      transform: translateY(-3px);
+      background: var(--yellow);
+      color: var(--navy);
+    }
     .closing {
       margin-top: 1.5rem;
       padding: clamp(1.5rem, 5vw, 3rem);
@@ -353,6 +401,15 @@
         </div>
       </div>
 
+      <section class="follow-movement" aria-labelledby="follow-title">
+        <h2 id="follow-title">Follow the Movement</h2>
+        <p>Catch the drops, visuals, squad energy, and everyday Keep Rocking moments from KRO PK across the official channels.</p>
+        <div class="social-row">
+          <a class="social-button" href="https://www.instagram.com/kro_pk1/" rel="noopener">Instagram</a>
+          <a class="social-button" href="https://www.tiktok.com/@kro_pk" rel="noopener">TikTok</a>
+        </div>
+      </section>
+
       <section class="closing" aria-labelledby="closing-title">
         <h2 id="closing-title">This is KRO PK.</h2>
         <p>Effortless swag. Built for the squads. Keep Rocking.</p>
@@ -370,7 +427,8 @@
       <a href="/about">About</a>
       <a href="/shop">Shop</a>
       <a href="/cart.html">Cart</a>
-      <a href="https://www.instagram.com/kro_pk1">Instagram</a>
+      <a href="https://www.instagram.com/kro_pk1/">Instagram</a>
+      <a href="https://www.tiktok.com/@kro_pk">TikTok</a>
     </div>
     <div class="copyright">© 2026 KRO PK. KEEP ROCKING.</div>
   </footer>
