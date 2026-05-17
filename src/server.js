@@ -7,6 +7,8 @@ const jwt = require('jsonwebtoken');
 const https = require('https');
 const { Resend } = require('resend');
 const multer = require('multer');
+const PDFDocument = require('pdfkit');
+const ExcelJS = require('exceljs');
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
@@ -827,9 +829,28 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
   res.json({ totalOrders, pendingOrders, totalRevenue });
 });
 
-app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+function getAnalyticsRange(range = 'today') {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  if (range === 'last7') start.setDate(start.getDate() - 6);
+  if (range === 'last30') start.setDate(start.getDate() - 29);
+  if (range === 'last90') start.setDate(start.getDate() - 89);
+  if (range === 'thisMonth') start.setDate(1);
+  if (range === 'all') return { key: 'all', label: 'All time', start: null, end: now };
+  const labels = {
+    today: 'Today',
+    last7: 'Last 7 days',
+    last30: 'Last 30 days',
+    last90: 'Last 90 days',
+    thisMonth: 'This month'
+  };
+  return { key: range, label: labels[range] || 'Today', start, end: now };
+}
+
+async function buildAnalyticsReport(rangeKey = 'today') {
+  const range = getAnalyticsRange(rangeKey);
+  const inRange = range.start ? { createdAt: { $gte: range.start, $lte: range.end } } : {};
   const abandonmentCutoff = new Date(Date.now() - 30 * 60 * 1000);
   const [
     todaysVisits,
@@ -844,17 +865,17 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
     abandonedRows,
     trafficRows
   ] = await Promise.all([
-    Visit.countDocuments({ createdAt: { $gte: todayStart } }),
-    ShopperProfile.countDocuments({}),
-    ShopperProfile.countDocuments({ cartItems: { $exists: true, $ne: [] } }),
-    AnalyticsEvent.countDocuments({ type: 'checkout_click', createdAt: { $gte: todayStart } }),
-    Order.countDocuments({ createdAt: { $gte: todayStart } }),
+    Visit.countDocuments(inRange),
+    Visit.distinct('visitorId', inRange).then(ids => ids.length),
+    ShopperProfile.countDocuments({ cartItems: { $exists: true, $ne: [] }, ...(range.start ? { cartUpdatedAt: { $gte: range.start, $lte: range.end } } : {}) }),
+    AnalyticsEvent.countDocuments({ type: 'checkout_click', ...inRange }),
+    Order.countDocuments(inRange),
     Order.aggregate([
-      { $match: { createdAt: { $gte: todayStart } } },
+      { $match: inRange },
       { $group: { _id: null, totalRevenue: { $sum: '$total' } } }
     ]),
     AnalyticsEvent.aggregate([
-      { $match: { type: { $in: ['product_view', 'add_to_cart'] }, productSlug: { $ne: '' } } },
+        { $match: { type: { $in: ['product_view', 'add_to_cart'] }, productSlug: { $ne: '' }, ...inRange } },
       {
         $group: {
           _id: '$productSlug',
@@ -866,7 +887,8 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
       { $sort: { productViews: -1, addToCarts: -1, _id: 1 } }
     ]),
       Order.aggregate([
-      { $unwind: '$items' },
+        { $match: inRange },
+        { $unwind: '$items' },
       {
         $group: {
           _id: '$items.slug',
@@ -876,6 +898,7 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
       }
       ]),
       ShopperProfile.find({
+        ...(range.start ? { lastActivityAt: { $gte: range.start, $lte: range.end } } : {}),
         $or: [
           { 'customer.name': { $ne: '' } },
           { 'customer.phone': { $ne: '' } },
@@ -885,6 +908,7 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
       ShopperProfile.find({
         cartItems: { $exists: true, $ne: [] },
         cartUpdatedAt: { $lte: abandonmentCutoff },
+        ...(range.start ? { cartUpdatedAt: { $gte: range.start, $lte: range.end } } : {}),
         $expr: {
           $or: [
             { $eq: ['$checkedOutAt', null] },
@@ -893,6 +917,7 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
         }
       }).sort({ cartUpdatedAt: -1 }).limit(50).lean(),
       Visit.aggregate([
+        ...(range.start ? [{ $match: inRange }] : []),
         { $group: { _id: '$source', visits: { $sum: 1 } } }
       ])
     ]);
@@ -934,14 +959,30 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
     traffic[row._id || 'direct'] = row.visits;
   });
 
-  res.json({
+  const visits = todaysVisits;
+  const orders = ordersToday;
+  const conversionRate = visits > 0 ? Number(((orders / visits) * 100).toFixed(1)) : 0;
+  const abandonedCount = abandonedRows.length;
+  const recommendations = [
+    bySold[0] ? `Push ${bySold[0].name}; it is currently the strongest product by sales.` : 'No product has sales yet; promote the strongest traffic/product-view candidate first.',
+    byConversionAsc[0] ? `Review ${byConversionAsc[0].name}; it has the weakest observed conversion in this period.` : 'There is not enough product conversion data yet to name a weak performer.',
+    Object.entries(traffic).sort((a, b) => b[1] - a[1])[0]?.[1] > 0
+      ? `Lean into ${Object.entries(traffic).sort((a, b) => b[1] - a[1])[0][0]}; it is the leading traffic source for this range.`
+      : 'Traffic source volume is still too low to identify a clear winner.',
+    abandonedCount > 0 ? `${abandonedCount} abandoned cart${abandonedCount === 1 ? '' : 's'} need follow-up.` : 'No abandoned carts are currently visible in this range.',
+    checkoutClicksToday > orders ? 'Checkout clicks exceed orders; review payment friction and form completion.' : 'Checkout-to-order flow looks healthy for the selected period.'
+  ];
+
+  return {
+    range,
     overview: {
-      todaysVisits,
+      visits,
       uniqueVisitors,
       totalCarts,
       checkoutClicks: checkoutClicksToday,
-      ordersToday,
-      revenue: revenueToday[0]?.totalRevenue || 0
+      orders,
+      revenue: revenueToday[0]?.totalRevenue || 0,
+      conversionRate
     },
     productPerformance,
     productHighlights: {
@@ -952,8 +993,156 @@ app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
     },
     customers: customerRows,
     abandonedCarts: abandonedRows,
-    traffic
+    traffic,
+    insights: recommendations
+  };
+}
+
+app.get('/api/admin/analytics', authMiddleware, async (req, res) => {
+  res.json(await buildAnalyticsReport(String(req.query.range || 'today')));
+});
+
+function summarizeReport(report) {
+  const best = report.productHighlights.bestProduct?.name || 'No clear leader yet';
+  const trafficWinner = Object.entries(report.traffic).sort((a, b) => b[1] - a[1])[0]?.[0] || 'direct';
+  return `For ${report.range.label.toLowerCase()}, the shop recorded ${report.overview.visits} visits, ${report.overview.orders} orders, and ${report.overview.conversionRate}% conversion. ${best} is the strongest sales performer, while ${trafficWinner} is the leading traffic source.`;
+}
+
+function writePdfSection(doc, title) {
+  doc.moveDown(0.6).fontSize(15).fillColor('#0f172a').text(title);
+  doc.moveDown(0.35);
+}
+
+app.get('/api/admin/analytics/export.pdf', authMiddleware, async (req, res) => {
+  const report = await buildAnalyticsReport(String(req.query.range || 'today'));
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="kro-pk-analytics-${report.range.key}.pdf"`);
+  const doc = new PDFDocument({ margin: 42 });
+  doc.pipe(res);
+  doc.fontSize(22).fillColor('#0f172a').text('KRO PK Analytics Report');
+  doc.fontSize(10).fillColor('#475569').text(`Date range: ${report.range.label}`);
+  writePdfSection(doc, 'Executive summary');
+  doc.fontSize(10).fillColor('#111827').text(summarizeReport(report));
+  writePdfSection(doc, 'Key metrics');
+  const metrics = [
+    ['Visits', report.overview.visits],
+    ['Unique visitors', report.overview.uniqueVisitors],
+    ['Total carts', report.overview.totalCarts],
+    ['Checkout clicks', report.overview.checkoutClicks],
+    ['Orders', report.overview.orders],
+    ['Revenue', `NGN ${Number(report.overview.revenue || 0).toLocaleString('en-NG')}`],
+    ['Conversion rate', `${report.overview.conversionRate}%`]
+  ];
+  metrics.forEach(([label, value]) => doc.fontSize(10).text(`${label}: ${value}`));
+  writePdfSection(doc, 'Traffic source breakdown');
+  const maxTraffic = Math.max(...Object.values(report.traffic), 1);
+  Object.entries(report.traffic).forEach(([source, visits]) => {
+    const y = doc.y;
+    doc.fontSize(10).fillColor('#111827').text(source, 42, y, { width: 80 });
+    doc.rect(130, y + 3, 180, 8).fillColor('#e2e8f0').fill();
+    doc.rect(130, y + 3, (Number(visits || 0) / maxTraffic) * 180, 8).fillColor('#fbbf24').fill();
+    doc.fillColor('#111827').text(String(visits), 320, y, { width: 40 });
+    doc.moveDown(0.35);
   });
+  writePdfSection(doc, 'Product performance');
+  report.productPerformance.slice(0, 10).forEach(product => {
+    doc.fontSize(9).text(`${product.name} | Views ${product.productViews} | Adds ${product.addToCarts} | Sold ${product.unitsSold} | Revenue NGN ${Number(product.revenue || 0).toLocaleString('en-NG')} | Conversion ${product.conversionRate}%`);
+  });
+  writePdfSection(doc, 'Cart and abandoned cart summary');
+  doc.fontSize(10).text(`Active carts in range: ${report.overview.totalCarts}`);
+  doc.text(`Abandoned carts in range: ${report.abandonedCarts.length}`);
+  writePdfSection(doc, 'Customer summary');
+  doc.fontSize(10).text(`Known customers in range: ${report.customers.length}`);
+  doc.text(`Customers with abandoned carts: ${report.abandonedCarts.length}`);
+  writePdfSection(doc, 'Business insights');
+  report.insights.forEach(insight => doc.fontSize(10).text(`• ${insight}`));
+  writePdfSection(doc, 'Recommendations');
+  report.insights.forEach(insight => doc.fontSize(10).text(`• ${insight}`));
+  doc.end();
+});
+
+app.get('/api/admin/analytics/export.xlsx', authMiddleware, async (req, res) => {
+  const report = await buildAnalyticsReport(String(req.query.range || 'today'));
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'KRO PK';
+  const overview = workbook.addWorksheet('Overview');
+  overview.addRow(['KRO PK Analytics Report']);
+  overview.addRow(['Date range', report.range.label]);
+  overview.addRows([
+    ['Visits', report.overview.visits],
+    ['Unique visitors', report.overview.uniqueVisitors],
+    ['Total carts', report.overview.totalCarts],
+    ['Checkout clicks', report.overview.checkoutClicks],
+    ['Orders', report.overview.orders],
+    ['Revenue', report.overview.revenue],
+    ['Conversion rate', report.overview.conversionRate]
+  ]);
+  const products = workbook.addWorksheet('Products');
+  products.columns = [
+    { header: 'Product', key: 'name' },
+    { header: 'Views', key: 'productViews' },
+    { header: 'Adds to cart', key: 'addToCarts' },
+    { header: 'Units sold', key: 'unitsSold' },
+    { header: 'Revenue', key: 'revenue' },
+    { header: 'Conversion rate', key: 'conversionRate' }
+  ];
+  products.addRows(report.productPerformance);
+  const traffic = workbook.addWorksheet('Traffic');
+  traffic.columns = [{ header: 'Source', key: 'source' }, { header: 'Visits', key: 'visits' }];
+  traffic.addRows(Object.entries(report.traffic).map(([source, visits]) => ({ source, visits })));
+  const abandoned = workbook.addWorksheet('Abandoned Carts');
+  abandoned.columns = [
+    { header: 'Name', key: 'name' }, { header: 'Phone', key: 'phone' }, { header: 'Email', key: 'email' },
+    { header: 'Cart items', key: 'items' }, { header: 'Abandoned at', key: 'abandonedAt' }
+  ];
+  abandoned.addRows(report.abandonedCarts.map(cart => ({
+    name: cart.customer?.name || '',
+    phone: cart.customer?.phone || '',
+    email: cart.customer?.email || '',
+    items: (cart.cartItems || []).map(item => `${item.name || item.id} x ${item.qty}`).join(', '),
+    abandonedAt: cart.cartUpdatedAt
+  })));
+  const customers = workbook.addWorksheet('Customers');
+  customers.columns = [
+    { header: 'Name', key: 'name' }, { header: 'Phone', key: 'phone' }, { header: 'Email', key: 'email' },
+    { header: 'Last activity', key: 'lastActivity' }, { header: 'Cart items', key: 'items' }
+  ];
+  customers.addRows(report.customers.map(customer => ({
+    name: customer.customer?.name || '',
+    phone: customer.customer?.phone || '',
+    email: customer.customer?.email || '',
+    lastActivity: customer.lastActivityAt,
+    items: (customer.cartItems || []).map(item => `${item.name || item.id} x ${item.qty}`).join(', ')
+  })));
+  workbook.eachSheet(sheet => {
+    sheet.getRow(1).font = { bold: true };
+    sheet.columns?.forEach(column => { column.width = 20; });
+  });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="kro-pk-analytics-${report.range.key}.xlsx"`);
+  await workbook.xlsx.write(res);
+  res.end();
+});
+
+app.get('/api/admin/analytics/export.csv', authMiddleware, async (req, res) => {
+  const report = await buildAnalyticsReport(String(req.query.range || 'today'));
+  const lines = [
+    ['section', 'metric', 'value'],
+    ['overview', 'date_range', report.range.label],
+    ['overview', 'visits', report.overview.visits],
+    ['overview', 'unique_visitors', report.overview.uniqueVisitors],
+    ['overview', 'total_carts', report.overview.totalCarts],
+    ['overview', 'checkout_clicks', report.overview.checkoutClicks],
+    ['overview', 'orders', report.overview.orders],
+    ['overview', 'revenue', report.overview.revenue],
+    ['overview', 'conversion_rate', report.overview.conversionRate],
+    ...report.productPerformance.map(product => ['product', product.name, JSON.stringify(product)]),
+    ...Object.entries(report.traffic).map(([source, visits]) => ['traffic', source, visits])
+  ];
+  const csv = lines.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="kro-pk-analytics-${report.range.key}.csv"`);
+  res.send(csv);
 });
 
 app.get('/admin', (req, res) => {

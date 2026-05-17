@@ -57,6 +57,8 @@
     .traffic-bar { height:10px; border-radius:999px; background:#1e293b; overflow:hidden; }
     .traffic-fill { height:100%; background:#fbbf24; border-radius:999px; }
     .whatsapp-btn { background:#16a34a; color:#fff; border:none; border-radius:999px; padding:.55rem .8rem; cursor:pointer; }
+    .analytics-toolbar { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; margin-top:1rem; }
+    .analytics-toolbar select { padding:.65rem .8rem; border-radius:12px; border:1px solid #334155; background:#0f172a; color:#fff; }
   </style>
 </head>
 <body>
@@ -123,6 +125,20 @@
       </div>
 
       <div id="analyticsPanel" class="hidden">
+        <div class="analytics-toolbar">
+          <label for="analyticsRange" style="color:#94a3b8;">Date range</label>
+          <select id="analyticsRange">
+            <option value="today">Today</option>
+            <option value="last7">Last 7 days</option>
+            <option value="last30">Last 30 days</option>
+            <option value="last90">Last 90 days</option>
+            <option value="thisMonth">This month</option>
+            <option value="all">All time</option>
+          </select>
+          <button class="btn-small" id="exportPdfBtn">Export PDF report</button>
+          <button class="btn-small" id="exportXlsxBtn">Export Excel</button>
+          <button class="btn-small" id="exportCsvBtnAnalytics">Export CSV</button>
+        </div>
         <div class="analytics-section">
           <h3>Overview</h3>
           <div id="analyticsOverview" class="analytics-grid"></div>

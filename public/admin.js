@@ -17,6 +17,10 @@ const analyticsProductsBody = document.getElementById('analyticsProductsBody');
 const analyticsCustomersBody = document.getElementById('analyticsCustomersBody');
 const analyticsAbandonedBody = document.getElementById('analyticsAbandonedBody');
 const analyticsTraffic = document.getElementById('analyticsTraffic');
+const analyticsRange = document.getElementById('analyticsRange');
+const exportPdfBtn = document.getElementById('exportPdfBtn');
+const exportXlsxBtn = document.getElementById('exportXlsxBtn');
+const exportCsvBtnAnalytics = document.getElementById('exportCsvBtnAnalytics');
 const promoCodesPanel = document.getElementById('promoCodesPanel');
 const promoCodesGrid = document.getElementById('promoCodesGrid');
 const broadcastsPanel = document.getElementById('broadcastsPanel');
@@ -438,13 +442,14 @@ const normalizeWhatsAppPhone = value => {
 };
 
 const loadAnalytics = async () => {
-  const data = await fetchJson('/api/admin/analytics', { credentials: 'include' });
+  const selectedRange = analyticsRange?.value || 'today';
+  const data = await fetchJson(`/api/admin/analytics?range=${encodeURIComponent(selectedRange)}`, { credentials: 'include' });
   analyticsOverview.innerHTML = renderMetricCards([
-    { label: "Today's visits", value: data.overview.todaysVisits ?? 0 },
+    { label: `${data.range?.label || 'Selected range'} visits`, value: data.overview.visits ?? 0 },
     { label: 'Unique visitors', value: data.overview.uniqueVisitors ?? 0 },
     { label: 'Total carts', value: data.overview.totalCarts ?? 0 },
     { label: 'Checkout clicks', value: data.overview.checkoutClicks ?? 0 },
-    { label: 'Orders today', value: data.overview.ordersToday ?? 0 },
+    { label: 'Orders', value: data.overview.orders ?? 0 },
     { label: 'Sales revenue', value: formatPrice(data.overview.revenue ?? 0) }
   ]);
 
@@ -601,6 +606,11 @@ const loadBroadcasts = async () => {
   `).join('') || '<div style="color:#94a3b8;">No broadcasts yet.</div>';
 };
 
+const exportAnalytics = format => {
+  const selectedRange = analyticsRange?.value || 'today';
+  window.location.href = `/api/admin/analytics/export.${format}?range=${encodeURIComponent(selectedRange)}`;
+};
+
 const updateSubscriberCount = async () => {
   try {
     const subs = await fetchJson('/api/admin/subscribers', { credentials: 'include' });
@@ -648,6 +658,10 @@ showAddProductBtn.addEventListener('click', () => productForm.classList.toggle('
 document.getElementById('createProductBtn').addEventListener('click', createProduct);
 createPromoBtn?.addEventListener('click', () => createPromoCode().catch(err => showMessage(err.message)));
 sendBroadcastBtn?.addEventListener('click', () => sendBroadcast().catch(err => showMessage(err.message)));
+analyticsRange?.addEventListener('change', () => loadAnalytics().catch(err => showMessage(err.message)));
+exportPdfBtn?.addEventListener('click', () => exportAnalytics('pdf'));
+exportXlsxBtn?.addEventListener('click', () => exportAnalytics('xlsx'));
+exportCsvBtnAnalytics?.addEventListener('click', () => exportAnalytics('csv'));
 
 const init = async () => {
   try {
