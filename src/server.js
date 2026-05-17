@@ -859,6 +859,8 @@ async function buildAnalyticsReport(rangeKey = 'today') {
     checkoutClicksToday,
     ordersToday,
     revenueToday,
+    productViewsCount,
+    addToCartCount,
     productEventRows,
     salesRows,
     customerRows,
@@ -874,6 +876,8 @@ async function buildAnalyticsReport(rangeKey = 'today') {
       { $match: inRange },
       { $group: { _id: null, totalRevenue: { $sum: '$total' } } }
     ]),
+    AnalyticsEvent.countDocuments({ type: 'product_view', ...inRange }),
+    AnalyticsEvent.countDocuments({ type: 'add_to_cart', ...inRange }),
     AnalyticsEvent.aggregate([
         { $match: { type: { $in: ['product_view', 'add_to_cart'] }, productSlug: { $ne: '' }, ...inRange } },
       {
@@ -963,14 +967,37 @@ async function buildAnalyticsReport(rangeKey = 'today') {
   const orders = ordersToday;
   const conversionRate = visits > 0 ? Number(((orders / visits) * 100).toFixed(1)) : 0;
   const abandonedCount = abandonedRows.length;
+  const trafficWinner = Object.entries(traffic).sort((a, b) => b[1] - a[1])[0];
+  const insights = orders === 0
+    ? [
+        'No completed orders were recorded in this period.',
+        'Conversion cannot be judged properly until sales data increases.',
+        'Product interest is currently based on views and add-to-cart activity.',
+        'Early data should be treated as directional because the sample size is still small.'
+      ]
+    : [
+        `${orders} completed order${orders === 1 ? '' : 's'} were recorded in this period.`,
+        `Overall conversion for the selected range is ${conversionRate}%.`,
+        abandonedCount > 0
+          ? `${abandonedCount} abandoned cart${abandonedCount === 1 ? ' needs' : 's need'} follow-up.`
+          : 'No abandoned carts are currently visible in this range.'
+      ];
   const recommendations = [
-    bySold[0] ? `Push ${bySold[0].name}; it is currently the strongest product by sales.` : 'No product has sales yet; promote the strongest traffic/product-view candidate first.',
-    byConversionAsc[0] ? `Review ${byConversionAsc[0].name}; it has the weakest observed conversion in this period.` : 'There is not enough product conversion data yet to name a weak performer.',
-    Object.entries(traffic).sort((a, b) => b[1] - a[1])[0]?.[1] > 0
-      ? `Lean into ${Object.entries(traffic).sort((a, b) => b[1] - a[1])[0][0]}; it is the leading traffic source for this range.`
+    bySold[0]
+      ? `Best product to push: ${bySold[0].name}.`
+      : 'There is not enough sales data yet to identify a strongest sales performer.',
+    byConversionAsc[0]
+      ? `Review ${byConversionAsc[0].name}; it has the weakest observed conversion in this period.`
+      : 'There is not enough product conversion data yet to name a weak performer.',
+    trafficWinner?.[1] > 0
+      ? `Traffic source performing best: ${trafficWinner[0]}.`
       : 'Traffic source volume is still too low to identify a clear winner.',
-    abandonedCount > 0 ? `${abandonedCount} abandoned cart${abandonedCount === 1 ? '' : 's'} need follow-up.` : 'No abandoned carts are currently visible in this range.',
-    checkoutClicksToday > orders ? 'Checkout clicks exceed orders; review payment friction and form completion.' : 'Checkout-to-order flow looks healthy for the selected period.'
+    abandonedCount > 0
+      ? `${abandonedCount} abandoned cart${abandonedCount === 1 ? ' needs' : 's need'} follow-up.`
+      : 'No abandoned carts are currently visible in this range.',
+    checkoutClicksToday > orders
+      ? 'Checkout clicks exceed orders; review payment friction and form completion.'
+      : 'Checkout-to-order flow looks healthy for the selected period.'
   ];
 
   return {
@@ -982,7 +1009,9 @@ async function buildAnalyticsReport(rangeKey = 'today') {
       checkoutClicks: checkoutClicksToday,
       orders,
       revenue: revenueToday[0]?.totalRevenue || 0,
-      conversionRate
+      conversionRate,
+      productViews: productViewsCount,
+      addToCarts: addToCartCount
     },
     productPerformance,
     productHighlights: {
@@ -994,7 +1023,8 @@ async function buildAnalyticsReport(rangeKey = 'today') {
     customers: customerRows,
     abandonedCarts: abandonedRows,
     traffic,
-    insights: recommendations
+    insights,
+    recommendations
   };
 }
 
@@ -1003,14 +1033,85 @@ app.get('/api/admin/analytics', authMiddleware, async (req, res) => {
 });
 
 function summarizeReport(report) {
-  const best = report.productHighlights.bestProduct?.name || 'No clear leader yet';
+  const best = report.productHighlights.bestProduct?.name;
   const trafficWinner = Object.entries(report.traffic).sort((a, b) => b[1] - a[1])[0]?.[0] || 'direct';
+  if (!best) {
+    return `For ${report.range.label.toLowerCase()}, the shop recorded ${report.overview.visits} visits and ${report.overview.orders} orders. There is not enough sales data yet to identify a strongest sales performer. ${trafficWinner} is the leading traffic source in the selected period.`;
+  }
   return `For ${report.range.label.toLowerCase()}, the shop recorded ${report.overview.visits} visits, ${report.overview.orders} orders, and ${report.overview.conversionRate}% conversion. ${best} is the strongest sales performer, while ${trafficWinner} is the leading traffic source.`;
 }
 
 function writePdfSection(doc, title) {
   doc.moveDown(0.6).fontSize(15).fillColor('#0f172a').text(title);
   doc.moveDown(0.35);
+}
+
+function enoughData(values = []) {
+  return values.some(value => Number(value || 0) > 0);
+}
+
+function writeNoChartData(doc) {
+  doc.fontSize(10).fillColor('#64748b').text('Not enough data to generate this chart yet.');
+}
+
+function drawDonutChart(doc, entries, x, y, radius = 48) {
+  const total = entries.reduce((sum, [, value]) => sum + Number(value || 0), 0);
+  if (!total) return false;
+  const colors = ['#0f172a', '#fbbf24', '#ef4444', '#2563eb', '#16a34a'];
+  let start = -Math.PI / 2;
+  entries.forEach(([label, value], index) => {
+    const angle = (Number(value || 0) / total) * Math.PI * 2;
+    doc.moveTo(x, y).fillColor(colors[index % colors.length]).path(`M ${x} ${y} L ${x + radius * Math.cos(start)} ${y + radius * Math.sin(start)} A ${radius} ${radius} 0 ${angle > Math.PI ? 1 : 0} 1 ${x + radius * Math.cos(start + angle)} ${y + radius * Math.sin(start + angle)} Z`).fill();
+    start += angle;
+    doc.fillColor(colors[index % colors.length]).rect(x + 80, y - 42 + index * 16, 10, 10).fill();
+    doc.fillColor('#111827').fontSize(9).text(`${label}: ${value}`, x + 96, y - 44 + index * 16);
+  });
+  doc.fillColor('#ffffff').circle(x, y, radius * 0.45).fill();
+  return true;
+}
+
+function drawGroupedBarChart(doc, products, x, y, width = 480, height = 140) {
+  if (!products.length || !products.some(product => product.productViews || product.addToCarts || product.unitsSold)) return false;
+  const top = Math.max(...products.flatMap(product => [product.productViews, product.addToCarts, product.unitsSold]), 1);
+  const groupWidth = width / products.length;
+  const barWidth = Math.min(18, groupWidth / 4);
+  const colors = ['#0f172a', '#fbbf24', '#ef4444'];
+  products.forEach((product, index) => {
+    [product.productViews, product.addToCarts, product.unitsSold].forEach((value, series) => {
+      const barHeight = (Number(value || 0) / top) * height;
+      doc.fillColor(colors[series]).rect(x + index * groupWidth + series * (barWidth + 4), y + height - barHeight, barWidth, barHeight).fill();
+    });
+    doc.fillColor('#111827').fontSize(7).text(product.name.slice(0, 10), x + index * groupWidth, y + height + 6, { width: groupWidth - 4 });
+  });
+  doc.fontSize(9).fillColor('#111827').text('Views', x, y - 15);
+  doc.fillColor(colors[0]).rect(x + 30, y - 12, 8, 8).fill();
+  doc.fillColor('#111827').text('Adds', x + 55, y - 15);
+  doc.fillColor(colors[1]).rect(x + 82, y - 12, 8, 8).fill();
+  doc.fillColor('#111827').text('Sold', x + 108, y - 15);
+  doc.fillColor(colors[2]).rect(x + 135, y - 12, 8, 8).fill();
+  return true;
+}
+
+function drawFunnelChart(doc, stages, x, y, width = 480, height = 120) {
+  if (!enoughData(stages.map(stage => stage.value))) return false;
+  const max = Math.max(...stages.map(stage => stage.value), 1);
+  stages.forEach((stage, index) => {
+    const barWidth = (stage.value / max) * width;
+    doc.fillColor(['#0f172a', '#334155', '#2563eb', '#fbbf24', '#16a34a'][index]).rect(x, y + index * 22, barWidth, 14).fill();
+    doc.fillColor('#111827').fontSize(9).text(`${stage.label}: ${stage.value}`, x + 4, y + index * 22 + 2);
+  });
+  return true;
+}
+
+function drawSimpleBarPair(doc, left, right, x, y, width = 220, height = 70) {
+  if (!enoughData([left.value, right.value])) return false;
+  const max = Math.max(left.value, right.value, 1);
+  [left, right].forEach((item, index) => {
+    const barHeight = (item.value / max) * height;
+    doc.fillColor(index === 0 ? '#2563eb' : '#ef4444').rect(x + index * 90, y + height - barHeight, 48, barHeight).fill();
+    doc.fillColor('#111827').fontSize(9).text(`${item.label}\n${item.value}`, x + index * 90, y + height + 6, { width: 70 });
+  });
+  return true;
 }
 
 app.get('/api/admin/analytics/export.pdf', authMiddleware, async (req, res) => {
@@ -1035,22 +1136,43 @@ app.get('/api/admin/analytics/export.pdf', authMiddleware, async (req, res) => {
   ];
   metrics.forEach(([label, value]) => doc.fontSize(10).text(`${label}: ${value}`));
   writePdfSection(doc, 'Traffic source breakdown');
-  const maxTraffic = Math.max(...Object.values(report.traffic), 1);
-  Object.entries(report.traffic).forEach(([source, visits]) => {
-    const y = doc.y;
-    doc.fontSize(10).fillColor('#111827').text(source, 42, y, { width: 80 });
-    doc.rect(130, y + 3, 180, 8).fillColor('#e2e8f0').fill();
-    doc.rect(130, y + 3, (Number(visits || 0) / maxTraffic) * 180, 8).fillColor('#fbbf24').fill();
-    doc.fillColor('#111827').text(String(visits), 320, y, { width: 40 });
-    doc.moveDown(0.35);
-  });
+  if (!drawDonutChart(doc, Object.entries(report.traffic), 110, doc.y + 48)) writeNoChartData(doc);
+  doc.moveDown(6);
   writePdfSection(doc, 'Product performance');
+  if (!drawGroupedBarChart(doc, report.productPerformance.slice(0, 6), 42, doc.y + 12)) writeNoChartData(doc);
+  doc.moveDown(9);
   report.productPerformance.slice(0, 10).forEach(product => {
     doc.fontSize(9).text(`${product.name} | Views ${product.productViews} | Adds ${product.addToCarts} | Sold ${product.unitsSold} | Revenue NGN ${Number(product.revenue || 0).toLocaleString('en-NG')} | Conversion ${product.conversionRate}%`);
   });
+  writePdfSection(doc, 'Funnel chart');
+  if (!drawFunnelChart(doc, [
+    { label: 'Visits', value: report.overview.visits },
+    { label: 'Product Views', value: report.overview.productViews },
+    { label: 'Add To Cart', value: report.overview.addToCarts },
+    { label: 'Checkout Clicks', value: report.overview.checkoutClicks },
+    { label: 'Orders', value: report.overview.orders }
+  ], 42, doc.y + 6)) writeNoChartData(doc);
+  doc.moveDown(7);
   writePdfSection(doc, 'Cart and abandoned cart summary');
   doc.fontSize(10).text(`Active carts in range: ${report.overview.totalCarts}`);
   doc.text(`Abandoned carts in range: ${report.abandonedCarts.length}`);
+  if (!drawSimpleBarPair(doc,
+    { label: 'Active carts', value: report.overview.totalCarts },
+    { label: 'Abandoned carts', value: report.abandonedCarts.length },
+    42, doc.y + 8
+  )) writeNoChartData(doc);
+  doc.moveDown(6);
+  writePdfSection(doc, 'Revenue / orders chart');
+  if (!enoughData([report.overview.orders, report.overview.revenue])) {
+    writeNoChartData(doc);
+  } else {
+    drawSimpleBarPair(doc,
+      { label: 'Orders', value: report.overview.orders },
+      { label: 'Revenue', value: report.overview.revenue },
+      42, doc.y + 8
+    );
+    doc.moveDown(6);
+  }
   writePdfSection(doc, 'Customer summary');
   doc.fontSize(10).text(`Known customers in range: ${report.customers.length}`);
   doc.text(`Customers with abandoned carts: ${report.abandonedCarts.length}`);
@@ -1079,12 +1201,13 @@ app.get('/api/admin/analytics/export.xlsx', authMiddleware, async (req, res) => 
   ]);
   const products = workbook.addWorksheet('Products');
   products.columns = [
-    { header: 'Product', key: 'name' },
-    { header: 'Views', key: 'productViews' },
-    { header: 'Adds to cart', key: 'addToCarts' },
-    { header: 'Units sold', key: 'unitsSold' },
+    { header: 'Product Name', key: 'name' },
+    { header: 'Slug', key: 'slug' },
+    { header: 'Product Views', key: 'productViews' },
+    { header: 'Add To Carts', key: 'addToCarts' },
+    { header: 'Units Sold', key: 'unitsSold' },
     { header: 'Revenue', key: 'revenue' },
-    { header: 'Conversion rate', key: 'conversionRate' }
+    { header: 'Conversion Rate', key: 'conversionRate' }
   ];
   products.addRows(report.productPerformance);
   const traffic = workbook.addWorksheet('Traffic');
@@ -1116,7 +1239,12 @@ app.get('/api/admin/analytics/export.xlsx', authMiddleware, async (req, res) => 
   })));
   workbook.eachSheet(sheet => {
     sheet.getRow(1).font = { bold: true };
-    sheet.columns?.forEach(column => { column.width = 20; });
+    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFBBF24' } };
+    sheet.columns?.forEach(column => {
+      const values = column.values || [];
+      const maxLength = values.reduce((max, value) => Math.max(max, String(value ?? '').length), 0);
+      column.width = Math.min(Math.max(maxLength + 2, 14), 32);
+    });
   });
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="kro-pk-analytics-${report.range.key}.xlsx"`);
@@ -1127,17 +1255,20 @@ app.get('/api/admin/analytics/export.xlsx', authMiddleware, async (req, res) => 
 app.get('/api/admin/analytics/export.csv', authMiddleware, async (req, res) => {
   const report = await buildAnalyticsReport(String(req.query.range || 'today'));
   const lines = [
-    ['section', 'metric', 'value'],
-    ['overview', 'date_range', report.range.label],
-    ['overview', 'visits', report.overview.visits],
-    ['overview', 'unique_visitors', report.overview.uniqueVisitors],
-    ['overview', 'total_carts', report.overview.totalCarts],
-    ['overview', 'checkout_clicks', report.overview.checkoutClicks],
-    ['overview', 'orders', report.overview.orders],
-    ['overview', 'revenue', report.overview.revenue],
-    ['overview', 'conversion_rate', report.overview.conversionRate],
-    ...report.productPerformance.map(product => ['product', product.name, JSON.stringify(product)]),
-    ...Object.entries(report.traffic).map(([source, visits]) => ['traffic', source, visits])
+    ['Section', 'Metric', 'Value', 'Product Name', 'Slug', 'Product Views', 'Add To Carts', 'Units Sold', 'Revenue', 'Conversion Rate', 'Traffic Source', 'Visits'],
+    ['Overview', 'Date Range', report.range.label, '', '', '', '', '', '', '', '', ''],
+    ['Overview', 'Visits', report.overview.visits, '', '', '', '', '', '', '', '', ''],
+    ['Overview', 'Unique Visitors', report.overview.uniqueVisitors, '', '', '', '', '', '', '', '', ''],
+    ['Overview', 'Total Carts', report.overview.totalCarts, '', '', '', '', '', '', '', '', ''],
+    ['Overview', 'Checkout Clicks', report.overview.checkoutClicks, '', '', '', '', '', '', '', '', ''],
+    ['Overview', 'Orders', report.overview.orders, '', '', '', '', '', '', '', '', ''],
+    ['Overview', 'Revenue', report.overview.revenue, '', '', '', '', '', '', '', '', ''],
+    ['Overview', 'Conversion Rate', report.overview.conversionRate, '', '', '', '', '', '', '', '', ''],
+    ...report.productPerformance.map(product => [
+      'Product Performance', '', '', product.name, product.slug, product.productViews,
+      product.addToCarts, product.unitsSold, product.revenue, product.conversionRate, '', ''
+    ]),
+    ...Object.entries(report.traffic).map(([source, visits]) => ['Traffic', '', '', '', '', '', '', '', '', '', source, visits])
   ];
   const csv = lines.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
