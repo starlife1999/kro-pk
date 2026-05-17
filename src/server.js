@@ -111,6 +111,7 @@ app.get('/sitemap.xml', async (_req, res) => {
     const products = await Product.find({ active: true }).select('slug updatedAt').lean();
     const staticUrls = [
       { loc: `${SITE_URL}/`, priority: '1.0' },
+      { loc: `${SITE_URL}/about`, priority: '0.8' },
       { loc: `${SITE_URL}/shop1.html`, priority: '0.9' }
     ];
     const productUrls = products
@@ -163,6 +164,14 @@ app.get('/products/:slug', async (req, res) => {
     .replace('content="https://www.kro-pk.shop/product.html"', `content="${escapeHtml(url)}"`)
     .replace('</head>', `  <script id="server-product-json-ld" type="application/ld+json">${buildProductJsonLd(product)}</script>\n</head>`);
   res.type('html').send(html);
+});
+
+app.get('/about', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'about.html'));
+});
+
+app.get('/shop', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'shop1.html'));
 });
 
 cloudinary.config({
