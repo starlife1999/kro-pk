@@ -45,6 +45,12 @@
     .error-box { color:#f87171; margin:.75rem 0; }
     .success-box { color:#34d399; margin:.75rem 0; }
     .btn-small { font-size:.85rem; padding:.6rem 1rem; border-radius:999px; background:#0ea5e9; border:none;color:#fff; cursor:pointer; }
+    .analytics-grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-bottom:1rem; }
+    .analytics-card { background:#0f172a; border:1px solid #334155; border-radius:16px; padding:1rem; }
+    .analytics-card span { display:block; color:#94a3b8; font-size:.85rem; margin-bottom:.4rem; }
+    .analytics-card strong { font-size:1.5rem; color:#f8fafc; }
+    .analytics-section { margin-top:1.25rem; }
+    .analytics-section h3 { margin:0 0 .75rem; color:#fbbf24; font-size:1rem; }
   </style>
 </head>
 <body>
@@ -63,6 +69,7 @@
         <div class="tab active" data-tab="orders">Orders</div>
         <div class="tab" data-tab="inventory">Inventory</div>
         <div class="tab" data-tab="products">Products</div>
+        <div class="tab" data-tab="analytics">Analytics</div>
         <div class="tab" data-tab="promocodes">Promo codes</div>
         <div class="tab" data-tab="broadcasts">Broadcasts</div>
       </div>
@@ -107,6 +114,30 @@
           <button id="createProductBtn" class="btn-small" style="margin-top:1rem;">Create product</button>
         </div>
         <div id="productsGrid" class="grid-card"></div>
+      </div>
+
+      <div id="analyticsPanel" class="hidden">
+        <div class="analytics-section">
+          <h3>Overview</h3>
+          <div id="analyticsOverview" class="analytics-grid"></div>
+        </div>
+        <div class="analytics-section">
+          <h3>Product performance</h3>
+          <div class="table-wrap">
+            <table class="orders-table">
+              <thead><tr><th>Product</th><th>Views</th><th>Adds to cart</th><th>Units sold</th><th>Revenue</th></tr></thead>
+              <tbody id="analyticsProductsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="analytics-section">
+          <h3>Cart activity</h3>
+          <div id="analyticsCart" class="analytics-grid"></div>
+        </div>
+        <div class="analytics-section">
+          <h3>Checkout activity</h3>
+          <div id="analyticsCheckout" class="analytics-grid"></div>
+        </div>
       </div>
 
       <div id="promoCodesPanel" class="hidden">

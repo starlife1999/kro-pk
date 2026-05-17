@@ -390,6 +390,7 @@
     <img id="zoomModalImg" src="" alt="">
   </div>
 
+  <script src="analytics.js"></script>
   <script src="site.js"></script>
   <script>
 (function () {
@@ -621,6 +622,10 @@
     state.primaryUrl = primaryUrl(product);
     state.galleryUrls = galleryUrls(product);
     state.mainDisplayUrl = state.primaryUrl || state.galleryUrls[0] || '';
+    window.KroAnalytics?.track('product_view', {
+      productSlug: product.slug,
+      productName: product.name
+    });
 
     const sizes = normalizeSizes(product);
     const displaySizes = sizesToDisplay(sizes);
@@ -679,7 +684,7 @@
           '<button class="add-cart-button" type="button">ADD TO CART</button>' +
           '<div class="details-grid">' +
             '<div class="detail-item"><div class="detail-label">DROP</div><div class="detail-value">Motorsport 2026</div></div>' +
-            '<div class="detail-item"><div class="detail-label">SHIPPING</div><div class="detail-value">Nationwide (2–3 days)</div></div>' +
+            '<div class="detail-item"><div class="detail-label">DELIVERY</div><div class="detail-value">3&ndash;5 working days</div></div>' +
           '</div></div></section>' +
       (related
         ? '<section class="also-like"><h2 class="also-title">YOU MAY ALSO LIKE</h2><div class="mini-grid">' + related + '</div></section>'

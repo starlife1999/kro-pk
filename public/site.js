@@ -16,6 +16,10 @@ function saveCart(cart) {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
 }
 
+function trackEvent(type, payload = {}) {
+    window.KroAnalytics?.track(type, payload);
+}
+
 function getUser() {
     try {
         return JSON.parse(localStorage.getItem(USER_KEY)) || null;
@@ -114,6 +118,12 @@ async function addToCart(id, name, price, size = 'L', img = '') {
     }
     saveCart(cart);
     updateCartBadge();
+    trackEvent('add_to_cart', {
+        productSlug: id,
+        productName: name,
+        quantity: 1,
+        cartCount: cart.reduce((sum, item) => sum + item.qty, 0)
+    });
     showToast(`${name} added to cart.`);
 }
 

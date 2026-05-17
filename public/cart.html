@@ -649,6 +649,7 @@
 </div>
 
 <div class="toast" id="toast">REMOVED!</div>
+<script src="analytics.js"></script>
 
 <script>
 // ─── CART ENGINE ────────────────────────────────────────────────
@@ -788,6 +789,12 @@ function updateQty(id, size, delta) {
     if (idx === -1) return;
     cart[idx].qty = Math.max(1, cart[idx].qty + delta);
     saveCart(cart);
+    window.KroAnalytics?.track('cart_update', {
+        productSlug: id,
+        quantity: cart[idx].qty,
+        cartCount: cart.reduce((sum, item) => sum + item.qty, 0),
+        metadata: { size, delta }
+    });
     render();
 }
 
@@ -799,6 +806,11 @@ function removeItem(id, size) {
         setTimeout(() => {
             cart = cart.filter(i => !(i.id === id && i.size === size));
             saveCart(cart);
+            window.KroAnalytics?.track('remove_from_cart', {
+                productSlug: id,
+                cartCount: cart.reduce((sum, item) => sum + item.qty, 0),
+                metadata: { size }
+            });
             render();
         }, 300);
     }
@@ -856,6 +868,9 @@ async function handleCheckout() {
     };
 
     try {
+        window.KroAnalytics?.track('checkout_click', {
+            cartCount: cart.reduce((sum, item) => sum + item.qty, 0)
+        });
         const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
         const afterPromo = appliedPromo
             ? Math.round(subtotal * (1 - (Number(appliedPromo.discountPercent) || 0) / 100))
@@ -927,7 +942,7 @@ function render() {
                     <span>${formatPrice(subtotal)}</span>
                 </div>
                 <div class="summary-row">
-                    <span class="summary-label">Delivery (flat rate)</span>
+                    <span class="summary-label">Delivery: 3&ndash;5 working days</span>
                     <span>${formatPrice(FLAT_DELIVERY_FEE_NGN)}</span>
                 </div>
                 <div class="summary-row">
@@ -1038,6 +1053,11 @@ function updateCartBadge() {
 }
 
 // Init
+window.addEventListener('DOMContentLoaded', () => {
+    window.KroAnalytics?.track('cart_view', {
+        cartCount: getCart().reduce((sum, item) => sum + item.qty, 0)
+    });
+});
 render();
 updateCartBadge();
 </script>

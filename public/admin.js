@@ -10,6 +10,11 @@ const inventoryPanel = document.getElementById('inventoryPanel');
 const inventoryGrid = document.getElementById('inventoryGrid');
 const productsPanel = document.getElementById('productsPanel');
 const productsGrid = document.getElementById('productsGrid');
+const analyticsPanel = document.getElementById('analyticsPanel');
+const analyticsOverview = document.getElementById('analyticsOverview');
+const analyticsProductsBody = document.getElementById('analyticsProductsBody');
+const analyticsCart = document.getElementById('analyticsCart');
+const analyticsCheckout = document.getElementById('analyticsCheckout');
 const promoCodesPanel = document.getElementById('promoCodesPanel');
 const promoCodesGrid = document.getElementById('promoCodesGrid');
 const broadcastsPanel = document.getElementById('broadcastsPanel');
@@ -411,8 +416,51 @@ const switchTab = tabName => {
   ordersPanel.classList.toggle('hidden', tabName !== 'orders');
   inventoryPanel.classList.toggle('hidden', tabName !== 'inventory');
   productsPanel.classList.toggle('hidden', tabName !== 'products');
+  analyticsPanel.classList.toggle('hidden', tabName !== 'analytics');
   promoCodesPanel.classList.toggle('hidden', tabName !== 'promocodes');
   broadcastsPanel.classList.toggle('hidden', tabName !== 'broadcasts');
+  if (tabName === 'analytics') loadAnalytics();
+};
+
+const renderMetricCards = metrics => metrics.map(metric => `
+  <div class="analytics-card">
+    <span>${escapeHtml(metric.label)}</span>
+    <strong>${metric.value}</strong>
+  </div>
+`).join('');
+
+const loadAnalytics = async () => {
+  const data = await fetchJson('/api/admin/analytics', { credentials: 'include' });
+  analyticsOverview.innerHTML = renderMetricCards([
+    { label: 'Total site visits', value: data.overview.totalVisits ?? 0 },
+    { label: 'Unique visitors', value: data.overview.uniqueVisitors ?? 0 },
+    { label: 'Product page views', value: data.overview.productViews ?? 0 },
+    { label: 'Orders', value: data.overview.orders ?? 0 },
+    { label: 'Sales revenue', value: formatPrice(data.overview.revenue ?? 0) }
+  ]);
+
+  analyticsProductsBody.innerHTML = (data.productPerformance || []).map(product => `
+    <tr>
+      <td>${escapeHtml(product.name || product.slug)}</td>
+      <td>${product.productViews ?? 0}</td>
+      <td>${product.addToCarts ?? 0}</td>
+      <td>${product.unitsSold ?? 0}</td>
+      <td>${formatPrice(product.revenue ?? 0)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="color:#94a3b8;">No product activity yet.</td></tr>';
+
+  analyticsCart.innerHTML = renderMetricCards([
+    { label: 'Add to cart events', value: data.cartActivity.addToCartEvents ?? 0 },
+    { label: 'Cart views', value: data.cartActivity.cartViews ?? 0 },
+    { label: 'Quantity changes', value: data.cartActivity.cartUpdates ?? 0 },
+    { label: 'Removed items', value: data.cartActivity.removals ?? 0 }
+  ]);
+
+  analyticsCheckout.innerHTML = renderMetricCards([
+    { label: 'Checkout clicks', value: data.checkoutActivity.checkoutClicks ?? 0 },
+    { label: 'Orders', value: data.checkoutActivity.orders ?? 0 },
+    { label: 'Sales revenue', value: formatPrice(data.checkoutActivity.revenue ?? 0) }
+  ]);
 };
 
 const loadPromoCodes = async () => {

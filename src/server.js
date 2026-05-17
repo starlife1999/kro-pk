@@ -16,6 +16,7 @@ const Counter = require('./models/Counter');
 const PromoCode = require('./models/PromoCode');
 const Subscriber = require('./models/Subscriber');
 const Broadcast = require('./models/Broadcast');
+const AnalyticsEvent = require('./models/AnalyticsEvent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -333,6 +334,29 @@ app.post('/api/subscribe', async (req, res) => {
 
   const subscriber = await Subscriber.create({ email, name, active: true });
   return res.status(201).json({ message: 'Subscribed', subscriber: { email: subscriber.email, name: subscriber.name } });
+});
+
+app.post('/api/analytics/events', async (req, res) => {
+  const allowedTypes = ['page_view', 'product_view', 'add_to_cart', 'cart_view', 'cart_update', 'remove_from_cart', 'checkout_click'];
+  const type = String(req.body?.type || '').trim();
+  const visitorId = String(req.body?.visitorId || '').trim();
+  if (!allowedTypes.includes(type) || !visitorId) {
+    return res.status(400).json({ message: 'Invalid analytics event' });
+  }
+
+  const event = await AnalyticsEvent.create({
+    type,
+    visitorId,
+    sessionId: String(req.body?.sessionId || '').trim(),
+    path: String(req.body?.path || '').trim(),
+    productSlug: String(req.body?.productSlug || '').trim(),
+    productName: String(req.body?.productName || '').trim(),
+    quantity: Number(req.body?.quantity || 0),
+    cartCount: Number(req.body?.cartCount || 0),
+    metadata: req.body?.metadata && typeof req.body.metadata === 'object' ? req.body.metadata : {}
+  });
+
+  res.status(202).json({ accepted: true, id: event._id });
 });
 
 app.post('/api/orders', async (req, res) => {
@@ -718,6 +742,101 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
   ]);
   const totalRevenue = revenueData.length ? revenueData[0].totalRevenue : 0;
   res.json({ totalOrders, pendingOrders, totalRevenue });
+});
+
+app.get('/api/admin/analytics', authMiddleware, async (_req, res) => {
+  const [
+    totalVisits,
+    uniqueVisitors,
+    productViews,
+    addToCartEvents,
+    cartViews,
+    cartUpdates,
+    removals,
+    checkoutClicks,
+    orderSummary,
+    productEventRows,
+    salesRows
+  ] = await Promise.all([
+    AnalyticsEvent.countDocuments({ type: 'page_view' }),
+    AnalyticsEvent.distinct('visitorId').then(ids => ids.length),
+    AnalyticsEvent.countDocuments({ type: 'product_view' }),
+    AnalyticsEvent.countDocuments({ type: 'add_to_cart' }),
+    AnalyticsEvent.countDocuments({ type: 'cart_view' }),
+    AnalyticsEvent.countDocuments({ type: 'cart_update' }),
+    AnalyticsEvent.countDocuments({ type: 'remove_from_cart' }),
+    AnalyticsEvent.countDocuments({ type: 'checkout_click' }),
+    Order.aggregate([
+      { $group: { _id: null, totalOrders: { $sum: 1 }, totalRevenue: { $sum: '$total' } } }
+    ]),
+    AnalyticsEvent.aggregate([
+      { $match: { type: { $in: ['product_view', 'add_to_cart'] }, productSlug: { $ne: '' } } },
+      {
+        $group: {
+          _id: '$productSlug',
+          productName: { $last: '$productName' },
+          productViews: { $sum: { $cond: [{ $eq: ['$type', 'product_view'] }, 1, 0] } },
+          addToCarts: { $sum: { $cond: [{ $eq: ['$type', 'add_to_cart'] }, 1, 0] } }
+        }
+      },
+      { $sort: { productViews: -1, addToCarts: -1, _id: 1 } }
+    ]),
+    Order.aggregate([
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.slug',
+          unitsSold: { $sum: '$items.qty' },
+          revenue: { $sum: { $multiply: ['$items.qty', '$items.price'] } }
+        }
+      }
+    ])
+  ]);
+
+  const salesBySlug = new Map(salesRows.map(row => [row._id, row]));
+  const productPerformance = productEventRows.map(row => ({
+    slug: row._id,
+    name: row.productName || row._id,
+    productViews: row.productViews,
+    addToCarts: row.addToCarts,
+    unitsSold: salesBySlug.get(row._id)?.unitsSold || 0,
+    revenue: salesBySlug.get(row._id)?.revenue || 0
+  }));
+
+  salesRows.forEach(row => {
+    if (!productPerformance.some(product => product.slug === row._id)) {
+      productPerformance.push({
+        slug: row._id,
+        name: row._id,
+        productViews: 0,
+        addToCarts: 0,
+        unitsSold: row.unitsSold || 0,
+        revenue: row.revenue || 0
+      });
+    }
+  });
+
+  res.json({
+    overview: {
+      totalVisits,
+      uniqueVisitors,
+      productViews,
+      orders: orderSummary[0]?.totalOrders || 0,
+      revenue: orderSummary[0]?.totalRevenue || 0
+    },
+    productPerformance,
+    cartActivity: {
+      addToCartEvents,
+      cartViews,
+      cartUpdates,
+      removals
+    },
+    checkoutActivity: {
+      checkoutClicks,
+      orders: orderSummary[0]?.totalOrders || 0,
+      revenue: orderSummary[0]?.totalRevenue || 0
+    }
+  });
 });
 
 app.get('/admin', (req, res) => {
