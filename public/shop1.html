@@ -3,10 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>KRO PK — DROP 2026</title>
+    <title>Shop KRO PK | Youth Streetwear &amp; Limited Drops</title>
+    <meta name="description" content="Shop KRO PK streetwear: bold everyday pieces from a youth-driven Nigerian streetwear brand built around community, limited fashion drops, and the Keep Rocking mindset.">
+    <meta name="keywords" content="KRO PK, KRO-PK, KROPK, KRO clothing, KRO streetwear, Keep Rocking clothing, Nigerian streetwear brand, youth streetwear brand, limited fashion drops">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.kro-pk.shop/shop1.html">
+    <meta property="og:site_name" content="KRO PK">
+    <meta property="og:title" content="Shop KRO PK | Youth Streetwear &amp; Limited Drops">
+    <meta property="og:description" content="Discover KRO PK streetwear, limited drops, and bold everyday fashion made for the Keep Rocking mindset.">
+    <meta property="og:image" content="https://www.kro-pk.shop/slideshow-1.jpg">
+    <meta property="og:url" content="https://www.kro-pk.shop/shop1.html">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Shop KRO PK | Youth Streetwear &amp; Limited Drops">
+    <meta name="twitter:description" content="Youth-driven Nigerian streetwear, limited fashion drops, and the Keep Rocking mindset.">
+    <meta name="twitter:image" content="https://www.kro-pk.shop/slideshow-1.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="favicon.png.png">
+    <link rel="apple-touch-icon" href="favicon.png.png">
+    <meta name="theme-color" content="#0f172a">
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"WebPage","@id":"https://www.kro-pk.shop/shop1.html#webpage","url":"https://www.kro-pk.shop/shop1.html","name":"Shop KRO PK | Youth Streetwear & Limited Drops","description":"KRO PK is a youth-driven streetwear brand built around effortless confidence, community, and limited drops. The brand blends bold everyday fashion with campus culture, clean streetwear energy, and the Keep Rocking mindset.","isPartOf":{"@id":"https://www.kro-pk.shop/#website"},"about":{"@id":"https://www.kro-pk.shop/#organization"}}
+    </script>
     <style>
         * {
             margin: 0;
@@ -349,6 +368,28 @@
             color: #94a3b8;
             margin-bottom: 2rem;
             font-size: 1rem;
+        }
+
+        .brand-story {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem 1.25rem 3rem;
+            text-align: center;
+        }
+
+        .brand-story h2 {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(2rem, 6vw, 3rem);
+            color: var(--yellow);
+            letter-spacing: 0.05em;
+            margin-bottom: 0.9rem;
+        }
+
+        .brand-story p {
+            color: #cbd5e1;
+            line-height: 1.7;
+            max-width: 760px;
+            margin: 0 auto;
         }
 
         .sub-footer-form {
@@ -1267,6 +1308,11 @@ body::before {
         <div class="product-grid" id="productGrid"></div>
     </section>
 
+    <section class="brand-story" aria-labelledby="brand-story-title">
+        <h2 id="brand-story-title">ABOUT KRO PK</h2>
+        <p>KRO PK is a youth-driven Nigerian streetwear brand built around effortless confidence, community, and limited drops. Also recognized as KRO-PK and KROPK, the brand blends bold everyday fashion with campus culture, clean streetwear energy, and the Keep Rocking mindset.</p>
+    </section>
+
     <!-- Marquee -->
     <div class="marquee-container">
         <div class="marquee">
@@ -1501,7 +1547,7 @@ body::before {
                 const tags = product.tag ? `<div class="product-tag ${tagClass}">${product.tag}</div>` : '';
                 const initials = String(product.name || '').split(' ').slice(0,2).map(w => w?.[0] || '').join('');
                 const imageContent = product.image
-                    ? `<img src="${product.image}" alt="${product.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.replaceWith(createProductFallback('${initials || 'KP'}'))">`
+                    ? `<img src="${product.image}" alt="${product.name} by KRO PK streetwear" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.replaceWith(createProductFallback('${initials || 'KP'}'))">`
                     : `<div class="product-fallback">${initials || 'KP'}</div>`;
 
                 return `

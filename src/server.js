@@ -30,6 +30,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'password';
 const OWNER_EMAIL = process.env.OWNER_EMAIL || 'orders@kropk.com';
 /** Flat nationwide delivery in NGN (must match cart checkout). */
 const FLAT_DELIVERY_FEE_NGN = 4500;
+const SITE_URL = 'https://www.kro-pk.shop';
 
 if (!process.env.MONGODB_URI) {
   console.warn('Warning: MONGODB_URI not set. Using default local mongodb://localhost:27017/kro_pk_store');
@@ -40,6 +41,63 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+function escapeXml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain');
+  res.send([
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /admin',
+    'Disallow: /api/admin',
+    '',
+    `Sitemap: ${SITE_URL}/sitemap.xml`
+  ].join('\n'));
+});
+
+app.get('/sitemap.xml', async (_req, res) => {
+  try {
+    const products = await Product.find({ active: true }).select('slug updatedAt').lean();
+    const staticUrls = [
+      { loc: `${SITE_URL}/`, priority: '1.0' },
+      { loc: `${SITE_URL}/shop1.html`, priority: '0.9' }
+    ];
+    const productUrls = products
+      .filter(product => product.slug)
+      .map(product => ({
+        loc: `${SITE_URL}/product.html?slug=${encodeURIComponent(product.slug)}`,
+        lastmod: product.updatedAt ? new Date(product.updatedAt).toISOString() : null,
+        priority: '0.8'
+      }));
+    const urls = [...staticUrls, ...productUrls];
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      ...urls.map(url => [
+        '  <url>',
+        `    <loc>${escapeXml(url.loc)}</loc>`,
+        url.lastmod ? `    <lastmod>${escapeXml(url.lastmod)}</lastmod>` : '',
+        `    <priority>${url.priority}</priority>`,
+        '  </url>'
+      ].filter(Boolean).join('\n')),
+      '</urlset>'
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.send(xml);
+  } catch (err) {
+    console.error('Failed to build sitemap', err);
+    res.status(500).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><error>Unable to generate sitemap</error>');
+  }
+});
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,

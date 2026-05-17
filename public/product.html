@@ -3,8 +3,23 @@
 <head>
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Product — KRO PK</title>
+  <title>Product | KRO PK Streetwear</title>
+  <meta name="description" content="Shop KRO PK streetwear products, limited fashion drops, and bold everyday pieces made for the Keep Rocking mindset.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.kro-pk.shop/product.html">
+  <meta property="og:site_name" content="KRO PK">
+  <meta property="og:title" content="Product | KRO PK Streetwear">
+  <meta property="og:description" content="Explore KRO PK streetwear and limited fashion drops.">
+  <meta property="og:image" content="https://www.kro-pk.shop/slideshow-1.jpg">
+  <meta property="og:url" content="https://www.kro-pk.shop/product.html">
+  <meta property="og:type" content="product">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Product | KRO PK Streetwear">
+  <meta name="twitter:description" content="Explore KRO PK streetwear and limited fashion drops.">
+  <meta name="twitter:image" content="https://www.kro-pk.shop/slideshow-1.jpg">
   <link rel="icon" type="image/png" href="favicon.png.png">
+  <link rel="apple-touch-icon" href="favicon.png.png">
+  <meta name="theme-color" content="#0f172a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="site.css">
@@ -588,7 +603,7 @@
       return others.map(p => {
         const href = 'product.html?slug=' + encodeURIComponent(p.slug);
         const img = p.image
-          ? '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '" onerror="this.replaceWith(document.createTextNode(\'' + escapeHtml(initialsFor(p) || 'KP') + '\'))">'
+          ? '<img src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name + ' by KRO PK streetwear') + '" onerror="this.replaceWith(document.createTextNode(\'' + escapeHtml(initialsFor(p) || 'KP') + '\'))">'
           : escapeHtml(initialsFor(p));
         return (
           '<a href="' + href + '" class="mini-card">' +
@@ -602,6 +617,55 @@
     } catch {
       return '';
     }
+  }
+
+  function absoluteUrl(url) {
+    if (!url) return 'https://www.kro-pk.shop/slideshow-1.jpg';
+    try { return new URL(url, 'https://www.kro-pk.shop/').href; }
+    catch { return 'https://www.kro-pk.shop/slideshow-1.jpg'; }
+  }
+
+  function setMeta(selector, content) {
+    const el = document.querySelector(selector);
+    if (el) el.setAttribute('content', content);
+  }
+
+  function updateProductSeo(product) {
+    const url = 'https://www.kro-pk.shop/product.html?slug=' + encodeURIComponent(product.slug);
+    const image = absoluteUrl(product.image || primaryUrl(product) || galleryUrls(product)[0]);
+    const description = (product.description || 'Limited streetwear piece') + ' Shop KRO PK streetwear and limited fashion drops made for the Keep Rocking mindset.';
+    document.title = product.name + ' | KRO PK Streetwear';
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', url);
+    setMeta('meta[name="description"]', description);
+    setMeta('meta[property="og:title"]', product.name + ' | KRO PK Streetwear');
+    setMeta('meta[property="og:description"]', description);
+    setMeta('meta[property="og:image"]', image);
+    setMeta('meta[property="og:url"]', url);
+    setMeta('meta[name="twitter:title"]', product.name + ' | KRO PK Streetwear');
+    setMeta('meta[name="twitter:description"]', description);
+    setMeta('meta[name="twitter:image"]', image);
+
+    document.getElementById('product-json-ld')?.remove();
+    const jsonLd = document.createElement('script');
+    jsonLd.id = 'product-json-ld';
+    jsonLd.type = 'application/ld+json';
+    jsonLd.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description,
+      image: [image],
+      brand: { '@type': 'Brand', name: 'KRO PK' },
+      url,
+      offers: {
+        '@type': 'Offer',
+        priceCurrency: 'NGN',
+        price: Number(product.price || 0),
+        availability: product.active ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        url
+      }
+    });
+    document.head.appendChild(jsonLd);
   }
 
   async function init() {
@@ -630,8 +694,7 @@
     const sizes = normalizeSizes(product);
     const displaySizes = sizesToDisplay(sizes);
     state.selectedSize = pickDefaultSize(sizes, displaySizes);
-
-    document.title = escapeHtml(product.name) + ' — KRO PK';
+    updateProductSeo(product);
 
     const tagHtml = product.tag
       ? '<div class="product-badge">' + escapeHtml(product.tag) + '</div>'
@@ -664,7 +727,7 @@
 
     const mainSrc = state.mainDisplayUrl;
     const mainImgTag = mainSrc
-      ? '<img id="mainImage" src="' + escapeHtml(mainSrc) + '" alt="' + escapeHtml(product.name) + '" style="width:100%;height:100%;object-fit:cover;">'
+      ? '<img id="mainImage" src="' + escapeHtml(mainSrc) + '" alt="' + escapeHtml(product.name + ' by KRO PK streetwear') + '" style="width:100%;height:100%;object-fit:cover;">'
       : '<div id="mainImage" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:Bangers,cursive;font-size:2rem;color:#64748b;">' + escapeHtml(initialsFor(product) || 'NO IMAGE') + '</div>';
 
     const related = await loadRelated(slug);
