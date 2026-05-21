@@ -440,7 +440,7 @@ app.get('/api/products/all', authMiddleware, async (req, res) => {
 });
 
 app.get('/api/products', async (req, res) => {
-  const products = await Product.find().sort({ createdAt: 1 }).lean();
+  const products = await Product.find({ active: true }).sort({ createdAt: 1 }).lean();
   res.set('Cache-Control', 'no-store');
   res.json(products);
 });
@@ -937,6 +937,13 @@ app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
   if (!product) return res.status(404).json({ message: 'Product not found' });
   console.log('[admin] updated product', { slug: product.slug, price: product.price, active: product.active, tag: product.tag });
   res.json(product);
+});
+
+app.delete('/api/admin/products/:slug', authMiddleware, async (req, res) => {
+  const slugParam = decodeURIComponent(req.params.slug);
+  const result = await Product.deleteOne({ slug: slugParam });
+  if (!result.deletedCount) return res.status(404).json({ message: 'Product not found' });
+  res.json({ message: 'Product deleted', deletedCount: result.deletedCount, slug: slugParam });
 });
 
 app.post('/api/admin/products', authMiddleware, async (req, res) => {

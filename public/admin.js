@@ -290,6 +290,8 @@ const loadProducts = async () => {
       <div class="product-actions">
         <label><input type="checkbox" class="product-active" ${product.active ? 'checked' : ''}> Active</label>
         <button class="save-product btn-small">Save</button>
+        <button class="archive-product btn-small" style="background:#f59e0b;color:#111827;">Archive</button>
+        <button class="delete-product btn-small" style="background:#b91c1c;">Delete</button>
       </div>
     </div>`;
   }).join('');
@@ -381,6 +383,50 @@ const loadProducts = async () => {
       } catch (err) {
         console.error(err);
         showMessage(err.message || 'Unable to save product changes');
+      }
+    });
+  });
+
+  productsGrid.querySelectorAll('.archive-product').forEach(btn => {
+    btn.addEventListener('click', async event => {
+      const card = event.target.closest('.product-card');
+      const slug = card.dataset.slug;
+      const name = card.querySelector('.product-name')?.value.trim() || slug;
+      if (!window.confirm(`Archive ${name}? It will be hidden from the store but kept in the database.`)) return;
+      try {
+        await fetchJson(`/api/admin/products/${encodeURIComponent(slug)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ active: false })
+        });
+        showMessage('Product archived');
+        await loadProducts();
+        await loadInventory();
+      } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Unable to archive product');
+      }
+    });
+  });
+
+  productsGrid.querySelectorAll('.delete-product').forEach(btn => {
+    btn.addEventListener('click', async event => {
+      const card = event.target.closest('.product-card');
+      const slug = card.dataset.slug;
+      const name = card.querySelector('.product-name')?.value.trim() || slug;
+      if (!window.confirm(`Permanently delete ${name} from MongoDB? This cannot be undone.`)) return;
+      try {
+        await fetchJson(`/api/admin/products/${encodeURIComponent(slug)}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        showMessage('Product deleted');
+        await loadProducts();
+        await loadInventory();
+      } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Unable to delete product');
       }
     });
   });

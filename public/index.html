@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>KRO PK | Youth-Driven Streetwear &amp; Limited Drops</title>
+    <title>KRO PK — Effortlessly Swag. Drop 2026.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&display=swap" rel="stylesheet">
     <!-- Basic SEO -->
-<meta name="description" content="KRO PK is a youth-driven streetwear and fashion brand built around effortless confidence, community, and limited fashion drops. Discover bold everyday pieces made for the Keep Rocking mindset.">
+<meta name="description" content="KRO PK — Effortlessly Swag. Drop 2026.">
 <meta name="keywords" content="KRO PK, KRO-PK, KROPK, KRO PK streetwear brand, KRO clothing, KRO streetwear, Keep Rocking clothing, Nigerian streetwear brand, youth streetwear brand, fashion brand, limited fashion drops">
 <meta name="author" content="KRO PK">
 <meta name="robots" content="index, follow">
@@ -15,16 +15,16 @@
 
 <!-- Open Graph (social media) -->
 <meta property="og:site_name" content="KRO PK">
-<meta property="og:title" content="KRO PK | Youth-Driven Streetwear &amp; Limited Drops">
-<meta property="og:description" content="KRO PK is a youth-driven streetwear and fashion brand built around effortless confidence, community, and limited fashion drops.">
+<meta property="og:title" content="KRO PK — Effortlessly Swag. Drop 2026.">
+<meta property="og:description" content="KRO PK — Effortlessly Swag. Drop 2026.">
 <meta property="og:image" content="https://www.kro-pk.shop/slideshow-1.jpg">
 <meta property="og:url" content="https://www.kro-pk.shop/">
 <meta property="og:type" content="website">
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="KRO PK | Youth-Driven Streetwear &amp; Limited Drops">
-<meta name="twitter:description" content="Youth-driven Nigerian streetwear and fashion brand built around community, limited drops, and the Keep Rocking mindset.">
+<meta name="twitter:title" content="KRO PK — Effortlessly Swag. Drop 2026.">
+<meta name="twitter:description" content="KRO PK — Effortlessly Swag. Drop 2026.">
 <meta name="twitter:image" content="https://www.kro-pk.shop/slideshow-1.jpg">
 <link rel="icon" type="image/png" href="favicon.png.png">
 <link rel="apple-touch-icon" href="favicon.png.png">
@@ -154,7 +154,7 @@
             right: 2rem;
             bottom: 2rem;
             z-index: 10;
-            display: flex;
+            display: none;
             gap: 0.75rem;
         }
 
@@ -193,7 +193,9 @@
             box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
             transition: all 0.3s ease;
             display: inline-block;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.12em;
+            text-shadow: 3px 3px 0 var(--navy), -2px -2px 0 rgba(251,191,36,0.8);
+            text-transform: uppercase;
         }
 
         .enter-text:hover {
@@ -241,10 +243,36 @@
             animation: pop 0.5s ease;
         }
 
+        .enter-btn.tap-vroom::before {
+            content: 'VROOM!';
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-10deg);
+            font-family: 'Bangers', cursive;
+            font-size: 1.5rem;
+            color: var(--yellow);
+            text-shadow: 3px 3px 0 var(--navy);
+            animation: pop 0.42s ease;
+        }
+
+        .enter-btn.tap-vroom .enter-text {
+            animation: tapSlide 0.42s ease;
+            background: var(--yellow);
+            color: var(--navy);
+            box-shadow: 8px 8px 0 var(--red);
+        }
+
         @keyframes pop {
             0% { transform: translateX(-50%) scale(0) rotate(-10deg); }
             50% { transform: translateX(-50%) scale(1.2) rotate(-10deg); }
             100% { transform: translateX(-50%) scale(1) rotate(-10deg); }
+        }
+
+        @keyframes tapSlide {
+            0% { transform: translateX(0) rotate(0deg); }
+            45% { transform: translateX(16px) rotate(2deg); }
+            100% { transform: translateX(0) rotate(0deg); }
         }
 
         /* Mobile */
@@ -334,8 +362,8 @@
     </div>
 
     <!-- Enter button -->
-    <a href="/shop" class="enter-btn">
-        <div class="enter-text">ENTER SITE →</div>
+    <a href="shop1.html" class="enter-btn" id="enterSiteBtn">
+        <div class="enter-text">SHOP KRO!</div>
     </a>
 
     <nav class="home-links" aria-label="Homepage links">
@@ -382,6 +410,18 @@
         dots[current].classList.add('active');
     }
 
+    const enterSiteBtn = document.getElementById('enterSiteBtn');
+    enterSiteBtn.addEventListener('click', (event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault();
+        enterSiteBtn.classList.remove('tap-vroom');
+        void enterSiteBtn.offsetWidth;
+        enterSiteBtn.classList.add('tap-vroom');
+        setTimeout(() => {
+            window.location.href = enterSiteBtn.getAttribute('href');
+        }, 320);
+    });
+
     // Auto-advance every 1.5 seconds
     setInterval(() => {
         goToSlide((current + 1) % images.length);
@@ -391,6 +431,3 @@
     <script src="analytics.js"></script>
 </body>
 </html>
-
-
-

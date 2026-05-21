@@ -778,9 +778,39 @@ body::before {
             animation: float 3s ease-in-out infinite 0.5s;
         }
 
+        .click-sfx {
+            position: fixed;
+            z-index: 10000;
+            pointer-events: none;
+            font-family: 'Bangers', cursive;
+            font-size: clamp(1.4rem, 5vw, 2.8rem);
+            color: var(--yellow);
+            text-shadow: 3px 3px 0 var(--navy), -2px -2px 0 var(--red);
+            -webkit-text-stroke: 1px var(--white);
+            transform: translate(-50%, -50%) rotate(-10deg) scale(0);
+            animation: clickBubblePop 0.72s ease-out forwards;
+        }
+
+        .click-sfx.pow {
+            color: var(--red);
+            text-shadow: 3px 3px 0 var(--navy), -2px -2px 0 var(--yellow);
+        }
+
+        .click-sfx.kpow {
+            color: var(--white);
+            text-shadow: 3px 3px 0 var(--red), -2px -2px 0 var(--yellow);
+        }
+
         @keyframes float {
             0%, 100% { transform: rotate(15deg) translateY(0); }
             50% { transform: rotate(15deg) translateY(-15px); }
+        }
+
+        @keyframes clickBubblePop {
+            0% { opacity: 0; transform: translate(-50%, -50%) rotate(-14deg) scale(0); }
+            18% { opacity: 1; transform: translate(-50%, -58%) rotate(8deg) scale(1.2); }
+            68% { opacity: 1; transform: translate(-50%, -84%) rotate(-7deg) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -110%) rotate(10deg) scale(0.82); }
         }
 
         /* Racing stripes */
@@ -1520,6 +1550,18 @@ body::before {
         const x = (e.clientX / window.innerWidth - 0.5) * 20;
         const y = (e.clientY / window.innerHeight - 0.5) * 20;
         mascot.style.transform = `translate(${x}px, ${y}px) rotate(${x * 0.2}deg)`;
+    });
+
+    document.addEventListener('click', (e) => {
+        const words = ['VROOM!', 'POW!', 'KPOW!'];
+        const word = words[Math.floor(Math.random() * words.length)];
+        const bubble = document.createElement('div');
+        bubble.className = `click-sfx ${word === 'POW!' ? 'pow' : word === 'KPOW!' ? 'kpow' : 'vroom'}`;
+        bubble.textContent = word;
+        bubble.style.left = `${e.clientX}px`;
+        bubble.style.top = `${e.clientY}px`;
+        document.body.appendChild(bubble);
+        bubble.addEventListener('animationend', () => bubble.remove(), { once: true });
     });
 
     document.querySelectorAll('.product-card').forEach(card => {
