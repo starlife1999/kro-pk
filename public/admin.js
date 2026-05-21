@@ -244,7 +244,7 @@ const loadInventory = async () => {
 
 const loadProducts = async () => {
   products = await fetchJson('/api/products/all', { credentials: 'include' });
-  productsGrid.innerHTML = products.map(product => {
+  productsGrid.innerHTML = products.map((product, index) => {
     const imgs = Array.isArray(product.images) ? product.images : [];
     const galleryInputs = [0, 1, 2, 3].map(i => `
             <div>
@@ -252,13 +252,13 @@ const loadProducts = async () => {
               <input class="stock-input product-gallery-url" data-slot="${i}" value="${escapeHtml(imgs[i] || '')}" placeholder="uploads/...">
             </div>`).join('');
     return `
-    <div class="product-card" data-slug="${escapeHtml(product.slug)}">
+    <div class="product-card" data-slug="${escapeHtml(product.slug)}" data-sort-order="${Number(product.sortOrder ?? 0)}">
       <div class="product-row">
         <div>
           <label style="font-size:.8rem;color:#94a3b8;">Name</label>
           <input class="stock-input product-name" value="${escapeHtml(product.name || '')}">
         </div>
-        <div style="text-align:right;color:#94a3b8;font-size:.95rem;">Slug: ${escapeHtml(product.slug || '')}</div>
+        <div style="text-align:right;color:#94a3b8;font-size:.95rem;">Slug: ${escapeHtml(product.slug || '')}<br>Order: ${Number(product.sortOrder ?? 0)}</div>
       </div>
       <div class="stock-grid">
         <div>
@@ -288,6 +288,8 @@ const loadProducts = async () => {
         <textarea class="stock-input product-desc" style="height:5rem;">${escapeHtml(product.description || '')}</textarea>
       </div>
       <div class="product-actions">
+        <button class="move-product btn-small" data-direction="up" ${index === 0 ? 'disabled style="opacity:.45;cursor:not-allowed;"' : ''}>↑</button>
+        <button class="move-product btn-small" data-direction="down" ${index === products.length - 1 ? 'disabled style="opacity:.45;cursor:not-allowed;"' : ''}>↓</button>
         <label><input type="checkbox" class="product-active" ${product.active ? 'checked' : ''}> Active</label>
         <button class="save-product btn-small">Save</button>
         <button class="archive-product btn-small" style="background:#f59e0b;color:#111827;">Archive</button>
@@ -368,6 +370,7 @@ const loadProducts = async () => {
           tag: card.querySelector('.product-tag').value.trim(),
           image: card.querySelector('.product-image').value.trim(),
           images: galleryUrls.slice(0, 4),
+          sortOrder: Number(card.dataset.sortOrder || 0),
           active: card.querySelector('.product-active').checked
         };
         console.log('[admin] products save payload', slug, payload);
@@ -427,6 +430,28 @@ const loadProducts = async () => {
       } catch (err) {
         console.error(err);
         showMessage(err.message || 'Unable to delete product');
+      }
+    });
+  });
+
+  productsGrid.querySelectorAll('.move-product').forEach(btn => {
+    btn.addEventListener('click', async event => {
+      const card = event.target.closest('.product-card');
+      const slug = card.dataset.slug;
+      const direction = event.target.dataset.direction;
+      try {
+        await fetchJson(`/api/admin/products/${encodeURIComponent(slug)}/move`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ direction })
+        });
+        showMessage(direction === 'up' ? 'Product moved up' : 'Product moved down');
+        await loadProducts();
+        await loadInventory();
+      } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Unable to reorder product');
       }
     });
   });

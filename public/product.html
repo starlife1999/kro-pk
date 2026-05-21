@@ -392,7 +392,7 @@
   <header class="site-header">
     <a href="/shop" class="site-logo">KRO PK<span>DROP 2026</span></a>
     <div class="site-actions">
-      <a class="shop-link" href="/about">ABOUT</a>
+      <a class="shop-link" href="/about.html">ABOUT</a>
       <a class="cart-link" href="/cart.html">CART <span class="cart-badge">0</span></a>
     </div>
   </header>
@@ -612,8 +612,8 @@
       return others.map(p => {
         const href = '/products/' + encodeURIComponent(p.slug);
         const img = p.image
-          ? '<img src="' + escapeHtml(assetPath(p.image)) + '" alt="' + escapeHtml(p.name + ' by KRO PK streetwear') + '" onerror="this.replaceWith(document.createTextNode(\'' + escapeHtml(initialsFor(p) || 'KP') + '\'))">'
-          : escapeHtml(initialsFor(p));
+          ? '<img src="' + escapeHtml(assetPath(p.image)) + '" alt="' + escapeHtml(p.name + ' by KRO PK streetwear') + '" onerror="this.outerHTML=&quot;<div>' + escapeHtml(initialsFor(p) || 'KP') + '</div>&quot;">'
+          : '<div>' + escapeHtml(initialsFor(p)) + '</div>';
         return (
           '<a href="' + href + '" class="mini-card">' +
             '<div class="mini-image">' + img + '</div>' +
@@ -762,7 +762,7 @@
       (related
         ? '<section class="also-like"><h2 class="also-title">YOU MAY ALSO LIKE</h2><div class="mini-grid">' + related + '</div></section>'
         : '') +
-      '<footer><div class="footer-logo">KRO PK</div><div style="color:#64748b;font-family:Permanent Marker;">KEEP ROCKING © 2026</div></footer>';
+      '<footer><div class="footer-logo">KRO PK</div><div style="margin-bottom:0.75rem;"><a href="/returns.html" style="color:var(--yellow);font-family:Permanent Marker;text-decoration:none;">Returns &amp; Refunds</a></div><div style="color:#64748b;font-family:Permanent Marker;">KEEP ROCKING © 2026</div></footer>';
 
     wireEvents();
     document.getElementById('mainImage')?.addEventListener('error', showMainImageFallback, { once: true });

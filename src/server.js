@@ -73,6 +73,8 @@ function buildProductDescription(product) {
   return `${product.description || 'Limited streetwear piece.'} Shop KRO PK streetwear and limited fashion drops made for the Keep Rocking mindset.`;
 }
 
+const productSort = { sortOrder: 1, createdAt: 1 };
+
 function buildProductJsonLd(product) {
   const url = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
   const image = absoluteSiteUrl(product.image);
@@ -128,10 +130,10 @@ app.get('/robots.txt', (_req, res) => {
 
 app.get('/sitemap.xml', async (_req, res) => {
   try {
-    const products = await Product.find({ active: true }).select('slug updatedAt').lean();
+    const products = await Product.find({ active: true }).sort(productSort).select('slug updatedAt').lean();
     const staticUrls = [
       { loc: `${SITE_URL}/`, priority: '1.0' },
-      { loc: `${SITE_URL}/about`, priority: '0.8' },
+      { loc: `${SITE_URL}/about.html`, priority: '0.8' },
       { loc: `${SITE_URL}/shop1.html`, priority: '0.9' }
     ];
     const productUrls = products
@@ -190,6 +192,10 @@ app.get('/about', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'about.html'));
 });
 
+app.get('/about.html', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'about.html'));
+});
+
 app.get('/shop', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'shop1.html'));
 });
@@ -233,6 +239,7 @@ const defaultProducts = [
     price: 25000,
     image: 'ipk-polo-front.png',
     tag: 'HOT!',
+    sortOrder: 10,
     sizes: { S: 5, M: 5, L: 5, XL: 5, 'ONE SIZE': 0 },
     active: true
   },
@@ -243,6 +250,7 @@ const defaultProducts = [
     price: 20000,
     image: 'pk-thermal.jpg',
     tag: 'NEW',
+    sortOrder: 20,
     sizes: { S: 3, M: 3, L: 3, XL: 2, 'ONE SIZE': 0 },
     active: true
   },
@@ -253,6 +261,7 @@ const defaultProducts = [
     price: 17000,
     image: 'jorts-front.png',
     tag: 'NEW',
+    sortOrder: 30,
     sizes: { S: 4, M: 4, L: 4, XL: 2, 'ONE SIZE': 0 },
     active: true
   },
@@ -263,6 +272,7 @@ const defaultProducts = [
     price: 10000,
     image: 'beanie-front.png',
     tag: '',
+    sortOrder: 40,
     sizes: { S: 0, M: 0, L: 0, XL: 0, 'ONE SIZE': 8 },
     active: true
   },
@@ -273,6 +283,7 @@ const defaultProducts = [
     price: 12000,
     image: 'graphic-tee.png',
     tag: 'NEW',
+    sortOrder: 50,
     sizes: { S: 5, M: 5, L: 5, XL: 5, 'ONE SIZE': 0 },
     active: true
   },
@@ -283,6 +294,7 @@ const defaultProducts = [
     price: 10000,
     image: '',
     tag: '',
+    sortOrder: 60,
     sizes: { S: 5, M: 5, L: 5, XL: 5, 'ONE SIZE': 0 },
     active: true
   }
@@ -294,6 +306,16 @@ async function seedProducts() {
     await Product.insertMany(defaultProducts);
     console.log('Seeded default products');
   }
+}
+
+async function normalizeProductSortOrder() {
+  const products = await Product.find().sort(productSort).select('_id sortOrder').lean();
+  const missing = products.filter(product => typeof product.sortOrder !== 'number');
+  if (!missing.length) return;
+  await Promise.all(missing.map((product, index) =>
+    Product.updateOne({ _id: product._id }, { $set: { sortOrder: (index + 1) * 10 } })
+  ));
+  console.log(`Normalized sortOrder for ${missing.length} products`);
 }
 
 async function getNextOrderSequence() {
@@ -434,13 +456,13 @@ app.post('/api/admin/logout', authMiddleware, (req, res) => {
 });
 
 app.get('/api/products/all', authMiddleware, async (req, res) => {
-  const products = await Product.find().sort({ createdAt: 1 }).lean();
+  const products = await Product.find().sort(productSort).lean();
   res.set('Cache-Control', 'no-store');
   res.json(products);
 });
 
 app.get('/api/products', async (req, res) => {
-  const products = await Product.find({ active: true }).sort({ createdAt: 1 }).lean();
+  const products = await Product.find({ active: true }).sort(productSort).lean();
   res.set('Cache-Control', 'no-store');
   res.json(products);
 });
@@ -592,6 +614,7 @@ app.post('/api/orders', async (req, res) => {
   const preparedItems = [];
   const stockErrors = [];
   const productsToUpdate = [];
+  const lowStockItems = [];
   let total = 0;
 
   for (const item of items) {
@@ -656,6 +679,7 @@ app.post('/api/orders', async (req, res) => {
   try {
     for (const update of productsToUpdate) {
       const pathKey = `sizes.${update.size}`;
+      const availableBefore = update.product.sizes?.get(update.size) ?? 0;
       const result = await Product.updateOne(
         { _id: update.product._id, [pathKey]: { $gte: update.qty } },
         { $inc: { [pathKey]: -update.qty } },
@@ -663,6 +687,15 @@ app.post('/api/orders', async (req, res) => {
       );
       if (result.modifiedCount === 0) {
         throw new Error(`Stock unavailable for ${update.product.slug} size ${update.size}`);
+      }
+      const remaining = availableBefore - update.qty;
+      if (remaining <= 2) {
+        lowStockItems.push({
+          slug: update.product.slug,
+          name: update.product.name,
+          size: update.size,
+          remaining: Math.max(remaining, 0)
+        });
       }
     }
 
@@ -713,6 +746,12 @@ app.post('/api/orders', async (req, res) => {
     resend.emails.send(customerMail).catch(err => {
       console.error('Customer email send error:', err.message || err);
     });
+
+    if (lowStockItems.length) {
+      resend.emails.send(createLowStockEmail(lowStockItems)).catch(err => {
+        console.error('Low stock email send error:', err.message || err);
+      });
+    }
 
     res.status(201).json({ message: 'Order placed successfully', orderNumber });
   } catch (err) {
@@ -912,7 +951,7 @@ app.post('/api/admin/products/:slug/gallery', authMiddleware, upload.array('gall
 app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
   const slugParam = decodeURIComponent(req.params.slug);
   console.log('[admin] PATCH /api/admin/products/:slug', slugParam, req.body);
-  const { sizes, active, name, price, description, tag, image, images } = req.body;
+  const { sizes, active, name, price, description, tag, image, images, sortOrder } = req.body;
   const update = {};
   if (sizes && typeof sizes === 'object') {
     for (const [key, value] of Object.entries(sizes)) {
@@ -932,11 +971,43 @@ app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
   if (Array.isArray(images)) {
     update.images = images.map(s => String(s).trim()).filter(Boolean).slice(0, 4);
   }
+  if (sortOrder !== undefined) update.sortOrder = Number(sortOrder);
   console.log('[admin] product update $set', slugParam, update);
   const product = await Product.findOneAndUpdate({ slug: slugParam }, { $set: update }, { new: true, runValidators: true }).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
   console.log('[admin] updated product', { slug: product.slug, price: product.price, active: product.active, tag: product.tag });
   res.json(product);
+});
+
+app.post('/api/admin/products/:slug/move', authMiddleware, async (req, res) => {
+  const slugParam = decodeURIComponent(req.params.slug);
+  const direction = String(req.body?.direction || '').toLowerCase();
+  if (!['up', 'down'].includes(direction)) {
+    return res.status(400).json({ message: 'direction must be up or down' });
+  }
+
+  const products = await Product.find().sort(productSort).select('_id slug sortOrder createdAt').lean();
+  const currentIndex = products.findIndex(product => product.slug === slugParam);
+  if (currentIndex === -1) return res.status(404).json({ message: 'Product not found' });
+
+  const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= products.length) {
+    return res.json({ message: 'Product already at boundary', products });
+  }
+
+  const normalized = products.map((product, index) => ({
+    ...product,
+    sortOrder: typeof product.sortOrder === 'number' ? product.sortOrder : (index + 1) * 10
+  }));
+  const current = normalized[currentIndex];
+  const target = normalized[targetIndex];
+  await Promise.all([
+    Product.updateOne({ _id: current._id }, { $set: { sortOrder: target.sortOrder } }),
+    Product.updateOne({ _id: target._id }, { $set: { sortOrder: current.sortOrder } })
+  ]);
+
+  const updatedProducts = await Product.find().sort(productSort).lean();
+  res.json({ message: 'Product reordered', products: updatedProducts });
 });
 
 app.delete('/api/admin/products/:slug', authMiddleware, async (req, res) => {
@@ -947,7 +1018,7 @@ app.delete('/api/admin/products/:slug', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/admin/products', authMiddleware, async (req, res) => {
-  const { name, slug, description, price, tag, image, images, sizes, active } = req.body;
+  const { name, slug, description, price, tag, image, images, sizes, active, sortOrder } = req.body;
   if (!name || !price) {
     return res.status(400).json({ message: 'Name and price are required' });
   }
@@ -973,6 +1044,7 @@ app.post('/api/admin/products', authMiddleware, async (req, res) => {
     image: image?.trim() || '',
     images: gallery,
     tag: tag?.trim() || '',
+    sortOrder: sortOrder !== undefined ? Number(sortOrder) : Date.now(),
     sizes: productSizes,
     active: active === false ? false : true
   });
@@ -1185,6 +1257,24 @@ async function buildAnalyticsReport(rangeKey = 'today') {
     traffic,
     insights,
     recommendations
+  };
+}
+
+function createLowStockEmail(lowStockItems) {
+  const rows = lowStockItems.map(item =>
+    `<li><strong>${escapeHtml(item.name)}</strong> / ${escapeHtml(item.size)} has ${item.remaining} unit${item.remaining === 1 ? '' : 's'} remaining.</li>`
+  ).join('');
+
+  return {
+    from: resendFrom(),
+    to: OWNER_EMAIL,
+    subject: 'KRO PK low stock alert',
+    html: `
+      <h2>Low stock alert</h2>
+      <p>An order just reduced these product sizes to 2 or fewer units:</p>
+      <ul>${rows}</ul>
+      <p>Restock or archive the product from the admin dashboard if needed.</p>
+    `,
   };
 }
 
@@ -1448,7 +1538,7 @@ app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, '..', 'public', 'error.htm'));
 });
 
-connectDB().then(() => seedProducts()).then(() => {
+connectDB().then(() => seedProducts()).then(() => normalizeProductSortOrder()).then(() => {
   app.listen(PORT, () => {
     console.log(`KRO PK backend running on http://localhost:${PORT}`);
   });

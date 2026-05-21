@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Returns & Refunds | KRO PK</title>
+  <meta name="description" content="KRO PK returns and refund policy: exchanges within 7 days, no refunds after shipping, unworn items only.">
+  <link rel="canonical" href="https://www.kro-pk.shop/returns.html">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/favicon.png.png">
+  <meta name="theme-color" content="#0f172a">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0f172a;
+      --navy-light: #1e293b;
+      --navy-deep: #020617;
+      --white: #f8fafc;
+      --red: #ef4444;
+      --yellow: #fbbf24;
+      --gray: #94a3b8;
+      --outline: 3px solid var(--white);
+    }
+    body {
+      min-height: 100vh;
+      background: var(--navy);
+      color: var(--white);
+      font-family: 'Comic Neue', cursive;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.075) 1px, transparent 1px);
+      background-size: 8px 8px;
+      z-index: 0;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 2rem;
+      background: rgba(15, 23, 42, 0.98);
+      border-bottom: var(--outline);
+    }
+    .nav-logo {
+      font-family: 'Bangers', cursive;
+      font-size: 1.8rem;
+      color: var(--white);
+      text-decoration: none;
+      text-shadow: 2px 2px 0 var(--red);
+      letter-spacing: 0.06em;
+    }
+    .nav-right { display: flex; gap: 0.9rem; flex-wrap: wrap; justify-content: flex-end; }
+    .nav-link {
+      color: #cbd5e1;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 0.95rem;
+      text-decoration: none;
+    }
+    .nav-link:hover { color: var(--yellow); }
+    main {
+      position: relative;
+      z-index: 1;
+      width: min(980px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: clamp(3rem, 8vw, 6rem) 0;
+    }
+    .policy-card {
+      background: rgba(30, 41, 59, 0.92);
+      border: var(--outline);
+      box-shadow: 10px 10px 0 var(--red);
+      padding: clamp(1.5rem, 5vw, 3rem);
+    }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 1rem;
+      padding: 0.45rem 1rem;
+      background: var(--yellow);
+      color: var(--navy);
+      border: 2px solid var(--white);
+      font-family: 'Permanent Marker', cursive;
+      transform: rotate(-2deg);
+    }
+    h1 {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(3.2rem, 11vw, 7rem);
+      line-height: 0.9;
+      letter-spacing: 0.04em;
+      text-shadow: 5px 5px 0 var(--red);
+      margin-bottom: 1.5rem;
+    }
+    .policy-list {
+      display: grid;
+      gap: 1rem;
+      margin: 1.5rem 0 2rem;
+      list-style: none;
+    }
+    .policy-list li {
+      padding: 1rem;
+      background: var(--navy);
+      border: 2px solid rgba(248,250,252,0.45);
+      color: #dbeafe;
+      line-height: 1.55;
+    }
+    .policy-list strong {
+      display: block;
+      color: var(--yellow);
+      font-family: 'Bangers', cursive;
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+    .contact {
+      color: #cbd5e1;
+      line-height: 1.7;
+      font-size: 1.05rem;
+    }
+    .contact a { color: var(--yellow); text-decoration: none; }
+    .cta-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 150px;
+      padding: 0.9rem 1.25rem;
+      border: 2px solid var(--white);
+      font-family: 'Bangers', cursive;
+      color: var(--navy);
+      background: var(--yellow);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: transform 0.2s, background 0.2s, color 0.2s;
+    }
+    .cta.secondary { background: transparent; color: var(--white); }
+    .cta:hover { transform: translateY(-3px); background: var(--red); color: var(--white); }
+    footer {
+      position: relative;
+      z-index: 1;
+      background: var(--navy-deep);
+      padding: 2.5rem 1rem;
+      text-align: center;
+      border-top: var(--outline);
+    }
+    .footer-logo {
+      font-family: 'Bangers', cursive;
+      font-size: 2.5rem;
+      text-shadow: 3px 3px 0 var(--red);
+      margin-bottom: 0.8rem;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .footer-links a {
+      color: var(--yellow);
+      font-family: 'Permanent Marker', cursive;
+      text-decoration: none;
+    }
+    .copyright { color: #64748b; font-family: 'Permanent Marker', cursive; }
+    @media (max-width: 560px) {
+      .site-nav { padding: 0.75rem 1rem; align-items: flex-start; flex-direction: column; }
+      .nav-right { width: 100%; justify-content: space-between; }
+      .policy-card { box-shadow: 6px 6px 0 var(--red); }
+      .cta { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Primary navigation">
+    <a href="/" class="nav-logo">KRO PK</a>
+    <div class="nav-right">
+      <a href="/about.html" class="nav-link">About</a>
+      <a href="/shop" class="nav-link">Shop</a>
+      <a href="/cart.html" class="nav-link">Cart</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="policy-card" aria-labelledby="returns-title">
+      <div class="eyebrow">Keep Rocking</div>
+      <h1 id="returns-title">Returns & Refunds</h1>
+      <p class="contact">We want every KRO PK piece to land right. Please review the policy before requesting an exchange.</p>
+      <ul class="policy-list">
+        <li><strong>Exchanges within 7 days</strong> You can request an exchange within 7 days of receiving your item.</li>
+        <li><strong>No refunds after shipping</strong> Once an order has shipped, refunds are no longer available.</li>
+        <li><strong>Unworn items only</strong> Items must be unworn, unused, and in their original condition.</li>
+        <li><strong>Contact us first</strong> Email <a href="mailto:orders@kro-pk.shop">orders@kro-pk.shop</a> with your order details before sending anything back.</li>
+      </ul>
+      <p class="contact">Our team will confirm whether the item is eligible and guide you through the next step.</p>
+      <div class="cta-row">
+        <a class="cta" href="mailto:orders@kro-pk.shop">Contact Orders</a>
+        <a class="cta secondary" href="/shop">Back to Shop</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-logo">KRO PK</div>
+    <div class="footer-links" aria-label="Footer navigation">
+      <a href="/about.html">About</a>
+      <a href="/shop">Shop</a>
+      <a href="/cart.html">Cart</a>
+      <a href="/returns.html">Returns & Refunds</a>
+      <a href="https://www.instagram.com/kro_pk1">Instagram</a>
+      <a href="https://www.tiktok.com/@kro_pk">TikTok</a>
+    </div>
+    <div class="copyright">© 2026 KRO PK. KEEP ROCKING.</div>
+  </footer>
+  <script src="/analytics.js"></script>
+</body>
+</html>

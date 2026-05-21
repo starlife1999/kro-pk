@@ -17,6 +17,7 @@ const productSchema = new mongoose.Schema({
     }
   },
   tag: { type: String, default: '' },
+  sortOrder: { type: Number, default: 0, index: true },
   sizes: {
     type: Map,
     of: Number,

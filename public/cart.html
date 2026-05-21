@@ -490,6 +490,35 @@
 
         .toast.show { transform: translateX(0); }
 
+        footer {
+            position: relative;
+            z-index: 1;
+            background: #020617;
+            padding: 2rem 1rem;
+            text-align: center;
+            border-top: var(--outline);
+        }
+
+        .footer-logo {
+            font-family: 'Bangers', cursive;
+            font-size: 2rem;
+            text-shadow: 3px 3px 0 var(--red);
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--yellow);
+            font-family: 'Permanent Marker', cursive;
+            text-decoration: none;
+        }
+
         /* ITEM REMOVED ANIMATION */
         .cart-item.removing {
             animation: slideOut 0.3s ease forwards;
@@ -649,6 +678,16 @@
 </div>
 
 <div class="toast" id="toast">REMOVED!</div>
+<footer>
+    <div class="footer-logo">KRO PK</div>
+    <div class="footer-links" aria-label="Footer navigation">
+        <a href="/about.html">About</a>
+        <a href="/shop">Shop</a>
+        <a href="/returns.html">Returns &amp; Refunds</a>
+        <a href="https://www.instagram.com/kro_pk1">Instagram</a>
+        <a href="https://www.tiktok.com/@kro_pk">TikTok</a>
+    </div>
+</footer>
 <script src="analytics.js"></script>
 
 <script>
