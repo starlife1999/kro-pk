@@ -32,6 +32,7 @@ const OWNER_EMAIL = process.env.OWNER_EMAIL || 'orders@kropk.com';
 /** Flat nationwide delivery in NGN (must match cart checkout). */
 const FLAT_DELIVERY_FEE_NGN = 4500;
 const SITE_URL = 'https://www.kro-pk.shop';
+const SITE_ICON_URL = `${SITE_URL}/android-chrome-512x512.png`;
 
 if (!process.env.MONGODB_URI) {
   console.warn('Warning: MONGODB_URI not set. Using default local mongodb://localhost:27017/kro_pk_store');
@@ -88,6 +89,7 @@ function buildProductJsonLd(product) {
       '@type': 'Brand',
       '@id': `${SITE_URL}/#brand`,
       name: 'KRO PK',
+      logo: SITE_ICON_URL,
       category: 'Streetwear fashion brand'
     },
     category: 'Streetwear',
@@ -121,6 +123,13 @@ app.get('/robots.txt', (_req, res) => {
   res.send([
     'User-agent: *',
     'Allow: /',
+    'Allow: /favicon.ico',
+    'Allow: /favicon-16x16.png',
+    'Allow: /favicon-32x32.png',
+    'Allow: /favicon-48x48.png',
+    'Allow: /apple-touch-icon.png',
+    'Allow: /android-chrome-192x192.png',
+    'Allow: /android-chrome-512x512.png',
     'Disallow: /admin',
     'Disallow: /api/admin',
     '',
