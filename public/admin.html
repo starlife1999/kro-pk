@@ -86,6 +86,7 @@
         <div class="tab" data-tab="products">Products</div>
         <div class="tab" data-tab="analytics">Analytics</div>
         <div class="tab" data-tab="promocodes">Promo codes</div>
+        <div class="tab" data-tab="subscribers">Subscribers</div>
         <div class="tab" data-tab="broadcasts">Broadcasts</div>
       </div>
       <div id="ordersPanel">
@@ -195,6 +196,25 @@
           </div>
         </div>
         <div id="promoCodesGrid" class="grid-card"></div>
+      </div>
+
+      <div id="subscribersPanel" class="hidden">
+        <div class="stat-card" style="margin-bottom:1.25rem;">
+          <h2>Total subscribers</h2>
+          <p id="subscribersTotalCount">0</p>
+        </div>
+        <div class="table-wrap">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Subscribed</th>
+              </tr>
+            </thead>
+            <tbody id="subscribersBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div id="broadcastsPanel" class="hidden">

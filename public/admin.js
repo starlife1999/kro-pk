@@ -23,6 +23,9 @@ const exportXlsxBtn = document.getElementById('exportXlsxBtn');
 const exportCsvBtnAnalytics = document.getElementById('exportCsvBtnAnalytics');
 const promoCodesPanel = document.getElementById('promoCodesPanel');
 const promoCodesGrid = document.getElementById('promoCodesGrid');
+const subscribersPanel = document.getElementById('subscribersPanel');
+const subscribersBody = document.getElementById('subscribersBody');
+const subscribersTotalCount = document.getElementById('subscribersTotalCount');
 const broadcastsPanel = document.getElementById('broadcastsPanel');
 const broadcastsGrid = document.getElementById('broadcastsGrid');
 const createPromoBtn = document.getElementById('createPromoBtn');
@@ -495,8 +498,10 @@ const switchTab = tabName => {
   productsPanel.classList.toggle('hidden', tabName !== 'products');
   analyticsPanel.classList.toggle('hidden', tabName !== 'analytics');
   promoCodesPanel.classList.toggle('hidden', tabName !== 'promocodes');
+  subscribersPanel.classList.toggle('hidden', tabName !== 'subscribers');
   broadcastsPanel.classList.toggle('hidden', tabName !== 'broadcasts');
   if (tabName === 'analytics') loadAnalytics();
+  if (tabName === 'subscribers') loadSubscribers();
 };
 
 const renderMetricCards = metrics => metrics.map(metric => `
@@ -682,10 +687,34 @@ const exportAnalytics = format => {
   window.location.href = `/api/admin/analytics/export.${format}?range=${encodeURIComponent(selectedRange)}`;
 };
 
+const formatSubscriberDate = value => {
+  if (!value) return '—';
+  return new Date(value).toLocaleString('en-NG', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const loadSubscribers = async () => {
+  const subs = await fetchJson('/api/admin/subscribers', { credentials: 'include' });
+  subscribersTotalCount.textContent = String(subs.length);
+  subscribersBody.innerHTML = subs.map(sub => `
+    <tr>
+      <td>${escapeHtml(sub.name?.trim() || '—')}</td>
+      <td>${escapeHtml(sub.email || '—')}</td>
+      <td>${formatSubscriberDate(sub.createdAt)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="3" style="color:#94a3b8;">No subscribers yet.</td></tr>';
+};
+
 const updateSubscriberCount = async () => {
   try {
     const subs = await fetchJson('/api/admin/subscribers', { credentials: 'include' });
     subscriberCountLabel.textContent = `${subs.length} subscribers`;
+    if (subscribersTotalCount) subscribersTotalCount.textContent = String(subs.length);
   } catch {
     subscriberCountLabel.textContent = '';
   }
@@ -705,6 +734,7 @@ const sendBroadcast = async () => {
   document.getElementById('broadcastBody').value = '';
   await loadBroadcasts();
   await updateSubscriberCount();
+  if (subscribersBody) await loadSubscribers();
 };
 
 const showMessage = msg => {
