@@ -349,108 +349,141 @@ function resendFrom() {
   return raw;
 }
 
-const EMAIL_LOGO_GIF_DEFAULT = 'https://res.cloudinary.com/dyogtj42w/image/upload/v1779412925/Recording_2026-05-22_021656_zmiqai.gif';
 const EMAIL_NAVY = '#0f172a';
 const EMAIL_PANEL = '#1e293b';
 const EMAIL_WHITE = '#f8fafc';
+const EMAIL_MUTED = '#cbd5e1';
 const EMAIL_RED = '#ef4444';
 const EMAIL_YELLOW = '#fbbf24';
+const EMAIL_BORDER = '#334155';
 const EMAIL_INSTAGRAM_URL = 'https://www.instagram.com/kro_pk1';
 const EMAIL_TIKTOK_URL = 'https://www.tiktok.com/@kro_pk';
 const EMAIL_HEADING_FONT = "'Arial Black', Impact, Arial, sans-serif";
-
-function emailLogoGifUrl() {
-  return (process.env.EMAIL_LOGO_GIF || EMAIL_LOGO_GIF_DEFAULT).trim();
-}
+const EMAIL_BODY_FONT = 'Arial, Helvetica, sans-serif';
 
 function formatNgn(amount) {
   return `₦${Number(amount || 0).toLocaleString('en-NG')}`;
 }
 
-function emailRacingStripeHtml() {
-  const cells = Array.from({ length: 30 }, (_, i) => {
+/** Inline + bgcolor pair to resist client dark/light mode color inversion. */
+function emailBgStyle(bg) {
+  return `background-color:${bg} !important;`;
+}
+
+function emailRacingStripeCellsHtml() {
+  return Array.from({ length: 30 }, (_, i) => {
     const bg = i % 2 === 0 ? EMAIL_RED : EMAIL_YELLOW;
-    return `<td style="width:20px;height:8px;background-color:${bg};font-size:0;line-height:0;padding:0;border:0;">&nbsp;</td>`;
+    return `<td bgcolor="${bg}" style="width:20px;height:10px;${emailBgStyle(bg)}font-size:0;line-height:0;padding:0;border:0;mso-line-height-rule:exactly;">&nbsp;</td>`;
   }).join('');
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;"><tr>${cells}</tr></table>`;
 }
 
 function emailHeaderHtml() {
-  const gif = escapeHtml(emailLogoGifUrl());
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;">
-  <tr>
-    <td align="center" bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};padding:0;margin:0;">
-      <img src="${gif}" alt="KRO PK" width="100%" style="display:block;width:100%;max-width:600px;height:auto;border:0;margin:0;padding:0;" />
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_NAVY}" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;${emailBgStyle(EMAIL_NAVY)}">
+  <tr bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}">
+    <td align="center" bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}padding:48px 24px 40px;text-align:center;border-bottom:3px solid ${EMAIL_WHITE};">
+      <div bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}">
+        <p bgcolor="${EMAIL_NAVY}" style="margin:0 0 12px;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_HEADING_FONT};font-size:52px;font-weight:900;line-height:1;color:${EMAIL_WHITE} !important;letter-spacing:0.08em;text-shadow:4px 4px 0 ${EMAIL_RED};">KRO PK</p>
+        <p bgcolor="${EMAIL_NAVY}" style="margin:0;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_BODY_FONT};font-size:13px;font-weight:700;color:${EMAIL_YELLOW} !important;letter-spacing:0.28em;text-transform:uppercase;">DROP 2026 &mdash; MOTORSPORT</p>
+      </div>
     </td>
   </tr>
-</table>${emailRacingStripeHtml()}`;
+  <tr bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}">
+    <td bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}padding:0;line-height:0;font-size:0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_NAVY}" style="width:100%;border-collapse:collapse;${emailBgStyle(EMAIL_NAVY)}">
+        <tr bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}">${emailRacingStripeCellsHtml()}</tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
 }
 
 function emailFooterHtml() {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;">
-  <tr>
-    <td bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};padding:28px 20px;text-align:center;border-top:3px solid ${EMAIL_WHITE};">
-      <p style="margin:0 0 12px;font-family:${EMAIL_HEADING_FONT};font-size:28px;font-weight:900;color:${EMAIL_WHITE};letter-spacing:0.08em;">KRO PK</p>
-      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;">
-        <a href="${EMAIL_INSTAGRAM_URL}" style="color:${EMAIL_YELLOW};text-decoration:none;font-weight:bold;">Instagram</a>
-        <span style="color:${EMAIL_WHITE};margin:0 10px;">|</span>
-        <a href="${EMAIL_TIKTOK_URL}" style="color:${EMAIL_YELLOW};text-decoration:none;font-weight:bold;">TikTok</a>
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_NAVY}" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;${emailBgStyle(EMAIL_NAVY)}">
+  <tr bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}">
+    <td bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}padding:28px 20px;text-align:center;border-top:3px solid ${EMAIL_WHITE};">
+      <p bgcolor="${EMAIL_NAVY}" style="margin:0 0 12px;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_HEADING_FONT};font-size:28px;font-weight:900;color:${EMAIL_WHITE} !important;letter-spacing:0.08em;">KRO PK</p>
+      <p bgcolor="${EMAIL_NAVY}" style="margin:0 0 16px;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_BODY_FONT};font-size:14px;line-height:1.5;color:${EMAIL_WHITE} !important;">
+        <a href="${EMAIL_INSTAGRAM_URL}" bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}color:${EMAIL_YELLOW} !important;text-decoration:none;font-weight:bold;">Instagram</a>
+        <span bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}color:${EMAIL_WHITE} !important;margin:0 10px;">|</span>
+        <a href="${EMAIL_TIKTOK_URL}" bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}color:${EMAIL_YELLOW} !important;text-decoration:none;font-weight:bold;">TikTok</a>
       </p>
-      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">Keep Rocking © 2026 KRO PK</p>
+      <p bgcolor="${EMAIL_NAVY}" style="margin:0;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_BODY_FONT};font-size:12px;color:${EMAIL_MUTED} !important;">Keep Rocking © 2026 KRO PK</p>
     </td>
   </tr>
 </table>`;
 }
 
 function emailButtonHtml(label, href) {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto;border-collapse:collapse;">
-  <tr>
-    <td align="center" bgcolor="${EMAIL_RED}" style="background-color:${EMAIL_RED};border:3px solid ${EMAIL_WHITE};">
-      <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 28px;font-family:${EMAIL_HEADING_FONT};font-size:16px;font-weight:900;color:${EMAIL_WHITE};text-decoration:none;letter-spacing:0.05em;">${escapeHtml(label)}</a>
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${EMAIL_NAVY}" style="margin:24px auto;border-collapse:collapse;${emailBgStyle(EMAIL_NAVY)}">
+  <tr bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}">
+    <td align="center" bgcolor="${EMAIL_RED}" style="${emailBgStyle(EMAIL_RED)}border:3px solid ${EMAIL_WHITE};">
+      <a href="${escapeHtml(href)}" bgcolor="${EMAIL_RED}" style="display:inline-block;${emailBgStyle(EMAIL_RED)}padding:14px 28px;font-family:${EMAIL_HEADING_FONT};font-size:16px;font-weight:900;color:${EMAIL_WHITE} !important;text-decoration:none;letter-spacing:0.05em;">${escapeHtml(label)}</a>
     </td>
   </tr>
 </table>`;
 }
 
 function emailPanelHtml(innerHtml) {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:568px;margin:0 auto 16px;border-collapse:collapse;">
-  <tr>
-    <td bgcolor="${EMAIL_PANEL}" style="background-color:${EMAIL_PANEL};border:4px solid ${EMAIL_WHITE};padding:20px;">
-      ${innerHtml}
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_NAVY}" style="width:100%;max-width:568px;margin:0 auto 16px;border-collapse:collapse;${emailBgStyle(EMAIL_NAVY)}">
+  <tr bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}">
+    <td bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}border:4px solid ${EMAIL_WHITE};padding:20px;color:${EMAIL_WHITE} !important;">
+      <div bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_WHITE} !important;">${innerHtml}</div>
     </td>
   </tr>
 </table>`;
 }
 
 function emailHeadingHtml(text, color = EMAIL_WHITE) {
-  return `<h1 style="margin:0 0 12px;font-family:${EMAIL_HEADING_FONT};font-size:26px;font-weight:900;color:${color};letter-spacing:0.04em;text-transform:uppercase;line-height:1.2;">${escapeHtml(text)}</h1>`;
+  return `<h1 bgcolor="${EMAIL_PANEL}" style="margin:0 0 12px;${emailBgStyle(EMAIL_PANEL)}font-family:${EMAIL_HEADING_FONT};font-size:26px;font-weight:900;color:${color} !important;letter-spacing:0.04em;text-transform:uppercase;line-height:1.2;">${escapeHtml(text)}</h1>`;
 }
 
 function emailSubheadingHtml(text) {
-  return `<h2 style="margin:0 0 10px;font-family:${EMAIL_HEADING_FONT};font-size:18px;font-weight:900;color:${EMAIL_YELLOW};letter-spacing:0.04em;text-transform:uppercase;">${escapeHtml(text)}</h2>`;
+  return `<h2 bgcolor="${EMAIL_PANEL}" style="margin:0 0 10px;${emailBgStyle(EMAIL_PANEL)}font-family:${EMAIL_HEADING_FONT};font-size:18px;font-weight:900;color:${EMAIL_YELLOW} !important;letter-spacing:0.04em;text-transform:uppercase;">${escapeHtml(text)}</h2>`;
 }
 
 function emailParagraphHtml(text) {
-  return `<p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:${EMAIL_WHITE};">${text}</p>`;
+  return `<p bgcolor="${EMAIL_PANEL}" style="margin:0 0 12px;${emailBgStyle(EMAIL_PANEL)}font-family:${EMAIL_BODY_FONT};font-size:15px;line-height:1.6;color:${EMAIL_WHITE} !important;">${text}</p>`;
 }
 
 function emailLabelValueHtml(label, value) {
-  return `<p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:${EMAIL_WHITE};"><strong style="color:${EMAIL_YELLOW};">${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`;
+  return `<p bgcolor="${EMAIL_PANEL}" style="margin:0 0 8px;${emailBgStyle(EMAIL_PANEL)}font-family:${EMAIL_BODY_FONT};font-size:14px;line-height:1.5;color:${EMAIL_WHITE} !important;"><strong bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_YELLOW} !important;">${escapeHtml(label)}:</strong> <span bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_WHITE} !important;">${escapeHtml(value)}</span></p>`;
 }
 
 function wrapBrandedEmail(mainContentHtml) {
   return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KRO PK</title></head>
-<body style="margin:0;padding:0;background-color:${EMAIL_NAVY};">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};border-collapse:collapse;">
-<tr><td align="center" style="padding:0;">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<title>KRO PK</title>
+<style type="text/css">
+  :root { color-scheme: light only; supported-color-schemes: light; }
+  body, table, td, tr, div, p, h1, h2, h3, a, span, strong {
+    color-scheme: light only;
+  }
+  @media (prefers-color-scheme: dark) {
+    body, table, td, tr, div, p, h1, h2, h3, a, span, strong {
+      background-color: ${EMAIL_NAVY} !important;
+      color: ${EMAIL_WHITE} !important;
+    }
+  }
+</style>
+</head>
+<body bgcolor="${EMAIL_NAVY}" style="margin:0;padding:0;${emailBgStyle(EMAIL_NAVY)}color:${EMAIL_WHITE} !important;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_NAVY}" style="border-collapse:collapse;${emailBgStyle(EMAIL_NAVY)}">
+<tr bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}"><td align="center" bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}padding:0;color:${EMAIL_WHITE} !important;">
+<div bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}color:${EMAIL_WHITE} !important;">
 ${emailHeaderHtml()}
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;">
-<tr><td bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};padding:24px 16px 8px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_NAVY}" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;${emailBgStyle(EMAIL_NAVY)}">
+<tr bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}"><td bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}padding:24px 16px 8px;color:${EMAIL_WHITE} !important;">
+<div bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}color:${EMAIL_WHITE} !important;">
 ${mainContentHtml}
+</div>
 </td></tr></table>
 ${emailFooterHtml()}
+</div>
 </td></tr></table>
 </body></html>`;
 }
@@ -458,12 +491,12 @@ ${emailFooterHtml()}
 function renderOrderItemCardsHtml(items) {
   return items.map(item => {
     const lineTotal = Number(item.price || 0) * Number(item.qty || 0);
-    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;margin:0 0 12px;border-collapse:collapse;">
-  <tr>
-    <td bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};border:3px solid #334155;padding:14px 16px;">
-      <p style="margin:0 0 6px;font-family:${EMAIL_HEADING_FONT};font-size:16px;font-weight:900;color:${EMAIL_YELLOW};letter-spacing:0.03em;">${escapeHtml(item.name)}</p>
-      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${EMAIL_WHITE};">Size: <span style="color:${EMAIL_YELLOW};font-weight:bold;">${escapeHtml(item.size)}</span> &nbsp;·&nbsp; Qty: <span style="font-weight:bold;">${Number(item.qty)}</span></p>
-      <p style="margin:10px 0 0;font-family:${EMAIL_HEADING_FONT};font-size:15px;font-weight:900;color:${EMAIL_WHITE};">${formatNgn(lineTotal)}</p>
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_PANEL}" style="width:100%;margin:0 0 12px;border-collapse:collapse;${emailBgStyle(EMAIL_PANEL)}">
+  <tr bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}">
+    <td bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}border:3px solid ${EMAIL_BORDER};padding:14px 16px;color:${EMAIL_WHITE} !important;">
+      <p bgcolor="${EMAIL_NAVY}" style="margin:0 0 6px;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_HEADING_FONT};font-size:16px;font-weight:900;color:${EMAIL_YELLOW} !important;letter-spacing:0.03em;">${escapeHtml(item.name)}</p>
+      <p bgcolor="${EMAIL_NAVY}" style="margin:0;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_BODY_FONT};font-size:14px;color:${EMAIL_WHITE} !important;">Size: <span bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}color:${EMAIL_YELLOW} !important;font-weight:bold;">${escapeHtml(item.size)}</span> &nbsp;·&nbsp; Qty: <span bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}color:${EMAIL_WHITE} !important;font-weight:bold;">${Number(item.qty)}</span></p>
+      <p bgcolor="${EMAIL_NAVY}" style="margin:10px 0 0;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_HEADING_FONT};font-size:15px;font-weight:900;color:${EMAIL_WHITE} !important;">${formatNgn(lineTotal)}</p>
     </td>
   </tr>
 </table>`;
@@ -473,7 +506,7 @@ function renderOrderItemCardsHtml(items) {
 function renderOrderTotalsHtml(order) {
   const delivery = Number(order.deliveryCost ?? 0);
   return `${emailLabelValueHtml('Delivery fee', formatNgn(delivery))}
-<p style="margin:16px 0 0;padding-top:12px;border-top:2px solid #334155;font-family:${EMAIL_HEADING_FONT};font-size:20px;font-weight:900;color:${EMAIL_YELLOW};">TOTAL: ${formatNgn(order.total)}</p>`;
+<p bgcolor="${EMAIL_PANEL}" style="margin:16px 0 0;padding-top:12px;border-top:2px solid ${EMAIL_BORDER};${emailBgStyle(EMAIL_PANEL)}font-family:${EMAIL_HEADING_FONT};font-size:20px;font-weight:900;color:${EMAIL_YELLOW} !important;">TOTAL: <span bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_YELLOW} !important;">${formatNgn(order.total)}</span></p>`;
 }
 
 function createOrderEmail(order) {
@@ -513,12 +546,12 @@ ${emailButtonHtml('VIEW IN ADMIN', `${SITE_URL}/admin`)}
 }
 
 function createCustomerConfirmationEmail(order) {
-  const crewBadge = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;margin:0 0 16px;border-collapse:collapse;">
-  <tr>
-    <td align="center" bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};border:4px solid ${EMAIL_YELLOW};padding:18px 16px;text-align:center;">
-      <p style="margin:0 0 6px;font-family:${EMAIL_HEADING_FONT};font-size:14px;font-weight:900;color:${EMAIL_YELLOW};letter-spacing:0.12em;">KRO PK CREW MEMBER</p>
-      <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Crew ID</p>
-      <p style="margin:0;font-family:${EMAIL_HEADING_FONT};font-size:22px;font-weight:900;color:${EMAIL_WHITE};letter-spacing:0.06em;">${escapeHtml(order.orderNumber)}</p>
+  const crewBadge = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_PANEL}" style="width:100%;margin:0 0 16px;border-collapse:collapse;${emailBgStyle(EMAIL_PANEL)}">
+  <tr bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}">
+    <td align="center" bgcolor="${EMAIL_NAVY}" style="${emailBgStyle(EMAIL_NAVY)}border:4px solid ${EMAIL_YELLOW};padding:18px 16px;text-align:center;color:${EMAIL_WHITE} !important;">
+      <p bgcolor="${EMAIL_NAVY}" style="margin:0 0 6px;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_HEADING_FONT};font-size:14px;font-weight:900;color:${EMAIL_YELLOW} !important;letter-spacing:0.12em;">KRO PK CREW MEMBER</p>
+      <p bgcolor="${EMAIL_NAVY}" style="margin:0 0 4px;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_BODY_FONT};font-size:12px;color:${EMAIL_MUTED} !important;text-transform:uppercase;letter-spacing:0.08em;">Crew ID</p>
+      <p bgcolor="${EMAIL_NAVY}" style="margin:0;${emailBgStyle(EMAIL_NAVY)}font-family:${EMAIL_HEADING_FONT};font-size:22px;font-weight:900;color:${EMAIL_WHITE} !important;letter-spacing:0.06em;">${escapeHtml(order.orderNumber)}</p>
     </td>
   </tr>
 </table>`;
@@ -527,7 +560,7 @@ function createCustomerConfirmationEmail(order) {
 ${emailPanelHtml(`
 ${emailHeadingHtml('Order confirmed')}
 ${crewBadge}
-${emailParagraphHtml(`Thanks for rocking with KRO PK, <strong style="color:${EMAIL_YELLOW};">${escapeHtml(order.customer.name)}</strong>. Your payment is in and we are getting your drop ready.`)}
+${emailParagraphHtml(`Thanks for rocking with KRO PK, <strong bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_YELLOW} !important;">${escapeHtml(order.customer.name)}</strong>. Your payment is in and we are getting your drop ready.`)}
 ${emailLabelValueHtml('Payment reference', order.paystackReference || 'N/A')}
 `)}
 ${emailPanelHtml(`
@@ -555,8 +588,8 @@ function createCustomerShippedEmail(order) {
   const body = wrapBrandedEmail(`
 ${emailPanelHtml(`
 ${emailHeadingHtml('YOUR ORDER IS ON THE WAY', EMAIL_YELLOW)}
-${emailParagraphHtml(`Order <strong style="color:${EMAIL_YELLOW};">${escapeHtml(order.orderNumber)}</strong> has left the garage and is headed your way.`)}
-${emailParagraphHtml('Expect delivery within <strong style="color:#f8fafc;">3–5 working days</strong>. We will reach out if we need anything else.')}
+${emailParagraphHtml(`Order <strong bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_YELLOW} !important;">${escapeHtml(order.orderNumber)}</strong> has left the garage and is headed your way.`)}
+${emailParagraphHtml(`Expect delivery within <strong bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_WHITE} !important;">3–5 working days</strong>. We will reach out if we need anything else.`)}
 `)}
 ${emailButtonHtml('TRACK YOUR ORDER', SITE_URL)}
 `);
@@ -573,7 +606,7 @@ function createCustomerDeliveredEmail(order) {
   const body = wrapBrandedEmail(`
 ${emailPanelHtml(`
 ${emailHeadingHtml('ORDER DELIVERED', EMAIL_YELLOW)}
-${emailParagraphHtml(`Your order <strong style="color:${EMAIL_YELLOW};">${escapeHtml(order.orderNumber)}</strong> has been delivered. Thanks for repping KRO PK.`)}
+${emailParagraphHtml(`Your order <strong bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_YELLOW} !important;">${escapeHtml(order.orderNumber)}</strong> has been delivered. Thanks for repping KRO PK.`)}
 ${emailParagraphHtml('If you loved the drop, tell a friend. The shop is always open for the next cop.')}
 `)}
 ${emailButtonHtml('SHOP AGAIN', `${SITE_URL}/shop1.html`)}
@@ -592,7 +625,7 @@ function createBroadcastEmail(subject, messageBody) {
   return wrapBrandedEmail(`
 ${emailPanelHtml(`
 ${emailHeadingHtml(subject, EMAIL_YELLOW)}
-<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:${EMAIL_WHITE};">${safeBody}</div>
+<div bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}font-family:${EMAIL_BODY_FONT};font-size:15px;line-height:1.7;color:${EMAIL_WHITE} !important;">${safeBody}</div>
 `)}
 ${emailButtonHtml('SHOP NOW', `${SITE_URL}/shop1.html`)}
 `);
