@@ -21,6 +21,7 @@ const shopperProfileSchema = new mongoose.Schema({
     default: []
   },
   cartUpdatedAt: { type: Date, default: null },
+  abandonedCartReminderSentAt: { type: Date, default: null },
   lastActivityAt: { type: Date, default: Date.now, index: true },
   checkedOutAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now }

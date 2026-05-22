@@ -59,6 +59,100 @@
             width: 100vw;
         }
 
+        .intro-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: var(--navy);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.35s ease, visibility 0.35s ease;
+        }
+
+        .intro-splash.hide {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .intro-mascot {
+            width: 160px;
+            height: 160px;
+            position: relative;
+            animation: intro-hover 2.2s ease-in-out infinite;
+        }
+
+        @keyframes intro-hover {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-14px) rotate(2deg); }
+        }
+
+        .intro-helmet {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e293b 0%, var(--navy) 50%, #020617 100%);
+            border-radius: 50% 50% 45% 45%;
+            border: 3px solid var(--white);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 36px rgba(239, 68, 68, 0.35);
+        }
+
+        .intro-helmet::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 20%;
+            width: 30%;
+            height: 20%;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            filter: blur(8px);
+        }
+
+        .intro-goggles {
+            position: absolute;
+            top: 35%;
+            left: 10%;
+            width: 80%;
+            height: 35%;
+            background: linear-gradient(135deg, var(--red) 0%, var(--yellow) 50%, var(--red) 100%);
+            border-radius: 50%;
+            border: 3px solid var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .intro-goggles::after {
+            content: '★';
+            color: var(--white);
+            font-size: 2rem;
+            text-shadow: 2px 2px 0 var(--navy);
+        }
+
+        .intro-hair {
+            position: absolute;
+            top: -5%;
+            right: -5%;
+            width: 35%;
+            height: 35%;
+            background: var(--white);
+            border: 3px solid var(--white);
+            border-radius: 0 50% 50% 50%;
+            transform: rotate(-30deg);
+        }
+
+        .main-content {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .main-content.visible {
+            opacity: 1;
+        }
+
         /* Slideshow container */
         .slideshow {
             position: fixed;
@@ -347,6 +441,16 @@
 </head>
 <body>
 
+    <div id="introSplash" class="intro-splash" aria-hidden="true">
+        <div class="intro-mascot">
+            <div class="intro-helmet">
+                <div class="intro-goggles"></div>
+                <div class="intro-hair"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContent" class="main-content">
     <!-- Slideshow -->
     <div class="slideshow">
         <div class="slide active"></div>
@@ -383,8 +487,18 @@
         <div class="dot" onclick="goToSlide(3)"></div>
         <div class="dot" onclick="goToSlide(4)"></div>
     </div>
+    </div><!-- /mainContent -->
 
    <script>
+    (function () {
+        const splash = document.getElementById('introSplash');
+        const main = document.getElementById('mainContent');
+        window.setTimeout(() => {
+            splash?.classList.add('hide');
+            main?.classList.add('visible');
+        }, 750);
+    })();
+
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.dot');
     const images = ['campaign-3.jpg', 'slideshow-1.jpg', 'slideshow-2.jpg'];

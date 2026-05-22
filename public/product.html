@@ -285,11 +285,76 @@
     #productRoot .load-state {
       text-align: center;
       padding: 6rem 2rem;
-      font-family: 'Bangers', cursive;
-      font-size: 1.5rem;
-      color: var(--yellow);
       position: relative;
       z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 50vh;
+      background: var(--navy);
+    }
+    .load-mascot {
+      width: 140px;
+      height: 140px;
+      margin: 0 auto;
+      position: relative;
+      animation: load-hover 2.5s ease-in-out infinite;
+    }
+    @keyframes load-hover {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-12px) rotate(2deg); }
+    }
+    .load-helmet {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1e293b 0%, var(--navy) 50%, #020617 100%);
+      border-radius: 50% 50% 45% 45%;
+      border: var(--outline);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.35);
+    }
+    .load-helmet::before {
+      content: '';
+      position: absolute;
+      top: 10%;
+      left: 20%;
+      width: 30%;
+      height: 20%;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      filter: blur(8px);
+    }
+    .load-goggles {
+      position: absolute;
+      top: 35%;
+      left: 10%;
+      width: 80%;
+      height: 35%;
+      background: linear-gradient(135deg, var(--red) 0%, var(--yellow) 50%, var(--red) 100%);
+      border-radius: 50%;
+      border: var(--outline);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .load-goggles::after {
+      content: '★';
+      color: var(--white);
+      font-size: 1.75rem;
+      text-shadow: 2px 2px 0 var(--navy);
+    }
+    .load-hair {
+      position: absolute;
+      top: -5%;
+      right: -5%;
+      width: 35%;
+      height: 35%;
+      background: var(--white);
+      border: var(--outline);
+      border-radius: 0 50% 50% 50%;
+      transform: rotate(-30deg);
     }
     #zoomModal {
       display: none;
@@ -430,7 +495,14 @@
   <a href="/shop" class="back-link">← BACK TO DROP</a>
 
   <div id="productRoot">
-    <div class="load-state">LOADING DROP…</div>
+    <div class="load-state">
+      <div class="load-mascot" aria-hidden="true">
+        <div class="load-helmet">
+          <div class="load-goggles"></div>
+          <div class="load-hair"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="zoomModal" aria-hidden="true">
@@ -513,8 +585,11 @@
 
   function renderError(msg) {
     document.getElementById('productRoot').innerHTML =
-      '<div class="load-state">' + escapeHtml(msg) +
-      '<div style="margin-top:1.5rem;font-family:Comic Neue;font-size:1rem;"><a href="/shop1.html" style="color:var(--yellow);">Back to shop</a></div></div>';
+      '<div class="load-state">' +
+        '<div class="load-mascot" aria-hidden="true"><div class="load-helmet"><div class="load-goggles"></div><div class="load-hair"></div></div></div>' +
+        '<p style="margin-top:1.5rem;font-family:Bangers,cursive;font-size:1.2rem;color:#fbbf24;">' + escapeHtml(msg) + '</p>' +
+        '<div style="margin-top:1.5rem;font-family:Comic Neue;font-size:1rem;"><a href="/shop1.html" style="color:var(--yellow);">Back to shop</a></div>' +
+      '</div>';
   }
 
   function openZoom(src) {
@@ -671,7 +746,7 @@
   }
 
   function updateProductSeo(product) {
-    const url = 'https://www.kro-pk.shop/products/' + encodeURIComponent(product.slug);
+    const url = 'https://www.kro-pk.shop/product.html?slug=' + encodeURIComponent(product.slug);
     const image = absoluteUrl(product.image || primaryUrl(product) || galleryUrls(product)[0]);
     const description = (product.description || 'Limited streetwear piece') + ' Shop KRO PK streetwear and limited fashion drops made for the Keep Rocking mindset.';
     document.title = product.name + ' | KRO PK Streetwear';

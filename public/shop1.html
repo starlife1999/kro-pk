@@ -880,6 +880,44 @@ body::before {
             gap: 2rem;
         }
 
+        @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card {
+            pointer-events: none;
+            border: 3px solid #334155 !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        .skeleton-shine {
+            background: linear-gradient(90deg, #1e293b 0%, #334155 45%, #475569 55%, #1e293b 100%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.25s ease-in-out infinite;
+        }
+
+        .skeleton-img {
+            height: 280px;
+            width: 100%;
+        }
+
+        .skeleton-line {
+            height: 14px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .skeleton-line.short { width: 45%; }
+        .skeleton-line.mid { width: 70%; }
+        .skeleton-btn {
+            height: 44px;
+            width: 100%;
+            margin-top: 12px;
+            border-radius: 0;
+        }
+
         .product-card {
             composes: panel;
             transform: rotate(-1deg);
@@ -1578,10 +1616,24 @@ body::before {
         });
     });
 
+    function renderSkeletonCards(count = 6) {
+        return Array.from({ length: count }, () => `
+            <div class="product-card panel skeleton-card" aria-hidden="true">
+                <div class="product-image-placeholder skeleton-shine skeleton-img"></div>
+                <div class="product-info" style="padding-top:0.25rem;">
+                    <div class="skeleton-shine skeleton-line mid"></div>
+                    <div class="skeleton-shine skeleton-line short"></div>
+                    <div class="skeleton-shine skeleton-line" style="width:90%;margin-top:0.5rem;"></div>
+                    <div class="skeleton-shine skeleton-btn"></div>
+                </div>
+            </div>
+        `).join('');
+    }
+
     async function loadProducts() {
         const container = document.getElementById('productGrid');
         if (!container) return;
-        container.innerHTML = '<div style="color:#f8fafc;padding:2rem;text-align:center;">Loading products...</div>';
+        container.innerHTML = renderSkeletonCards(6);
         try {
             const res = await fetch('/api/products', { cache: 'no-store' });
             const products = await res.json();

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Page Not Found — KRO PK</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --navy: #0f172a;
+      --white: #f8fafc;
+      --red: #ef4444;
+      --yellow: #fbbf24;
+    }
+    body {
+      min-height: 100vh;
+      font-family: 'Permanent Marker', cursive;
+      background: var(--navy);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 10px 10px;
+      pointer-events: none;
+    }
+    .panel {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      background: #1e293b;
+      border: 4px solid var(--white);
+      box-shadow: 8px 8px 0 var(--red);
+      padding: 2.5rem 2rem;
+    }
+    .stripe {
+      display: flex;
+      height: 8px;
+      margin: -2.5rem -2rem 1.5rem;
+      border-bottom: 3px solid var(--white);
+    }
+    .stripe span { flex: 1; }
+    .stripe span:nth-child(odd) { background: var(--red); }
+    .stripe span:nth-child(even) { background: var(--yellow); }
+    h1 {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(2.5rem, 10vw, 3.5rem);
+      letter-spacing: 0.06em;
+      text-shadow: 4px 4px 0 var(--red);
+      margin-bottom: 1rem;
+    }
+    p {
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+    }
+    .shop-btn {
+      display: inline-block;
+      background: var(--red);
+      color: var(--white);
+      font-family: 'Bangers', cursive;
+      font-size: 1.35rem;
+      padding: 1rem 2rem;
+      border: 3px solid var(--white);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      box-shadow: 5px 5px 0 rgba(0,0,0,0.4);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .shop-btn:hover {
+      background: var(--yellow);
+      color: var(--navy);
+      transform: translateY(-3px);
+    }
+    .code {
+      margin-top: 1.5rem;
+      font-size: 4rem;
+      color: var(--yellow);
+      font-family: 'Bangers', cursive;
+      opacity: 0.35;
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <div class="stripe" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <h1>PAGE NOT FOUND</h1>
+    <p>This page pulled up and left.<br>Wrong turn on the track — head back to the drop.</p>
+    <a href="/shop1.html" class="shop-btn">← BACK TO SHOP</a>
+    <div class="code">404</div>
+  </main>
+</body>
+</html>

@@ -39,6 +39,24 @@ if (!process.env.MONGODB_URI) {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const COMING_SOON_ENABLED = String(process.env.COMING_SOON || 'false').trim().toLowerCase() === 'true';
+const ABANDONED_CART_HOURS = 24;
+
+app.use((req, res, next) => {
+  if (!COMING_SOON_ENABLED) return next();
+  const p = req.path;
+  if (
+    p.startsWith('/api') ||
+    p.startsWith('/admin') ||
+    p === '/coming-soon.html' ||
+    p === '/robots.txt' ||
+    p === '/sitemap.xml' ||
+    /\.(css|js|mjs|map|jpg|jpeg|png|gif|webp|ico|svg|woff2?|ttf|txt|xml|webmanifest)$/i.test(p)
+  ) {
+    return next();
+  }
+  return res.redirect(302, '/coming-soon.html');
+});
 
 app.use(express.json());
 app.use(cookieParser());
@@ -142,13 +160,16 @@ app.get('/sitemap.xml', async (_req, res) => {
     const products = await Product.find({ active: true }).sort(productSort).select('slug updatedAt').lean();
     const staticUrls = [
       { loc: `${SITE_URL}/`, priority: '1.0' },
+      { loc: `${SITE_URL}/index.html`, priority: '1.0' },
+      { loc: `${SITE_URL}/shop1.html`, priority: '0.9' },
       { loc: `${SITE_URL}/about.html`, priority: '0.8' },
-      { loc: `${SITE_URL}/shop1.html`, priority: '0.9' }
+      { loc: `${SITE_URL}/returns.html`, priority: '0.6' },
+      { loc: `${SITE_URL}/cart.html`, priority: '0.5' }
     ];
     const productUrls = products
       .filter(product => product.slug)
       .map(product => ({
-        loc: `${SITE_URL}/products/${encodeURIComponent(product.slug)}`,
+        loc: `${SITE_URL}/product.html?slug=${encodeURIComponent(product.slug)}`,
         lastmod: product.updatedAt ? new Date(product.updatedAt).toISOString() : null,
         priority: '0.8'
       }));
@@ -177,11 +198,11 @@ app.get('/sitemap.xml', async (_req, res) => {
 app.get('/products/:slug', async (req, res) => {
   const product = await Product.findOne({ slug: req.params.slug, active: true }).lean();
   if (!product) {
-    res.status(404).sendFile(path.join(__dirname, '..', 'public', 'error.htm'));
+    res.status(404).sendFile(path.join(__dirname, '..', 'public', '404.html'));
     return;
   }
 
-  const url = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
+  const url = `${SITE_URL}/product.html?slug=${encodeURIComponent(product.slug)}`;
   const description = buildProductDescription(product);
   const image = absoluteSiteUrl(product.image);
   let html = await fs.readFile(path.join(__dirname, '..', 'public', 'product.html'), 'utf8');
@@ -631,6 +652,64 @@ ${emailButtonHtml('SHOP NOW', `${SITE_URL}/shop1.html`)}
 `);
 }
 
+function createAbandonedCartEmail(profile) {
+  const name = profile.customer?.name?.trim() || 'there';
+  const itemsHtml = (profile.cartItems || []).map(item => {
+    const lineTotal = Number(item.price || 0) * Number(item.qty || 0);
+    return `<p bgcolor="${EMAIL_PANEL}" style="margin:0 0 10px;${emailBgStyle(EMAIL_PANEL)}font-family:${EMAIL_BODY_FONT};font-size:14px;color:${EMAIL_WHITE} !important;">
+      <strong bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_YELLOW} !important;">${escapeHtml(item.name || item.id)}</strong>
+      <span bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_WHITE} !important;"> — ${escapeHtml(item.size || '—')} × ${Number(item.qty || 0)} = ${formatNgn(lineTotal)}</span>
+    </p>`;
+  }).join('');
+
+  const body = wrapBrandedEmail(`
+${emailPanelHtml(`
+${emailHeadingHtml('Still in your cart', EMAIL_YELLOW)}
+${emailParagraphHtml(`Hey <strong bgcolor="${EMAIL_PANEL}" style="${emailBgStyle(EMAIL_PANEL)}color:${EMAIL_YELLOW} !important;">${escapeHtml(name)}</strong>, you left heat in your cart. Finish checkout before it sells out.`)}
+${itemsHtml || emailParagraphHtml('Your picks are waiting at checkout.')}
+`)}
+${emailButtonHtml('COMPLETE YOUR ORDER', `${SITE_URL}/cart.html`)}
+`);
+
+  return {
+    from: resendFrom(),
+    to: profile.customer.email,
+    subject: 'Your KRO PK cart is waiting',
+    html: body
+  };
+}
+
+async function processAbandonedCartReminders() {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const cutoff = new Date(Date.now() - ABANDONED_CART_HOURS * 60 * 60 * 1000);
+  const profiles = await ShopperProfile.find({
+    'cartItems.0': { $exists: true },
+    cartUpdatedAt: { $lte: cutoff },
+    abandonedCartReminderSentAt: null,
+    'customer.email': { $exists: true, $nin: [null, ''] },
+    $or: [
+      { checkedOutAt: null },
+      { $expr: { $lt: ['$checkedOutAt', '$cartUpdatedAt'] } }
+    ]
+  }).limit(40).lean();
+
+  for (const profile of profiles) {
+    const email = String(profile.customer?.email || '').trim().toLowerCase();
+    if (!email) continue;
+
+    try {
+      await resend.emails.send(createAbandonedCartEmail({ ...profile, customer: { ...profile.customer, email } }));
+      await ShopperProfile.updateOne(
+        { _id: profile._id },
+        { $set: { abandonedCartReminderSentAt: new Date() } }
+      );
+    } catch (err) {
+      console.error('Abandoned cart reminder failed:', email, err.message || err);
+    }
+  }
+}
+
 function authMiddleware(req, res, next) {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ message: 'Authentication required' });
@@ -799,6 +878,7 @@ app.post('/api/analytics/profile', async (req, res) => {
   if (cartItems) {
     update.cartItems = cartItems;
     update.cartUpdatedAt = new Date();
+    update.abandonedCartReminderSentAt = null;
   }
   if (req.body?.checkedOut === true) {
     update.checkedOutAt = new Date();
@@ -1754,12 +1834,22 @@ app.get('/admin/login', (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, '..', 'public', 'error.htm'));
+  res.status(404).sendFile(path.join(__dirname, '..', 'public', '404.html'));
 });
 
 connectDB().then(() => seedProducts()).then(() => normalizeProductSortOrder()).then(() => {
+  processAbandonedCartReminders().catch(err => {
+    console.error('Abandoned cart reminder run failed:', err.message || err);
+  });
+  setInterval(() => {
+    processAbandonedCartReminders().catch(err => {
+      console.error('Abandoned cart reminder run failed:', err.message || err);
+    });
+  }, 60 * 60 * 1000);
+
   app.listen(PORT, () => {
     console.log(`KRO PK backend running on http://localhost:${PORT}`);
+    if (COMING_SOON_ENABLED) console.log('COMING_SOON mode: public routes redirect to /coming-soon.html');
   });
 }).catch(err => {
   console.error('Failed to start server', err);
