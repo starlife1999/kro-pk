@@ -8,191 +8,339 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&display=swap" rel="stylesheet">
   <link rel="icon" href="/favicon.ico" sizes="any">
+  <meta name="theme-color" content="#0f172a">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     :root {
       --navy: #0f172a;
       --white: #f8fafc;
       --red: #ef4444;
       --yellow: #fbbf24;
     }
-    html, body {
-      min-height: 100vh;
+
+    body {
       font-family: 'Permanent Marker', cursive;
       background: var(--navy);
       color: var(--white);
-      overflow-x: hidden;
-    }
-    .mosaic-wrap {
-      position: fixed;
-      inset: 0;
       overflow: hidden;
-      z-index: 0;
+      height: 100vh;
+      width: 100vw;
     }
-    .mosaic {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      width: 140%;
-      height: 140%;
-      left: -20%;
-      top: -20%;
-      position: absolute;
-      animation: mosaic-drift 40s linear infinite;
-    }
-    @keyframes mosaic-drift {
-      0% { transform: translate(0, 0); }
-      50% { transform: translate(-3%, -2%); }
-      100% { transform: translate(0, 0); }
-    }
-    .mosaic img {
+
+    .slideshow {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      display: block;
-      filter: saturate(0.85);
-    }
-    .mosaic-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.82);
       z-index: 1;
     }
-    .page {
-      position: relative;
-      z-index: 2;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1.25rem 3rem;
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      background-size: cover;
+      background-position: center;
     }
-    .card {
-      width: min(420px, 100%);
-      background: rgba(15, 23, 42, 0.95);
+
+    .slide.active {
+      opacity: 1;
+    }
+
+    .slide::before {
+      display: none;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.6) 100%);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .brand {
+      position: fixed;
+      top: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .brand-logo {
+      font-family: 'Bangers', cursive;
+      font-size: 4rem;
+      text-shadow: 4px 4px 0 var(--red);
+      letter-spacing: 0.1em;
+    }
+
+    .brand-drop {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 1.2rem;
+      color: var(--yellow);
+      margin-top: 0.5rem;
+    }
+
+    .gate-wrap {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      width: min(420px, calc(100vw - 2rem));
+    }
+
+    .gate-card {
+      background: rgba(15, 23, 42, 0.92);
       border: 4px solid var(--white);
       box-shadow: 8px 8px 0 var(--red);
       padding: 2rem 1.75rem;
       text-align: center;
     }
-    .logo {
-      font-family: 'Bangers', cursive;
-      font-size: 3rem;
-      letter-spacing: 0.08em;
-      text-shadow: 4px 4px 0 var(--red);
-      margin-bottom: 0.35rem;
-    }
-    .tagline {
-      color: var(--yellow);
-      font-size: 0.85rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      margin-bottom: 1.75rem;
-    }
-    label {
+
+    .gate-card label {
       display: block;
       text-align: left;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: #94a3b8;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
-    input[type="password"] {
+
+    .gate-card input[type="password"] {
       width: 100%;
       padding: 0.9rem 1rem;
       border: 3px solid #334155;
       background: var(--navy);
       color: var(--white);
-      font-family: 'Comic Neue', Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       font-size: 1rem;
       margin-bottom: 1rem;
     }
-    input:focus {
+
+    .gate-card input:focus {
       outline: none;
       border-color: var(--yellow);
     }
-    .enter-btn {
+
+    .gate-submit {
       width: 100%;
-      padding: 1rem;
+      padding: 1rem 1.5rem;
       border: 3px solid var(--white);
       background: var(--red);
       color: var(--white);
       font-family: 'Bangers', cursive;
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       cursor: pointer;
-      letter-spacing: 0.06em;
-      transition: background 0.2s, transform 0.2s;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      box-shadow: 5px 5px 0 rgba(0,0,0,0.4);
+      transition: all 0.2s ease;
     }
-    .enter-btn:hover {
+
+    .gate-submit:hover {
       background: var(--yellow);
       color: var(--navy);
       transform: translateY(-2px);
+      box-shadow: 7px 7px 0 var(--red);
     }
-    .error {
+
+    .gate-error {
       display: none;
       margin-top: 1rem;
       color: #f87171;
       font-size: 0.95rem;
+      font-family: 'Permanent Marker', cursive;
     }
-    .error.show { display: block; }
+
+    .gate-error.show {
+      display: block;
+    }
+
     .social {
-      margin-top: 2.5rem;
+      position: fixed;
+      bottom: max(2rem, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
       display: flex;
-      gap: 1.5rem;
+      gap: 1.25rem;
       flex-wrap: wrap;
       justify-content: center;
     }
+
     .social a {
-      color: var(--yellow);
+      color: var(--white);
       text-decoration: none;
-      font-size: 1rem;
-      border-bottom: 2px solid transparent;
+      font-family: 'Bangers', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      border: 2px solid var(--white);
+      background: rgba(15, 23, 42, 0.75);
+      padding: 0.55rem 1.2rem;
+      transition: all 0.2s ease;
     }
-    .social a:hover { border-bottom-color: var(--yellow); }
+
+    .social a:hover {
+      background: var(--yellow);
+      color: var(--navy);
+    }
+
+    .indicators {
+      position: fixed;
+      bottom: max(5rem, calc(4.5rem + env(safe-area-inset-bottom)));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      gap: 1rem;
+      pointer-events: none;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--white);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    .dot.active {
+      background: var(--yellow);
+      border-color: var(--yellow);
+    }
+
+    @media (max-width: 768px) {
+      .brand-logo {
+        font-size: 2.5rem;
+      }
+      .gate-submit {
+        font-size: 1.25rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .brand {
+        top: max(1rem, env(safe-area-inset-top));
+        left: max(1rem, env(safe-area-inset-left));
+        right: max(1rem, env(safe-area-inset-right));
+        transform: none;
+        width: auto;
+      }
+
+      .brand-logo {
+        font-size: clamp(2rem, 12vw, 2.75rem);
+      }
+
+      .brand-drop {
+        font-size: 0.95rem;
+      }
+
+      .gate-wrap {
+        width: calc(100vw - 1.5rem);
+      }
+
+      .gate-card {
+        padding: 1.5rem 1.25rem;
+      }
+
+      .indicators {
+        bottom: max(4.5rem, calc(3.75rem + env(safe-area-inset-bottom)));
+      }
+
+      .social {
+        bottom: max(1rem, env(safe-area-inset-bottom));
+        gap: 0.75rem;
+      }
+
+      .social a {
+        font-size: 0.9rem;
+        padding: 0.45rem 0.85rem;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="mosaic-wrap" aria-hidden="true">
-    <div class="mosaic" id="mosaicGrid"></div>
-  </div>
-  <div class="mosaic-overlay" aria-hidden="true"></div>
 
-  <div class="page">
-    <div class="card">
-      <div class="logo">KRO PK</div>
-      <div class="tagline">Drop 2026 — Motorsport</div>
+  <div class="slideshow">
+    <div class="slide active"></div>
+    <div class="slide"></div>
+    <div class="slide"></div>
+  </div>
+
+  <div class="overlay" aria-hidden="true"></div>
+
+  <div class="brand">
+    <div class="brand-logo">KRO PK</div>
+    <div class="brand-drop">DROP 2026 — MOTORSPORT</div>
+  </div>
+
+  <div class="gate-wrap">
+    <div class="gate-card">
       <form id="gateForm">
         <label for="gatePassword">Enter access password</label>
         <input type="password" id="gatePassword" placeholder="Password" autocomplete="current-password" required>
-        <button type="submit" class="enter-btn">ENTER</button>
+        <button type="submit" class="gate-submit">ENTER</button>
       </form>
-      <p class="error" id="gateError">Wrong password. Try again.</p>
+      <p class="gate-error" id="gateError">Wrong password. Try again.</p>
     </div>
-    <nav class="social" aria-label="Social links">
-      <a href="https://www.instagram.com/kro_pk1" target="_blank" rel="noopener noreferrer">Instagram</a>
-      <a href="https://www.tiktok.com/@kro_pk" target="_blank" rel="noopener noreferrer">TikTok</a>
-    </nav>
   </div>
 
+  <div class="indicators" aria-hidden="true">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+  <nav class="social" aria-label="Social links">
+    <a href="https://www.instagram.com/kro_pk1" target="_blank" rel="noopener noreferrer">Instagram</a>
+    <a href="https://www.tiktok.com/@kro_pk" target="_blank" rel="noopener noreferrer">TikTok</a>
+  </nav>
+
   <script>
-    const IMAGES = ['campaign-3.jpg', 'slideshow-1.jpg', 'slideshow-2.jpg'];
     const PASS = 'KROPK2026';
     const STORAGE_KEY = 'kro_pk_site_unlocked';
+    const images = ['campaign-3.jpg', 'slideshow-1.jpg', 'slideshow-2.jpg'];
 
     if (localStorage.getItem(STORAGE_KEY) === '1') {
       window.location.replace('/shop1.html');
     }
 
-    const grid = document.getElementById('mosaicGrid');
-    const cells = 12;
-    for (let i = 0; i < cells; i++) {
-      const img = document.createElement('img');
-      img.src = IMAGES[i % IMAGES.length];
-      img.alt = '';
-      grid.appendChild(img);
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.dot');
+    let current = 0;
+
+    slides.forEach((slide, i) => {
+      slide.style.backgroundImage = `url('${images[i]}')`;
+    });
+
+    function goToSlide(index) {
+      slides[current].classList.remove('active');
+      dots[current].classList.remove('active');
+      current = index;
+      slides[current].classList.add('active');
+      dots[current].classList.add('active');
     }
+
+    setInterval(() => {
+      goToSlide((current + 1) % images.length);
+    }, 1500);
 
     document.getElementById('gateForm').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -205,6 +353,7 @@
       }
       err.classList.add('show');
     });
+
     document.getElementById('gatePassword').addEventListener('input', () => {
       document.getElementById('gateError').classList.remove('show');
     });
