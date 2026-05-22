@@ -349,84 +349,253 @@ function resendFrom() {
   return raw;
 }
 
+const EMAIL_LOGO_GIF_DEFAULT = 'https://res.cloudinary.com/dyogtj42w/image/upload/v1779412925/Recording_2026-05-22_021656_zmiqai.gif';
+const EMAIL_NAVY = '#0f172a';
+const EMAIL_PANEL = '#1e293b';
+const EMAIL_WHITE = '#f8fafc';
+const EMAIL_RED = '#ef4444';
+const EMAIL_YELLOW = '#fbbf24';
+const EMAIL_INSTAGRAM_URL = 'https://www.instagram.com/kro_pk1';
+const EMAIL_TIKTOK_URL = 'https://www.tiktok.com/@kro_pk';
+const EMAIL_HEADING_FONT = "'Arial Black', Impact, Arial, sans-serif";
+
+function emailLogoGifUrl() {
+  return (process.env.EMAIL_LOGO_GIF || EMAIL_LOGO_GIF_DEFAULT).trim();
+}
+
+function formatNgn(amount) {
+  return `₦${Number(amount || 0).toLocaleString('en-NG')}`;
+}
+
+function emailRacingStripeHtml() {
+  const cells = Array.from({ length: 30 }, (_, i) => {
+    const bg = i % 2 === 0 ? EMAIL_RED : EMAIL_YELLOW;
+    return `<td style="width:20px;height:8px;background-color:${bg};font-size:0;line-height:0;padding:0;border:0;">&nbsp;</td>`;
+  }).join('');
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;"><tr>${cells}</tr></table>`;
+}
+
+function emailHeaderHtml() {
+  const gif = escapeHtml(emailLogoGifUrl());
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;">
+  <tr>
+    <td align="center" bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};padding:0;margin:0;">
+      <img src="${gif}" alt="KRO PK" width="100%" style="display:block;width:100%;max-width:600px;height:auto;border:0;margin:0;padding:0;" />
+    </td>
+  </tr>
+</table>${emailRacingStripeHtml()}`;
+}
+
+function emailFooterHtml() {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;">
+  <tr>
+    <td bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};padding:28px 20px;text-align:center;border-top:3px solid ${EMAIL_WHITE};">
+      <p style="margin:0 0 12px;font-family:${EMAIL_HEADING_FONT};font-size:28px;font-weight:900;color:${EMAIL_WHITE};letter-spacing:0.08em;">KRO PK</p>
+      <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;">
+        <a href="${EMAIL_INSTAGRAM_URL}" style="color:${EMAIL_YELLOW};text-decoration:none;font-weight:bold;">Instagram</a>
+        <span style="color:${EMAIL_WHITE};margin:0 10px;">|</span>
+        <a href="${EMAIL_TIKTOK_URL}" style="color:${EMAIL_YELLOW};text-decoration:none;font-weight:bold;">TikTok</a>
+      </p>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">Keep Rocking © 2026 KRO PK</p>
+    </td>
+  </tr>
+</table>`;
+}
+
+function emailButtonHtml(label, href) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto;border-collapse:collapse;">
+  <tr>
+    <td align="center" bgcolor="${EMAIL_RED}" style="background-color:${EMAIL_RED};border:3px solid ${EMAIL_WHITE};">
+      <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 28px;font-family:${EMAIL_HEADING_FONT};font-size:16px;font-weight:900;color:${EMAIL_WHITE};text-decoration:none;letter-spacing:0.05em;">${escapeHtml(label)}</a>
+    </td>
+  </tr>
+</table>`;
+}
+
+function emailPanelHtml(innerHtml) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:568px;margin:0 auto 16px;border-collapse:collapse;">
+  <tr>
+    <td bgcolor="${EMAIL_PANEL}" style="background-color:${EMAIL_PANEL};border:4px solid ${EMAIL_WHITE};padding:20px;">
+      ${innerHtml}
+    </td>
+  </tr>
+</table>`;
+}
+
+function emailHeadingHtml(text, color = EMAIL_WHITE) {
+  return `<h1 style="margin:0 0 12px;font-family:${EMAIL_HEADING_FONT};font-size:26px;font-weight:900;color:${color};letter-spacing:0.04em;text-transform:uppercase;line-height:1.2;">${escapeHtml(text)}</h1>`;
+}
+
+function emailSubheadingHtml(text) {
+  return `<h2 style="margin:0 0 10px;font-family:${EMAIL_HEADING_FONT};font-size:18px;font-weight:900;color:${EMAIL_YELLOW};letter-spacing:0.04em;text-transform:uppercase;">${escapeHtml(text)}</h2>`;
+}
+
+function emailParagraphHtml(text) {
+  return `<p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:${EMAIL_WHITE};">${text}</p>`;
+}
+
+function emailLabelValueHtml(label, value) {
+  return `<p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:${EMAIL_WHITE};"><strong style="color:${EMAIL_YELLOW};">${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`;
+}
+
+function wrapBrandedEmail(mainContentHtml) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KRO PK</title></head>
+<body style="margin:0;padding:0;background-color:${EMAIL_NAVY};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};border-collapse:collapse;">
+<tr><td align="center" style="padding:0;">
+${emailHeaderHtml()}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;width:100%;margin:0 auto;border-collapse:collapse;">
+<tr><td bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};padding:24px 16px 8px;">
+${mainContentHtml}
+</td></tr></table>
+${emailFooterHtml()}
+</td></tr></table>
+</body></html>`;
+}
+
+function renderOrderItemCardsHtml(items) {
+  return items.map(item => {
+    const lineTotal = Number(item.price || 0) * Number(item.qty || 0);
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;margin:0 0 12px;border-collapse:collapse;">
+  <tr>
+    <td bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};border:3px solid #334155;padding:14px 16px;">
+      <p style="margin:0 0 6px;font-family:${EMAIL_HEADING_FONT};font-size:16px;font-weight:900;color:${EMAIL_YELLOW};letter-spacing:0.03em;">${escapeHtml(item.name)}</p>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${EMAIL_WHITE};">Size: <span style="color:${EMAIL_YELLOW};font-weight:bold;">${escapeHtml(item.size)}</span> &nbsp;·&nbsp; Qty: <span style="font-weight:bold;">${Number(item.qty)}</span></p>
+      <p style="margin:10px 0 0;font-family:${EMAIL_HEADING_FONT};font-size:15px;font-weight:900;color:${EMAIL_WHITE};">${formatNgn(lineTotal)}</p>
+    </td>
+  </tr>
+</table>`;
+  }).join('');
+}
+
+function renderOrderTotalsHtml(order) {
+  const delivery = Number(order.deliveryCost ?? 0);
+  return `${emailLabelValueHtml('Delivery fee', formatNgn(delivery))}
+<p style="margin:16px 0 0;padding-top:12px;border-top:2px solid #334155;font-family:${EMAIL_HEADING_FONT};font-size:20px;font-weight:900;color:${EMAIL_YELLOW};">TOTAL: ${formatNgn(order.total)}</p>`;
+}
+
 function createOrderEmail(order) {
-  const items = order.items.map(item =>
-    `• ${item.name} / ${item.size} × ${item.qty} = ₦${item.price.toLocaleString('en-NG')}`
-  ).join('\n');
+  const itemsHtml = renderOrderItemCardsHtml(order.items);
+  const body = wrapBrandedEmail(`
+${emailPanelHtml(`
+${emailHeadingHtml('New order received', EMAIL_RED)}
+${emailParagraphHtml('A new order just landed. Review the details below and process it from admin.')}
+`)}
+${emailPanelHtml(`
+${emailSubheadingHtml('Order')}
+${emailLabelValueHtml('Order number', order.orderNumber)}
+${emailLabelValueHtml('Status', order.status || 'pending')}
+${emailLabelValueHtml('Paystack ref', order.paystackReference || 'N/A')}
+`)}
+${emailPanelHtml(`
+${emailSubheadingHtml('Customer')}
+${emailLabelValueHtml('Name', order.customer.name)}
+${emailLabelValueHtml('Phone', order.customer.phone)}
+${emailLabelValueHtml('Email', order.customer.email || 'Not provided')}
+${emailLabelValueHtml('Address', `${order.customer.address}, ${order.customer.city}, ${order.customer.state}`)}
+`)}
+${emailPanelHtml(`
+${emailSubheadingHtml('Items')}
+${itemsHtml}
+${renderOrderTotalsHtml(order)}
+`)}
+${emailButtonHtml('VIEW IN ADMIN', `${SITE_URL}/admin`)}
+`);
 
   return {
     from: resendFrom(),
     to: OWNER_EMAIL,
     subject: `New order ${order.orderNumber}`,
-    html: `
-      <h2>New order received</h2>
-      <p><strong>Order number:</strong> ${order.orderNumber}</p>
-      <p><strong>Customer:</strong> ${order.customer.name}</p>
-      <p><strong>Phone:</strong> ${order.customer.phone}</p>
-      <p><strong>Email:</strong> ${order.customer.email || 'Not provided'}</p>
-      <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city}, ${order.customer.state}</p>
-      <p><strong>Paystack ref:</strong> ${order.paystackReference || 'N/A'}</p>
-      <h3>Items:</h3>
-      <pre>${items}</pre>
-      <p><strong>Delivery fee:</strong> ₦${(order.deliveryCost ?? 0).toLocaleString('en-NG')}</p>
-      <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
-      <p><strong>Status:</strong> ${order.status}</p>
-      <p>Please review the admin dashboard to process this order.</p>
-    `,
+    html: body
   };
 }
 
 function createCustomerConfirmationEmail(order) {
-  const items = order.items.map(item =>
-    `• ${item.name} / ${item.size} × ${item.qty} = ₦${item.price.toLocaleString('en-NG')}`
-  ).join('\n');
+  const crewBadge = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;margin:0 0 16px;border-collapse:collapse;">
+  <tr>
+    <td align="center" bgcolor="${EMAIL_NAVY}" style="background-color:${EMAIL_NAVY};border:4px solid ${EMAIL_YELLOW};padding:18px 16px;text-align:center;">
+      <p style="margin:0 0 6px;font-family:${EMAIL_HEADING_FONT};font-size:14px;font-weight:900;color:${EMAIL_YELLOW};letter-spacing:0.12em;">KRO PK CREW MEMBER</p>
+      <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Crew ID</p>
+      <p style="margin:0;font-family:${EMAIL_HEADING_FONT};font-size:22px;font-weight:900;color:${EMAIL_WHITE};letter-spacing:0.06em;">${escapeHtml(order.orderNumber)}</p>
+    </td>
+  </tr>
+</table>`;
+
+  const body = wrapBrandedEmail(`
+${emailPanelHtml(`
+${emailHeadingHtml('Order confirmed')}
+${crewBadge}
+${emailParagraphHtml(`Thanks for rocking with KRO PK, <strong style="color:${EMAIL_YELLOW};">${escapeHtml(order.customer.name)}</strong>. Your payment is in and we are getting your drop ready.`)}
+${emailLabelValueHtml('Payment reference', order.paystackReference || 'N/A')}
+`)}
+${emailPanelHtml(`
+${emailSubheadingHtml('Delivery')}
+${emailLabelValueHtml('Address', `${order.customer.address}, ${order.customer.city}, ${order.customer.state}`)}
+${emailLabelValueHtml('Phone', order.customer.phone)}
+`)}
+${emailPanelHtml(`
+${emailSubheadingHtml('Your picks')}
+${renderOrderItemCardsHtml(order.items)}
+${renderOrderTotalsHtml(order)}
+`)}
+${emailButtonHtml('VIEW YOUR ORDER', SITE_URL)}
+`);
 
   return {
     from: resendFrom(),
     to: order.customer.email,
     subject: `Your KRO PK order ${order.orderNumber}`,
-    html: `
-      <h2>Thanks for your order!</h2>
-      <p>Your order number is <strong>${order.orderNumber}</strong>.</p>
-      <p>Payment reference: <strong>${order.paystackReference || 'N/A'}</strong></p>
-      <p>We will contact you soon to confirm payment and delivery.</p>
-      <h3>Order details</h3>
-      <p><strong>Name:</strong> ${order.customer.name}</p>
-      <p><strong>Phone:</strong> ${order.customer.phone}</p>
-      <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city}, ${order.customer.state}</p>
-      <h3>Items</h3>
-      <pre>${items}</pre>
-      <p><strong>Delivery fee:</strong> ₦${(order.deliveryCost ?? 0).toLocaleString('en-NG')}</p>
-      <p><strong>Total:</strong> ₦${order.total.toLocaleString('en-NG')}</p>
-      <p>We will reach out soon with payment and delivery details.</p>
-    `,
+    html: body
   };
 }
 
 function createCustomerShippedEmail(order) {
+  const body = wrapBrandedEmail(`
+${emailPanelHtml(`
+${emailHeadingHtml('YOUR ORDER IS ON THE WAY', EMAIL_YELLOW)}
+${emailParagraphHtml(`Order <strong style="color:${EMAIL_YELLOW};">${escapeHtml(order.orderNumber)}</strong> has left the garage and is headed your way.`)}
+${emailParagraphHtml('Expect delivery within <strong style="color:#f8fafc;">3–5 working days</strong>. We will reach out if we need anything else.')}
+`)}
+${emailButtonHtml('TRACK YOUR ORDER', SITE_URL)}
+`);
+
   return {
     from: resendFrom(),
     to: order.customer.email,
     subject: `Your KRO PK order ${order.orderNumber} is on the way`,
-    html: `
-      <h2>Your order is on the way 🚚</h2>
-      <p>Good news — your order <strong>${order.orderNumber}</strong> has been shipped.</p>
-      <p>We’ll reach out if we need anything else. Thank you for shopping KRO PK.</p>
-    `,
+    html: body
   };
 }
 
 function createCustomerDeliveredEmail(order) {
+  const body = wrapBrandedEmail(`
+${emailPanelHtml(`
+${emailHeadingHtml('ORDER DELIVERED', EMAIL_YELLOW)}
+${emailParagraphHtml(`Your order <strong style="color:${EMAIL_YELLOW};">${escapeHtml(order.orderNumber)}</strong> has been delivered. Thanks for repping KRO PK.`)}
+${emailParagraphHtml('If you loved the drop, tell a friend. The shop is always open for the next cop.')}
+`)}
+${emailButtonHtml('SHOP AGAIN', `${SITE_URL}/shop1.html`)}
+`);
+
   return {
     from: resendFrom(),
     to: order.customer.email,
     subject: `Delivered: KRO PK order ${order.orderNumber}`,
-    html: `
-      <h2>Delivered ✅</h2>
-      <p>Your order <strong>${order.orderNumber}</strong> has been delivered.</p>
-      <p>Thanks for rocking with us. If you love it, tell a friend.</p>
-    `,
+    html: body
   };
+}
+
+function createBroadcastEmail(subject, messageBody) {
+  const safeBody = escapeHtml(messageBody).replace(/\n/g, '<br>');
+  return wrapBrandedEmail(`
+${emailPanelHtml(`
+${emailHeadingHtml(subject, EMAIL_YELLOW)}
+<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:${EMAIL_WHITE};">${safeBody}</div>
+`)}
+${emailButtonHtml('SHOP NOW', `${SITE_URL}/shop1.html`)}
+`);
 }
 
 function authMiddleware(req, res, next) {
@@ -923,7 +1092,7 @@ app.post('/api/admin/broadcasts', authMiddleware, async (req, res) => {
       from: resendFrom(),
       to: s.email,
       subject,
-      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;">${body.replace(/\n/g, '<br>')}</div>`
+      html: createBroadcastEmail(subject, body)
     });
   }));
 
@@ -1271,19 +1440,27 @@ async function buildAnalyticsReport(rangeKey = 'today') {
 
 function createLowStockEmail(lowStockItems) {
   const rows = lowStockItems.map(item =>
-    `<li><strong>${escapeHtml(item.name)}</strong> / ${escapeHtml(item.size)} has ${item.remaining} unit${item.remaining === 1 ? '' : 's'} remaining.</li>`
+    emailLabelValueHtml(
+      `${item.name} (${item.size})`,
+      `${item.remaining} unit${item.remaining === 1 ? '' : 's'} remaining`
+    )
   ).join('');
+
+  const body = wrapBrandedEmail(`
+${emailPanelHtml(`
+${emailHeadingHtml('Low stock alert', EMAIL_RED)}
+${emailParagraphHtml('An order just reduced these product sizes to 2 or fewer units:')}
+${rows}
+${emailParagraphHtml('Restock or archive the product from the admin dashboard if needed.')}
+`)}
+${emailButtonHtml('VIEW IN ADMIN', `${SITE_URL}/admin`)}
+`);
 
   return {
     from: resendFrom(),
     to: OWNER_EMAIL,
     subject: 'KRO PK low stock alert',
-    html: `
-      <h2>Low stock alert</h2>
-      <p>An order just reduced these product sizes to 2 or fewer units:</p>
-      <ul>${rows}</ul>
-      <p>Restock or archive the product from the admin dashboard if needed.</p>
-    `,
+    html: body
   };
 }
 
