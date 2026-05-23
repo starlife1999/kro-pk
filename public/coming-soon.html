@@ -64,90 +64,9 @@
         linear-gradient(180deg, rgba(15, 23, 42, 0.1), rgba(15, 23, 42, 0.86));
     }
 
-    .password-access {
-      position: fixed;
-      top: max(1rem, env(safe-area-inset-top));
-      right: max(1rem, env(safe-area-inset-right));
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 0.5rem;
-      max-width: calc(100vw - 2rem);
-      flex-wrap: wrap;
-    }
-
-    .password-toggle,
-    .password-submit {
-      border: 2px solid rgba(248, 250, 252, 0.72);
-      background: rgba(15, 23, 42, 0.58);
-      color: var(--white);
-      cursor: pointer;
-      font-family: 'Bangers', cursive;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      transition: all 0.2s ease;
-    }
-
-    .password-toggle {
-      padding: 0.48rem 0.72rem;
-      font-size: 0.78rem;
-    }
-
-    .password-submit {
-      min-height: 36px;
-      padding: 0.42rem 0.58rem;
-      font-size: 0.82rem;
-      background: rgba(239, 68, 68, 0.84);
-    }
-
-    .password-toggle:hover,
-    .password-submit:hover {
-      background: var(--yellow);
-      border-color: var(--yellow);
-      color: var(--ink);
-    }
-
-    .password-form {
-      display: none;
-      align-items: center;
-      gap: 0.45rem;
-    }
-
-    .password-form.open {
-      display: flex;
-    }
-
-    .password-form input {
-      width: min(185px, calc(100vw - 8rem));
-      min-height: 36px;
-      border: 2px solid rgba(248, 250, 252, 0.72);
-      background: rgba(15, 23, 42, 0.72);
-      color: var(--white);
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 0.9rem;
-      padding: 0.42rem 0.58rem;
-    }
-
-    .password-form input:focus,
     .signup-form input:focus {
       outline: none;
       border-color: var(--yellow);
-    }
-
-    .password-error {
-      display: none;
-      width: 100%;
-      text-align: right;
-      color: #fecaca;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .password-error.show {
-      display: block;
     }
 
     .main-stage {
@@ -218,8 +137,7 @@
       box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.45);
     }
 
-    .signup-form input::placeholder,
-    .password-form input::placeholder {
+    .signup-form input::placeholder {
       color: #94a3b8;
     }
 
@@ -314,17 +232,6 @@
         overflow-y: auto;
       }
 
-      .password-access {
-        align-items: flex-end;
-        flex-direction: column;
-        gap: 0.4rem;
-      }
-
-      .password-form {
-        justify-content: flex-end;
-        width: 100%;
-      }
-
       .signup-form {
         grid-template-columns: 1fr;
       }
@@ -352,15 +259,6 @@
 
   <div class="overlay" aria-hidden="true"></div>
 
-  <div class="password-access">
-    <button class="password-toggle" id="passwordToggle" type="button">I have a password</button>
-    <form class="password-form" id="gateForm">
-      <input type="password" id="gatePassword" placeholder="Password" autocomplete="current-password" required>
-      <button class="password-submit" type="submit">Enter</button>
-    </form>
-    <div class="password-error" id="gateError">Wrong password</div>
-  </div>
-
   <main class="main-stage">
     <section class="signup-panel" aria-labelledby="comingSoonTitle">
       <div class="brand-logo">KRO PK</div>
@@ -387,36 +285,7 @@
   </nav>
 
   <script>
-    const PASS = 'KROPK2026';
-    const STORAGE_KEY = 'kro_pk_site_unlocked';
-    const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
     const images = ['campaign-3.jpg', 'slideshow-1.jpg', 'slideshow-2.jpg'];
-
-    function unlockSite() {
-      document.cookie = `${STORAGE_KEY}=1; Max-Age=${COOKIE_MAX_AGE}; Path=/; SameSite=Lax`;
-      try {
-        localStorage.setItem(STORAGE_KEY, '1');
-      } catch {
-        // The cookie is the server-side unlock source of truth.
-      }
-    }
-
-    function hasStoredUnlock() {
-      const hasCookie = document.cookie
-        .split(';')
-        .some(cookie => cookie.trim() === `${STORAGE_KEY}=1`);
-      if (hasCookie) return true;
-      try {
-        return localStorage.getItem(STORAGE_KEY) === '1';
-      } catch {
-        return false;
-      }
-    }
-
-    if (hasStoredUnlock()) {
-      unlockSite();
-      window.location.replace('/shop1.html');
-    }
 
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.dot');
@@ -437,31 +306,6 @@
     setInterval(() => {
       goToSlide((current + 1) % images.length);
     }, 1800);
-
-    const passwordToggle = document.getElementById('passwordToggle');
-    const gateForm = document.getElementById('gateForm');
-    const gatePassword = document.getElementById('gatePassword');
-    const gateError = document.getElementById('gateError');
-
-    passwordToggle.addEventListener('click', () => {
-      gateForm.classList.toggle('open');
-      gateError.classList.remove('show');
-      if (gateForm.classList.contains('open')) gatePassword.focus();
-    });
-
-    gateForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (gatePassword.value.trim() === PASS) {
-        unlockSite();
-        window.location.replace('/shop1.html');
-        return;
-      }
-      gateError.classList.add('show');
-    });
-
-    gatePassword.addEventListener('input', () => {
-      gateError.classList.remove('show');
-    });
 
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();

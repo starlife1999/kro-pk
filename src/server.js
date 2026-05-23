@@ -41,31 +41,30 @@ if (!process.env.MONGODB_URI) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 const COMING_SOON_RAW = process.env.COMING_SOON;
 const COMING_SOON_ENABLED = String(COMING_SOON_RAW || 'false').trim().replace(/^['"]|['"]$/g, '').toLowerCase() === 'true';
-const COMING_SOON_UNLOCK_COOKIE = 'kro_pk_site_unlocked';
 const ABANDONED_CART_HOURS = 24;
 
 app.use(cookieParser());
 
 app.use((req, res, next) => {
   if (!COMING_SOON_ENABLED) return next();
-  if (req.cookies?.[COMING_SOON_UNLOCK_COOKIE] === '1') return next();
 
   const p = req.path;
-  if (
-    p.startsWith('/api') ||
-    p.startsWith('/admin') ||
-    p === '/coming-soon.html' ||
-    p === '/robots.txt' ||
-    p === '/sitemap.xml' ||
-    /\.(css|js|mjs|map|jpg|jpeg|png|gif|webp|ico|svg|woff2?|ttf|txt|xml|webmanifest)$/i.test(p)
-  ) {
+  const isComingSoonPage = p === '/coming-soon';
+  const isAdminRoute = p.startsWith('/admin') || p.startsWith('/api/admin');
+  const isAsset = /\.(css|js|mjs|map|jpg|jpeg|png|gif|webp|ico|svg|woff2?|ttf|txt|xml|webmanifest)$/i.test(p);
+
+  if (isComingSoonPage || isAdminRoute || isAsset) {
     return next();
   }
-  return res.redirect(302, '/coming-soon.html');
+  return res.redirect(302, '/coming-soon');
 });
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+app.get('/coming-soon', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'coming-soon.html'));
+});
 
 function escapeXml(value = '') {
   return String(value)
@@ -1860,7 +1859,7 @@ connectDB().then(() => seedProducts()).then(() => normalizeProductSortOrder()).t
   app.listen(PORT, () => {
     console.log(`KRO PK backend running on http://localhost:${PORT}`);
     console.log(`COMING_SOON raw value: ${COMING_SOON_RAW === undefined ? '(unset)' : JSON.stringify(COMING_SOON_RAW)}; enabled: ${COMING_SOON_ENABLED}`);
-    if (COMING_SOON_ENABLED) console.log('COMING_SOON mode: public routes redirect to /coming-soon.html');
+    if (COMING_SOON_ENABLED) console.log('COMING_SOON mode: public routes redirect to /coming-soon');
   });
 }).catch(err => {
   console.error('Failed to start server', err);
