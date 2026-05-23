@@ -41,6 +41,8 @@ if (!process.env.MONGODB_URI) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 const COMING_SOON_RAW = process.env.COMING_SOON;
 const COMING_SOON_ENABLED = String(COMING_SOON_RAW || 'false').trim().replace(/^['"]|['"]$/g, '').toLowerCase() === 'true';
+const COMING_SOON_PASSWORD = process.env.COMING_SOON_PASSWORD || '';
+const COMING_SOON_ACCESS_COOKIE = 'kro_pk_public_access';
 const ABANDONED_CART_HOURS = 24;
 
 app.use(cookieParser());
@@ -52,9 +54,18 @@ app.use((req, res, next) => {
   const isComingSoonPage = p === '/coming-soon';
   const isAdminRoute = p.startsWith('/admin') || p.startsWith('/api/admin');
   const isSubscriberSignup = p === '/api/subscribe';
+  const isComingSoonLogin = p === '/api/coming-soon/login';
   const isAsset = /\.(css|js|mjs|map|jpg|jpeg|png|gif|webp|ico|svg|woff2?|ttf|txt|xml|webmanifest)$/i.test(p);
 
-  if (isComingSoonPage || isAdminRoute || isSubscriberSignup || isAsset) {
+  try {
+    const access = req.cookies?.[COMING_SOON_ACCESS_COOKIE];
+    if (access && !isAdminRoute) {
+      const payload = jwt.verify(access, JWT_SECRET);
+      if (payload?.scope === 'coming-soon-access') return next();
+    }
+  } catch {}
+
+  if (isComingSoonPage || isAdminRoute || isSubscriberSignup || isComingSoonLogin || isAsset) {
     return next();
   }
   return res.redirect(302, '/coming-soon');
@@ -65,6 +76,27 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/coming-soon', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'coming-soon.html'));
+});
+
+app.post('/api/coming-soon/login', (req, res) => {
+  const password = String(req.body?.password || '');
+
+  if (!COMING_SOON_PASSWORD) {
+    return res.status(503).json({ message: 'Access password is not configured' });
+  }
+
+  if (password !== COMING_SOON_PASSWORD) {
+    return res.status(401).json({ message: 'Invalid password' });
+  }
+
+  const token = jwt.sign({ scope: 'coming-soon-access' }, JWT_SECRET, { expiresIn: '7d' });
+  res.cookie(COMING_SOON_ACCESS_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+  return res.json({ redirectTo: '/shop' });
 });
 
 function escapeXml(value = '') {

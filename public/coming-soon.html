@@ -68,24 +68,100 @@
         rgba(15, 23, 42, 0.34);
     }
 
-    .login-link {
+    .login-trigger {
       position: fixed;
       top: max(1rem, env(safe-area-inset-top));
       right: max(1rem, env(safe-area-inset-right));
       z-index: 10;
+      border: 0;
+      background: transparent;
       color: var(--white);
+      cursor: pointer;
       font-family: 'Bangers', cursive;
       font-size: 0.95rem;
       letter-spacing: 0.08em;
-      text-decoration: none;
       text-transform: uppercase;
       opacity: 0.82;
       transition: color 0.2s ease, opacity 0.2s ease;
     }
 
-    .login-link:hover {
+    .login-trigger:hover,
+    .login-trigger:focus-visible {
       color: var(--yellow);
       opacity: 1;
+      outline: none;
+    }
+
+    .login-prompt {
+      position: fixed;
+      top: max(3.25rem, calc(2.75rem + env(safe-area-inset-top)));
+      right: max(1rem, env(safe-area-inset-right));
+      z-index: 10;
+      display: none;
+      width: min(280px, calc(100vw - 2rem));
+    }
+
+    .login-prompt.open {
+      display: block;
+    }
+
+    .login-form {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .login-form input {
+      min-height: 42px;
+      border: 2px solid var(--white);
+      background: rgba(15, 23, 42, 0.88);
+      color: var(--white);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.95rem;
+      padding: 0.7rem 0.75rem;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    .login-form input::placeholder {
+      color: #94a3b8;
+    }
+
+    .login-form input:focus {
+      border-color: var(--yellow);
+      outline: none;
+    }
+
+    .login-submit {
+      min-height: 42px;
+      border: 2px solid var(--white);
+      background: var(--red);
+      color: var(--white);
+      cursor: pointer;
+      font-family: 'Bangers', cursive;
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .login-submit:hover,
+    .login-submit:focus-visible {
+      background: var(--yellow);
+      color: var(--ink);
+      outline: none;
+    }
+
+    .login-submit:disabled {
+      cursor: wait;
+      opacity: 0.72;
+    }
+
+    .login-status {
+      min-height: 1rem;
+      color: #fecaca;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.78rem;
+      text-align: right;
     }
 
     .main-stage {
@@ -228,7 +304,15 @@
 
   <div class="overlay" aria-hidden="true"></div>
 
-  <a class="login-link" href="/admin">LOG IN</a>
+  <button class="login-trigger" id="loginTrigger" type="button" aria-expanded="false" aria-controls="loginPrompt">LOG IN</button>
+
+  <div class="login-prompt" id="loginPrompt">
+    <form class="login-form" id="loginForm">
+      <input type="password" id="accessPassword" placeholder="Password" autocomplete="current-password" required>
+      <button class="login-submit" type="submit">ENTER</button>
+      <p class="login-status" id="loginStatus" aria-live="polite"></p>
+    </form>
+  </div>
 
   <main class="main-stage">
     <section class="signup-panel" aria-label="Email signup">
@@ -264,6 +348,49 @@
     setInterval(() => {
       goToSlide((current + 1) % images.length);
     }, 1800);
+
+    const loginTrigger = document.getElementById('loginTrigger');
+    const loginPrompt = document.getElementById('loginPrompt');
+    const loginForm = document.getElementById('loginForm');
+    const accessPassword = document.getElementById('accessPassword');
+    const loginStatus = document.getElementById('loginStatus');
+
+    loginTrigger.addEventListener('click', () => {
+      const isOpen = loginPrompt.classList.contains('open');
+      if (!isOpen) {
+        loginPrompt.classList.add('open');
+        loginTrigger.setAttribute('aria-expanded', 'true');
+        accessPassword.focus();
+        return;
+      }
+      loginPrompt.classList.remove('open');
+      loginTrigger.setAttribute('aria-expanded', 'false');
+    });
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submit = e.currentTarget.querySelector('button');
+      const password = accessPassword.value;
+      if (!password) return;
+
+      loginStatus.textContent = '';
+      submit.disabled = true;
+
+      try {
+        const res = await fetch('/api/coming-soon/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Login failed');
+        window.location.assign(data.redirectTo || '/shop');
+      } catch (err) {
+        loginStatus.textContent = err.message || 'Login failed';
+      } finally {
+        submit.disabled = false;
+      }
+    });
 
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
