@@ -566,7 +566,12 @@ ${emailButtonHtml('VIEW IN ADMIN', `${SITE_URL}/admin`)}
   return {
     from: resendFrom(),
     to: OWNER_EMAIL,
-    subject: `New order ${order.orderNumber}`,
+    subject: `🔥 NEW ORDER — ${order.orderNumber}`,
+    headers: {
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+      'Importance': 'high'
+    },
     html: body
   };
 }
