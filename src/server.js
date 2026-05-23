@@ -39,7 +39,8 @@ if (!process.env.MONGODB_URI) {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const COMING_SOON_ENABLED = String(process.env.COMING_SOON || 'false').trim().toLowerCase() === 'true';
+const COMING_SOON_RAW = process.env.COMING_SOON;
+const COMING_SOON_ENABLED = String(COMING_SOON_RAW || 'false').trim().replace(/^['"]|['"]$/g, '').toLowerCase() === 'true';
 const COMING_SOON_UNLOCK_COOKIE = 'kro_pk_site_unlocked';
 const ABANDONED_CART_HOURS = 24;
 
@@ -1853,6 +1854,7 @@ connectDB().then(() => seedProducts()).then(() => normalizeProductSortOrder()).t
 
   app.listen(PORT, () => {
     console.log(`KRO PK backend running on http://localhost:${PORT}`);
+    console.log(`COMING_SOON raw value: ${COMING_SOON_RAW === undefined ? '(unset)' : JSON.stringify(COMING_SOON_RAW)}; enabled: ${COMING_SOON_ENABLED}`);
     if (COMING_SOON_ENABLED) console.log('COMING_SOON mode: public routes redirect to /coming-soon.html');
   });
 }).catch(err => {
