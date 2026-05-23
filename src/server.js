@@ -40,10 +40,15 @@ if (!process.env.MONGODB_URI) {
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const COMING_SOON_ENABLED = String(process.env.COMING_SOON || 'false').trim().toLowerCase() === 'true';
+const COMING_SOON_UNLOCK_COOKIE = 'kro_pk_site_unlocked';
 const ABANDONED_CART_HOURS = 24;
+
+app.use(cookieParser());
 
 app.use((req, res, next) => {
   if (!COMING_SOON_ENABLED) return next();
+  if (req.cookies?.[COMING_SOON_UNLOCK_COOKIE] === '1') return next();
+
   const p = req.path;
   if (
     p.startsWith('/api') ||
@@ -59,7 +64,6 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 function escapeXml(value = '') {

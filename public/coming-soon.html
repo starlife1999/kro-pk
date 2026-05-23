@@ -316,9 +316,32 @@
   <script>
     const PASS = 'KROPK2026';
     const STORAGE_KEY = 'kro_pk_site_unlocked';
+    const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
     const images = ['campaign-3.jpg', 'slideshow-1.jpg', 'slideshow-2.jpg'];
 
-    if (localStorage.getItem(STORAGE_KEY) === '1') {
+    function unlockSite() {
+      document.cookie = `${STORAGE_KEY}=1; Max-Age=${COOKIE_MAX_AGE}; Path=/; SameSite=Lax`;
+      try {
+        localStorage.setItem(STORAGE_KEY, '1');
+      } catch {
+        // The cookie is the server-side unlock source of truth.
+      }
+    }
+
+    function hasStoredUnlock() {
+      const hasCookie = document.cookie
+        .split(';')
+        .some(cookie => cookie.trim() === `${STORAGE_KEY}=1`);
+      if (hasCookie) return true;
+      try {
+        return localStorage.getItem(STORAGE_KEY) === '1';
+      } catch {
+        return false;
+      }
+    }
+
+    if (hasStoredUnlock()) {
+      unlockSite();
       window.location.replace('/shop1.html');
     }
 
@@ -347,8 +370,8 @@
       const err = document.getElementById('gateError');
       const value = document.getElementById('gatePassword').value.trim();
       if (value === PASS) {
-        localStorage.setItem(STORAGE_KEY, '1');
-        window.location.href = '/shop1.html';
+        unlockSite();
+        window.location.replace('/shop1.html');
         return;
       }
       err.classList.add('show');
