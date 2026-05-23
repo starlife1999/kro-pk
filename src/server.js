@@ -51,9 +51,10 @@ app.use((req, res, next) => {
   const p = req.path;
   const isComingSoonPage = p === '/coming-soon';
   const isAdminRoute = p.startsWith('/admin') || p.startsWith('/api/admin');
+  const isSubscriberSignup = p === '/api/subscribe';
   const isAsset = /\.(css|js|mjs|map|jpg|jpeg|png|gif|webp|ico|svg|woff2?|ttf|txt|xml|webmanifest)$/i.test(p);
 
-  if (isComingSoonPage || isAdminRoute || isAsset) {
+  if (isComingSoonPage || isAdminRoute || isSubscriberSignup || isAsset) {
     return next();
   }
   return res.redirect(302, '/coming-soon');
