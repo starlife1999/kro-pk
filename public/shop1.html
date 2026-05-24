@@ -1152,7 +1152,7 @@ body::before {
             .sfx-pow { left: 5%; }
 
             .product-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: minmax(0, 1fr);
             }
         }
 
@@ -1219,16 +1219,24 @@ body::before {
             }
 
             .product-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 1.25rem;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 1rem;
             }
 
             .catalogue {
-                padding: 1.25rem max(0.75rem, env(safe-area-inset-left)) 2.5rem max(0.75rem, env(safe-area-inset-right));
+                padding: 0.9rem max(0.75rem, env(safe-area-inset-left)) 2rem max(0.75rem, env(safe-area-inset-right));
             }
 
             .drop-section {
-                padding: 2.5rem max(0.5rem, env(safe-area-inset-left)) 2rem max(0.5rem, env(safe-area-inset-right));
+                padding: 2rem max(0.5rem, env(safe-area-inset-left)) 1.25rem max(0.5rem, env(safe-area-inset-right));
+            }
+
+            .section-header {
+                margin-bottom: 1.75rem;
+            }
+
+            .brand-story {
+                padding: 0.5rem 1.1rem 2.25rem;
             }
 
             .section-title {
@@ -1261,7 +1269,7 @@ body::before {
             }
 
             .sub-footer-section {
-                padding: 2.25rem max(0.75rem, env(safe-area-inset-left)) 2.5rem max(0.75rem, env(safe-area-inset-right));
+                padding: 2rem max(0.75rem, env(safe-area-inset-left)) 2.25rem max(0.75rem, env(safe-area-inset-right));
             }
 
             .sub-footer-form {
