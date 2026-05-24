@@ -1657,7 +1657,6 @@ body::before {
                         <div class="product-info">
                             <h3 class="product-name">${product.name}</h3>
                             <div class="product-price">₦${Number(product.price || 0).toLocaleString('en-NG')}</div>
-                            <p class="product-desc">${product.description || ''}</p>
                             <button class="add-to-cart-btn" ${isSoldOut ? 'disabled style="opacity:.45;cursor:not-allowed;"' : ''} onclick="event.stopPropagation(); quickAddToCart('${product.slug}','${String(product.name || '').replace(/'/g, '\\\'')}',${Number(product.price || 0)},'${product.image || ''}')">${isSoldOut ? 'SOLD OUT' : '🛒 ADD TO CART'}</button>
                         </div>
                     </div>
