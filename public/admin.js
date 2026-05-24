@@ -41,10 +41,30 @@ const logoutBtn = document.getElementById('logoutBtn');
 let orders = [];
 let products = [];
 let selectedOrder = null;
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const UPLOAD_TIMEOUT_MS = 60000;
+const activeUploads = new Set();
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection and try again.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
 
 const fetchJson = async (url, options = {}) => {
   console.log('[admin] request', url, options);
-  const res = await fetch(url, options);
+  const timeoutMs = options.timeoutMs || 30000;
+  const { timeoutMs: _timeoutMs, ...fetchOptions } = options;
+  const res = await fetchWithTimeout(url, fetchOptions, timeoutMs);
   const raw = await res.text();
   let body = {};
   try { body = raw ? JSON.parse(raw) : {}; } catch { body = { raw }; }
@@ -53,6 +73,37 @@ const fetchJson = async (url, options = {}) => {
     throw new Error(body.message || `Request failed (${res.status})`);
   }
   return body;
+};
+
+const parseUploadResponse = async res => {
+  const raw = await res.text();
+  let body = {};
+  try { body = raw ? JSON.parse(raw) : {}; } catch { body = { raw }; }
+  if (!res.ok) throw new Error(body.message || `Upload failed (${res.status})`);
+  return body;
+};
+
+const setCardBusy = (card, isBusy, status, kind = '') => {
+  card.querySelectorAll('input, textarea, button').forEach(control => {
+    if (isBusy) {
+      if (!control.dataset.wasDisabled) control.dataset.wasDisabled = control.disabled ? 'true' : 'false';
+      control.disabled = true;
+    } else if (control.dataset.wasDisabled) {
+      control.disabled = control.dataset.wasDisabled === 'true';
+      delete control.dataset.wasDisabled;
+    }
+  });
+
+  const statusEl = card.querySelector('.upload-status');
+  if (statusEl) {
+    statusEl.textContent = status || '';
+    statusEl.className = `upload-status ${kind}`.trim();
+  }
+};
+
+const validateUploadFile = file => {
+  if (!file.type.startsWith('image/')) throw new Error('Please choose an image file.');
+  if (file.size > MAX_UPLOAD_BYTES) throw new Error('Image is too large. Maximum size is 5MB.');
 };
 
 const formatPrice = value => `₦${Number(value).toLocaleString('en-NG')}`;
@@ -298,6 +349,7 @@ const loadProducts = async () => {
         <button class="archive-product btn-small" style="background:#f59e0b;color:#111827;">Archive</button>
         <button class="delete-product btn-small" style="background:#b91c1c;">Delete</button>
       </div>
+      <div class="upload-status" aria-live="polite"></div>
     </div>`;
   }).join('');
 
@@ -307,24 +359,31 @@ const loadProducts = async () => {
       if (!file) return;
       const card = e.target.closest('.product-card');
       const slug = card.dataset.slug;
+      const uploadKey = `image:${slug}`;
+      if (activeUploads.has(uploadKey)) return;
       const form = new FormData();
       form.append('image', file);
       try {
-        const res = await fetch(`/api/admin/products/${encodeURIComponent(slug)}/image`, {
+        validateUploadFile(file);
+        activeUploads.add(uploadKey);
+        setCardBusy(card, true, 'Uploading primary image...');
+        const res = await fetchWithTimeout(`/api/admin/products/${encodeURIComponent(slug)}/image`, {
           method: 'POST',
           credentials: 'include',
           body: form
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.message || 'Upload failed');
+        }, UPLOAD_TIMEOUT_MS);
+        const body = await parseUploadResponse(res);
         const updatedImage = body.product?.image ?? body.image ?? '';
         card.querySelector('.product-image').value = updatedImage;
+        setCardBusy(card, false, 'Primary image uploaded', 'success');
         showMessage('Primary image uploaded');
         await loadProducts();
       } catch (err) {
         console.error(err);
+        setCardBusy(card, false, err.message || 'Image upload failed', 'error');
         showMessage(err.message || 'Image upload failed');
       } finally {
+        activeUploads.delete(uploadKey);
         e.target.value = '';
       }
     });
@@ -336,22 +395,29 @@ const loadProducts = async () => {
       if (!files.length) return;
       const card = e.target.closest('.product-card');
       const slug = card.dataset.slug;
+      const uploadKey = `gallery:${slug}`;
+      if (activeUploads.has(uploadKey)) return;
       const form = new FormData();
       files.forEach(f => form.append('gallery', f));
       try {
-        const res = await fetch(`/api/admin/products/${encodeURIComponent(slug)}/gallery`, {
+        files.forEach(validateUploadFile);
+        activeUploads.add(uploadKey);
+        setCardBusy(card, true, `Uploading ${files.length} gallery image${files.length === 1 ? '' : 's'}...`);
+        const res = await fetchWithTimeout(`/api/admin/products/${encodeURIComponent(slug)}/gallery`, {
           method: 'POST',
           credentials: 'include',
           body: form
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.message || 'Gallery upload failed');
+        }, UPLOAD_TIMEOUT_MS);
+        await parseUploadResponse(res);
+        setCardBusy(card, false, 'Gallery images uploaded', 'success');
         showMessage('Gallery images uploaded');
         await loadProducts();
       } catch (err) {
         console.error(err);
+        setCardBusy(card, false, err.message || 'Gallery upload failed', 'error');
         showMessage(err.message || 'Gallery upload failed');
       } finally {
+        activeUploads.delete(uploadKey);
         e.target.value = '';
       }
     });
@@ -461,6 +527,8 @@ const loadProducts = async () => {
 };
 
 const createProduct = async () => {
+  const createBtn = document.getElementById('createProductBtn');
+  if (createBtn.disabled) return;
   const payload = {
     name: document.getElementById('newProductName').value.trim(),
     price: Number(document.getElementById('newProductPrice').value),
@@ -473,22 +541,32 @@ const createProduct = async () => {
     showMessage('Name and price are required');
     return;
   }
-  await fetchJson('/api/admin/products', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(payload)
-  });
-  showMessage('Product created');
-  document.getElementById('newProductName').value = '';
-  document.getElementById('newProductPrice').value = '';
-  document.getElementById('newProductDescription').value = '';
-  document.getElementById('newProductTag').value = '';
-  document.getElementById('newProductImage').value = '';
-  document.getElementById('newProductActive').checked = true;
-  productForm.classList.add('hidden');
-  await loadProducts();
-  await loadInventory();
+  try {
+    createBtn.disabled = true;
+    createBtn.textContent = 'Creating...';
+    await fetchJson('/api/admin/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    showMessage('Product created');
+    document.getElementById('newProductName').value = '';
+    document.getElementById('newProductPrice').value = '';
+    document.getElementById('newProductDescription').value = '';
+    document.getElementById('newProductTag').value = '';
+    document.getElementById('newProductImage').value = '';
+    document.getElementById('newProductActive').checked = true;
+    productForm.classList.add('hidden');
+    await loadProducts();
+    await loadInventory();
+  } catch (err) {
+    console.error(err);
+    showMessage(err.message || 'Unable to create product');
+  } finally {
+    createBtn.disabled = false;
+    createBtn.textContent = 'Create product';
+  }
 };
 
 const switchTab = tabName => {

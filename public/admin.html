@@ -37,8 +37,12 @@
     .stock-input { width:100%; padding:.7rem 1rem; border-radius:12px; border:1px solid #334155; background:#090f1f; color:#fff; }
     .product-actions { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
     .product-actions button { border:none;padding:.75rem 1rem;border-radius:999px;cursor:pointer;background:#2563eb;color:#fff; }
+    .product-actions button:disabled, .stock-input:disabled, .btn-small:disabled { opacity:.55; cursor:not-allowed; }
     .product-actions label { display:inline-flex; align-items:center; gap:.5rem; cursor:pointer; }
     .product-actions input[type=checkbox] { accent-color:#fbbf24; }
+    .upload-status { min-height:1.2rem; margin-top:.75rem; color:#94a3b8; font-size:.9rem; }
+    .upload-status.error { color:#f87171; }
+    .upload-status.success { color:#34d399; }
     .order-details { margin-top:1rem; font-size:.95rem; line-height:1.6; }
     .order-details strong { color:#fbbf24; }
     .hidden { display:none; }

@@ -8,10 +8,10 @@ const jwt = require('jsonwebtoken');
 const https = require('https');
 const { Resend } = require('resend');
 const multer = require('multer');
+const { Readable } = require('stream');
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
 const { v2: cloudinary } = require('cloudinary');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
@@ -273,20 +273,126 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary,
-  params: async (_req, file) => ({
-    folder: 'kro-pk/products',
-    resource_type: 'image',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-    public_id: `${String(file.fieldname || 'image').replace(/[^a-zA-Z0-9_-]+/g, '-')}-${Date.now()}`
-  })
-});
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const UPLOAD_TIMEOUT_MS = Number(process.env.UPLOAD_TIMEOUT_MS || 45000);
+const CLOUDINARY_UPLOAD_FOLDER = 'kro-pk/products';
+const ALLOWED_IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif'
+]);
 
 const upload = multer({
-  storage: cloudinaryStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_UPLOAD_BYTES,
+    files: 4
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)) {
+      return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
+    }
+    return cb(null, true);
+  }
 });
+
+function uploadPublicId(file) {
+  const field = String(file?.fieldname || 'image').replace(/[^a-zA-Z0-9_-]+/g, '-') || 'image';
+  const original = String(file?.originalname || '').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 40);
+  return [field, original, Date.now()].filter(Boolean).join('-');
+}
+
+function formatBytes(bytes) {
+  return `${Math.round((Number(bytes || 0) / 1024 / 1024) * 10) / 10}MB`;
+}
+
+function uploadErrorStatus(err) {
+  if (err?.code === 'UPLOAD_TIMEOUT') return 504;
+  if (err instanceof multer.MulterError) return 400;
+  if (err?.name === 'ValidationError' || err?.name === 'CastError') return 400;
+  return 500;
+}
+
+function uploadErrorMessage(err) {
+  if (err?.code === 'LIMIT_FILE_SIZE') return `Image is too large. Maximum size is ${formatBytes(MAX_UPLOAD_BYTES)}.`;
+  if (err?.code === 'LIMIT_UNEXPECTED_FILE') return 'Only JPG, PNG, WEBP, and GIF images are allowed.';
+  if (err?.code === 'UPLOAD_TIMEOUT') return 'Image upload timed out. Please try a smaller image or try again.';
+  return err?.message || 'Image upload failed';
+}
+
+function sendUploadError(res, err, context) {
+  const status = uploadErrorStatus(err);
+  const message = uploadErrorMessage(err);
+  console.error(`[upload] ${context} failed`, {
+    status,
+    code: err?.code,
+    message: err?.message || err
+  });
+  if (!res.headersSent) {
+    return res.status(status).json({ message });
+  }
+}
+
+function runUploadMiddleware(req, res, middleware, context) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      const err = new Error(`${context} request parsing timed out`);
+      err.code = 'UPLOAD_TIMEOUT';
+      reject(err);
+    }, UPLOAD_TIMEOUT_MS);
+
+    middleware(req, res, err => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
+
+function uploadBufferToCloudinary(file, context) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let stream;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      const err = new Error(`${context} Cloudinary upload timed out`);
+      err.code = 'UPLOAD_TIMEOUT';
+      if (stream?.destroy) stream.destroy(err);
+      reject(err);
+    }, UPLOAD_TIMEOUT_MS);
+
+    stream = cloudinary.uploader.upload_stream({
+      folder: CLOUDINARY_UPLOAD_FOLDER,
+      resource_type: 'image',
+      public_id: uploadPublicId(file),
+      timeout: UPLOAD_TIMEOUT_MS
+    }, (err, response) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (err) return reject(err);
+      if (!response?.secure_url) return reject(new Error('Cloudinary did not return a secure URL'));
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[upload] ${context} Cloudinary response`, {
+          public_id: response.public_id,
+          secure_url: response.secure_url,
+          bytes: response.bytes,
+          format: response.format
+        });
+      }
+      resolve(response);
+    });
+
+    Readable.from(file.buffer).pipe(stream);
+  });
+}
 
 async function connectDB() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kro_pk_store', {
@@ -1255,30 +1361,72 @@ app.post('/api/admin/broadcasts', authMiddleware, async (req, res) => {
 });
 
 // ─── ADMIN: PRODUCT IMAGE UPLOAD ───────────────────────────────
-app.post('/api/admin/products/:slug/image', authMiddleware, upload.single('image'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-  const slug = decodeURIComponent(req.params.slug);
-  const imagePath = req.file.path;
-  const product = await Product.findOneAndUpdate(
-    { slug },
-    { $set: { image: imagePath } },
-    { new: true, runValidators: true }
-  ).lean();
-  if (!product) return res.status(404).json({ message: 'Product not found' });
-  res.status(201).json({ message: 'Uploaded', image: imagePath, product });
+app.post('/api/admin/products/:slug/image', authMiddleware, async (req, res) => {
+  const startedAt = Date.now();
+  let slug;
+
+  try {
+    slug = decodeURIComponent(req.params.slug);
+    console.log('[upload] primary image request started', { slug });
+    await runUploadMiddleware(req, res, upload.single('image'), `primary image for ${slug}`);
+
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+    const existingProduct = await Product.findOne({ slug }).select('_id slug').lean();
+    if (!existingProduct) return res.status(404).json({ message: 'Product not found' });
+
+    const cloudinaryResponse = await uploadBufferToCloudinary(req.file, `primary image for ${slug}`);
+    const imagePath = cloudinaryResponse.secure_url;
+    const product = await Product.findOneAndUpdate(
+      { _id: existingProduct._id },
+      { $set: { image: imagePath } },
+      { new: true, runValidators: true }
+    ).lean();
+
+    console.log('[upload] primary image request completed', {
+      slug,
+      ms: Date.now() - startedAt,
+      image: imagePath
+    });
+    return res.status(201).json({ message: 'Uploaded', image: imagePath, product });
+  } catch (err) {
+    return sendUploadError(res, err, `primary image${slug ? ` for ${slug}` : ''}`);
+  }
 });
 
-app.post('/api/admin/products/:slug/gallery', authMiddleware, upload.array('gallery', 4), async (req, res) => {
-  const slug = decodeURIComponent(req.params.slug);
-  if (!req.files?.length) return res.status(400).json({ message: 'No files uploaded' });
-  const paths = req.files.slice(0, 4).map(f => f.path);
-  const product = await Product.findOneAndUpdate(
-    { slug },
-    { $set: { images: paths } },
-    { new: true, runValidators: true }
-  ).lean();
-  if (!product) return res.status(404).json({ message: 'Product not found' });
-  res.status(201).json({ message: 'Gallery uploaded', images: paths, product });
+app.post('/api/admin/products/:slug/gallery', authMiddleware, async (req, res) => {
+  const startedAt = Date.now();
+  let slug;
+
+  try {
+    slug = decodeURIComponent(req.params.slug);
+    console.log('[upload] gallery request started', { slug });
+    await runUploadMiddleware(req, res, upload.array('gallery', 4), `gallery for ${slug}`);
+
+    if (!req.files?.length) return res.status(400).json({ message: 'No files uploaded' });
+
+    const existingProduct = await Product.findOne({ slug }).select('_id slug').lean();
+    if (!existingProduct) return res.status(404).json({ message: 'Product not found' });
+
+    const cloudinaryResponses = await Promise.all(
+      req.files.slice(0, 4).map((file, index) => uploadBufferToCloudinary(file, `gallery ${index + 1} for ${slug}`))
+    );
+    const paths = cloudinaryResponses.map(response => response.secure_url);
+    const product = await Product.findOneAndUpdate(
+      { _id: existingProduct._id },
+      { $set: { images: paths } },
+      { new: true, runValidators: true }
+    ).lean();
+
+    console.log('[upload] gallery request completed', {
+      slug,
+      ms: Date.now() - startedAt,
+      count: paths.length
+    });
+    return res.status(201).json({ message: 'Gallery uploaded', images: paths, product });
+  } catch (err) {
+    return sendUploadError(res, err, `gallery${slug ? ` for ${slug}` : ''}`);
+  }
 });
 
 app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
