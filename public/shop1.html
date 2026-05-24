@@ -1152,7 +1152,7 @@ body::before {
             .sfx-pow { left: 5%; }
 
             .product-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
@@ -1219,7 +1219,7 @@ body::before {
             }
 
             .product-grid {
-                grid-template-columns: minmax(0, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
                 gap: 1.25rem;
             }
 
