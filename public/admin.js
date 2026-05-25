@@ -75,6 +75,12 @@ const fetchJson = async (url, options = {}) => {
   return body;
 };
 
+const normalizeProductsResponse = data => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.products)) return data.products;
+  return [];
+};
+
 const parseUploadResponse = async res => {
   const raw = await res.text();
   let body = {};
@@ -237,7 +243,7 @@ const deleteAllOrders = async () => {
 };
 
 const loadInventory = async () => {
-  products = await fetchJson('/api/products/all', { credentials: 'include' });
+  products = normalizeProductsResponse(await fetchJson('/api/products/all', { credentials: 'include' }));
   inventoryGrid.innerHTML = products.map(product => {
     const lowStock = Object.values(product.sizes).some(x => x <= 2 && x >= 0);
     return `
@@ -297,7 +303,7 @@ const loadInventory = async () => {
 };
 
 const loadProducts = async () => {
-  products = await fetchJson('/api/products/all', { credentials: 'include' });
+  products = normalizeProductsResponse(await fetchJson('/api/products/all', { credentials: 'include' }));
   productsGrid.innerHTML = products.map((product, index) => {
     const imgs = Array.isArray(product.images) ? product.images : [];
     const galleryInputs = [0, 1, 2, 3].map(i => `
