@@ -8,10 +8,17 @@
   }
 
   function getOrCreate(key, prefix, storage) {
-    let value = storage.getItem(key);
+    let value = null;
+    try {
+      value = storage.getItem(key);
+    } catch {
+      value = null;
+    }
     if (!value) {
       value = randomId(prefix);
-      storage.setItem(key, value);
+      try {
+        storage.setItem(key, value);
+      } catch {}
     }
     return value;
   }
@@ -21,9 +28,14 @@
   const allowedSources = new Set(['instagram', 'tiktok', 'snapchat', 'whatsapp']);
   const params = new URLSearchParams(window.location.search);
   const incomingSource = String(params.get('source') || '').trim().toLowerCase();
-  const storedSource = localStorage.getItem('kro_pk_source');
+  let storedSource = '';
+  try {
+    storedSource = localStorage.getItem('kro_pk_source') || '';
+  } catch {}
   const source = allowedSources.has(incomingSource) ? incomingSource : (storedSource || 'direct');
-  localStorage.setItem('kro_pk_source', source);
+  try {
+    localStorage.setItem('kro_pk_source', source);
+  } catch {}
 
   function send(type, payload = {}) {
     const body = JSON.stringify({

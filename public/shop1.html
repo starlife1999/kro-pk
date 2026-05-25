@@ -1456,7 +1456,12 @@ body::before {
     }
 
     function saveCart(cart) {
-        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+        try {
+            localStorage.setItem(CART_KEY, JSON.stringify(cart));
+        } catch {
+            showToast('Unable to save cart in this browser.');
+            return;
+        }
         window.KroAnalytics?.updateProfile({ cartItems: cart });
     }
 
@@ -1585,11 +1590,17 @@ body::before {
 
     // Auto-show modal after 30 seconds if not subscribed
     setTimeout(() => {
-        const subs = JSON.parse(localStorage.getItem('kro_pk_subs') || '[]');
-        const shown = localStorage.getItem('kro_pk_modal_shown');
+        let subs = [];
+        let shown = '';
+        try {
+            subs = JSON.parse(localStorage.getItem('kro_pk_subs') || '[]');
+            shown = localStorage.getItem('kro_pk_modal_shown') || '';
+        } catch {}
         if (!subs.length && !shown) {
             openSubModal();
-            localStorage.setItem('kro_pk_modal_shown', '1');
+            try {
+                localStorage.setItem('kro_pk_modal_shown', '1');
+            } catch {}
         }
     }, 30000);
 
@@ -1643,7 +1654,8 @@ body::before {
         container.innerHTML = renderSkeletonCards(6);
         try {
             const res = await fetch('/api/products', { cache: 'no-store' });
-            const products = await res.json();
+            const products = await res.json().catch(() => []);
+            if (!res.ok) throw new Error('Unable to load products');
             if (!Array.isArray(products) || !products.length) {
                 container.innerHTML = '<div style="color:#f8fafc;padding:2rem;text-align:center;">No products available.</div>';
                 return;
@@ -1671,7 +1683,6 @@ body::before {
                 `;
             }).join('');
         } catch (err) {
-            console.error(err);
             container.innerHTML = '<div style="color:#ef4444;padding:2rem;text-align:center;">Unable to load products.</div>';
         }
     }

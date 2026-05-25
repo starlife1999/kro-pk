@@ -13,7 +13,7 @@ const analyticsEventSchema = new mongoose.Schema({
   productName: { type: String, default: '' },
   quantity: { type: Number, default: 0 },
   cartCount: { type: Number, default: 0 },
-  metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+  metadata: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
   createdAt: { type: Date, default: Date.now, index: true }
 });
 

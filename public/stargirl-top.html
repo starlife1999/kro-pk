@@ -543,9 +543,7 @@
                 const product = await getProductBySlug(slug);
                 if (!product) return;
                 setAddCartButtonState(isSizeInStock(product, selectedSize));
-            } catch (err) {
-                console.error('Product availability check failed', err);
-            }
+            } catch (err) {}
         }
 
         window.addEventListener('DOMContentLoaded', () => checkProductAvailability('stargirl-top'));

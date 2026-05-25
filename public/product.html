@@ -712,7 +712,8 @@
   async function loadRelated(currentSlug) {
     try {
       const res = await fetch('/api/products', { cache: 'no-store' });
-      const list = await res.json();
+      const list = await res.json().catch(() => []);
+      if (!res.ok) return '';
       if (!Array.isArray(list)) return '';
       const others = list.filter(p => p && p.slug && p.slug !== currentSlug && p.active).slice(0, 4);
       return others.map(p => {
@@ -875,7 +876,6 @@
     updateMainImageUI();
     await refreshAddButton();
     } catch (err) {
-      console.error(err);
       renderError('Something went wrong loading this product. Please try again or go back to the shop.');
     }
   }

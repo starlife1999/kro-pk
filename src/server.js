@@ -23,7 +23,10 @@ const AnalyticsEvent = require('./models/AnalyticsEvent');
 const ShopperProfile = require('./models/ShopperProfile');
 const Visit = require('./models/Visit');
 
+mongoose.set('sanitizeFilter', true);
+
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@kropk.com';
@@ -33,9 +36,16 @@ const OWNER_EMAIL = process.env.OWNER_EMAIL || 'orders@kropk.com';
 const FLAT_DELIVERY_FEE_NGN = 4500;
 const SITE_URL = 'https://www.kro-pk.shop';
 const SITE_ICON_URL = `${SITE_URL}/android-chrome-512x512.png`;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 if (!process.env.MONGODB_URI) {
   console.warn('Warning: MONGODB_URI not set. Using default local mongodb://localhost:27017/kro_pk_store');
+}
+if (IS_PRODUCTION && JWT_SECRET === 'change-this-secret') {
+  throw new Error('JWT_SECRET must be set in production');
+}
+if (IS_PRODUCTION && (ADMIN_EMAIL === 'admin@kropk.com' || ADMIN_PASSWORD === 'password')) {
+  throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD must be set in production');
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -44,6 +54,54 @@ const COMING_SOON_ENABLED = String(COMING_SOON_RAW || 'false').trim().replace(/^
 const COMING_SOON_PASSWORD = process.env.COMING_SOON_PASSWORD || '';
 const COMING_SOON_ACCESS_COOKIE = 'kro_pk_public_access';
 const ABANDONED_CART_HOURS = 24;
+let abandonedCartReminderRunning = false;
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_LOGIN_MAX_ATTEMPTS = 10;
+const adminLoginAttempts = new Map();
+
+process.on('unhandledRejection', err => {
+  console.error('Unhandled promise rejection', err?.message || err);
+});
+
+process.on('uncaughtException', err => {
+  console.error('Uncaught exception', err?.message || err);
+  process.exit(1);
+});
+
+function asyncHandler(handler) {
+  if (handler?.constructor?.name !== 'AsyncFunction') return handler;
+  return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+}
+
+for (const method of ['get', 'post', 'put', 'patch', 'delete']) {
+  const original = app[method].bind(app);
+  app[method] = (...args) => original(...args.map(arg => typeof arg === 'function' ? asyncHandler(arg) : arg));
+}
+
+function pruneAdminLoginAttempts(now = Date.now()) {
+  for (const [key, attempts] of adminLoginAttempts) {
+    const freshAttempts = attempts.filter(timestamp => now - timestamp < ADMIN_LOGIN_WINDOW_MS);
+    if (freshAttempts.length) {
+      adminLoginAttempts.set(key, freshAttempts);
+    } else {
+      adminLoginAttempts.delete(key);
+    }
+  }
+}
+
+function recordAdminLoginFailure(key) {
+  const now = Date.now();
+  pruneAdminLoginAttempts(now);
+  const attempts = adminLoginAttempts.get(key) || [];
+  attempts.push(now);
+  adminLoginAttempts.set(key, attempts);
+}
+
+function isAdminLoginLimited(key) {
+  const now = Date.now();
+  pruneAdminLoginAttempts(now);
+  return (adminLoginAttempts.get(key) || []).length >= ADMIN_LOGIN_MAX_ATTEMPTS;
+}
 
 app.use(cookieParser());
 
@@ -72,7 +130,7 @@ app.use((req, res, next) => {
   return res.redirect(302, '/coming-soon');
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use((req, res, next) => {
   if (req.path === '/admin' || req.path === '/admin.js') {
     res.set('Cache-Control', 'no-store');
@@ -100,7 +158,7 @@ app.post('/api/coming-soon/login', (req, res) => {
   res.cookie(COMING_SOON_ACCESS_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: IS_PRODUCTION,
     maxAge: 7 * 24 * 60 * 60 * 1000
   });
   return res.json({ redirectTo: '/shop' });
@@ -122,6 +180,10 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function isValidEmail(value = '') {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
 }
 
 function absoluteSiteUrl(value = '') {
@@ -386,14 +448,6 @@ function uploadBufferToCloudinary(file, context) {
       clearTimeout(timeout);
       if (err) return reject(err);
       if (!response?.secure_url) return reject(new Error('Cloudinary did not return a secure URL'));
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`[upload] ${context} Cloudinary response`, {
-          public_id: response.public_id,
-          secure_url: response.secure_url,
-          bytes: response.bytes,
-          format: response.format
-        });
-      }
       resolve(response);
     });
 
@@ -484,7 +538,6 @@ async function seedProducts() {
   const count = await Product.countDocuments();
   if (count === 0) {
     await Product.insertMany(defaultProducts);
-    console.log('Seeded default products');
   }
 }
 
@@ -495,7 +548,6 @@ async function normalizeProductSortOrder() {
   await Promise.all(missing.map((product, index) =>
     Product.updateOne({ _id: product._id }, { $set: { sortOrder: (index + 1) * 10 } })
   ));
-  console.log(`Normalized sortOrder for ${missing.length} products`);
 }
 
 async function getNextOrderSequence() {
@@ -836,32 +888,38 @@ ${emailButtonHtml('COMPLETE YOUR ORDER', `${SITE_URL}/cart.html`)}
 
 async function processAbandonedCartReminders() {
   if (!process.env.RESEND_API_KEY) return;
+  if (abandonedCartReminderRunning) return;
+  abandonedCartReminderRunning = true;
 
-  const cutoff = new Date(Date.now() - ABANDONED_CART_HOURS * 60 * 60 * 1000);
-  const profiles = await ShopperProfile.find({
-    'cartItems.0': { $exists: true },
-    cartUpdatedAt: { $lte: cutoff },
-    abandonedCartReminderSentAt: null,
-    'customer.email': { $exists: true, $nin: [null, ''] },
-    $or: [
-      { checkedOutAt: null },
-      { $expr: { $lt: ['$checkedOutAt', '$cartUpdatedAt'] } }
-    ]
-  }).limit(40).lean();
+  try {
+    const cutoff = new Date(Date.now() - ABANDONED_CART_HOURS * 60 * 60 * 1000);
+    const profiles = await ShopperProfile.find({
+      'cartItems.0': { $exists: true },
+      cartUpdatedAt: { $lte: cutoff },
+      abandonedCartReminderSentAt: null,
+      'customer.email': { $exists: true, $nin: [null, ''] },
+      $or: [
+        { checkedOutAt: null },
+        { $expr: { $lt: ['$checkedOutAt', '$cartUpdatedAt'] } }
+      ]
+    }).limit(40).lean();
 
-  for (const profile of profiles) {
-    const email = String(profile.customer?.email || '').trim().toLowerCase();
-    if (!email) continue;
+    for (const profile of profiles) {
+      const email = String(profile.customer?.email || '').trim().toLowerCase();
+      if (!email) continue;
 
-    try {
-      await resend.emails.send(createAbandonedCartEmail({ ...profile, customer: { ...profile.customer, email } }));
-      await ShopperProfile.updateOne(
-        { _id: profile._id },
-        { $set: { abandonedCartReminderSentAt: new Date() } }
-      );
-    } catch (err) {
-      console.error('Abandoned cart reminder failed:', email, err.message || err);
+      try {
+        await resend.emails.send(createAbandonedCartEmail({ ...profile, customer: { ...profile.customer, email } }));
+        await ShopperProfile.updateOne(
+          { _id: profile._id },
+          { $set: { abandonedCartReminderSentAt: new Date() } }
+        );
+      } catch (err) {
+        console.error('Abandoned cart reminder failed:', email, err.message || err);
+      }
     }
+  } finally {
+    abandonedCartReminderRunning = false;
   }
 }
 
@@ -878,18 +936,27 @@ function authMiddleware(req, res, next) {
 }
 
 app.post('/api/admin/login', async (req, res) => {
+  const attemptKey = req.ip || req.socket?.remoteAddress || 'unknown';
+  if (isAdminLoginLimited(attemptKey)) {
+    return res.status(429).json({ message: 'Too many login attempts. Please try again later.' });
+  }
+
   const { email, password } = req.body;
   if (!email || !password) {
+    recordAdminLoginFailure(attemptKey);
     return res.status(400).json({ message: 'Email and password are required' });
   }
   if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+    recordAdminLoginFailure(attemptKey);
     return res.status(401).json({ message: 'Invalid admin credentials' });
   }
+  adminLoginAttempts.delete(attemptKey);
 
   const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' });
   res.cookie('token', token, {
     httpOnly: true,
     sameSite: 'strict',
+    secure: IS_PRODUCTION,
     maxAge: 7 * 24 * 60 * 60 * 1000
   });
   res.json({ message: 'Login successful' });
@@ -945,6 +1012,7 @@ app.post('/api/subscribe', async (req, res) => {
   const name = String(req.body?.name || '').trim();
   const email = String(req.body?.email || '').trim().toLowerCase();
   if (!email) return res.status(400).json({ message: 'Email is required' });
+  if (!isValidEmail(email)) return res.status(400).json({ message: 'A valid email is required' });
 
   const existing = await Subscriber.findOne({ email });
   if (existing) {
@@ -1024,10 +1092,14 @@ app.post('/api/analytics/profile', async (req, res) => {
     lastActivityAt: new Date()
   };
   if (req.body?.customer && typeof req.body.customer === 'object') {
+    const email = String(req.body.customer.email || '').trim().toLowerCase();
+    if (email && !isValidEmail(email)) {
+      return res.status(400).json({ message: 'A valid customer email is required' });
+    }
     update.customer = {
       name: String(req.body.customer.name || '').trim(),
       phone: String(req.body.customer.phone || '').trim(),
-      email: String(req.body.customer.email || '').trim().toLowerCase()
+      email
     };
   }
   if (cartItems) {
@@ -1056,6 +1128,9 @@ app.post('/api/orders', async (req, res) => {
   if (missingFields.length) {
     return res.status(400).json({ message: 'All customer fields are required' });
   }
+  if (!isValidEmail(customer.email)) {
+    return res.status(400).json({ message: 'A valid customer email is required' });
+  }
 
   const preparedItems = [];
   const stockErrors = [];
@@ -1064,27 +1139,30 @@ app.post('/api/orders', async (req, res) => {
   let total = 0;
 
   for (const item of items) {
-    if (!item.slug || !item.size || !item.qty || !item.price) {
-      return res.status(400).json({ message: 'Each item needs slug, size, qty, and price' });
+    const slug = String(item?.slug || '').trim();
+    const size = String(item?.size || '').trim();
+    const qty = Number(item?.qty);
+    if (!slug || !size || !Number.isInteger(qty) || qty <= 0 || qty > 99) {
+      return res.status(400).json({ message: 'Each item needs a valid slug, size, and quantity' });
     }
 
-    const product = await Product.findOne({ slug: item.slug });
+    const product = await Product.findOne({ slug });
     if (!product || !product.active) {
-      stockErrors.push({ slug: item.slug, message: 'Product unavailable' });
+      stockErrors.push({ slug, message: 'Product unavailable' });
       continue;
     }
 
-    const stockKey = item.size;
+    const stockKey = size;
     const available = product.sizes?.get(stockKey) ?? 0;
-    if (available < item.qty) {
-      stockErrors.push({ slug: item.slug, size: stockKey, available });
+    if (available < qty) {
+      stockErrors.push({ slug, size: stockKey, available });
       continue;
     }
 
-    const itemTotal = item.qty * product.price;
-    preparedItems.push({ slug: product.slug, name: product.name, size: stockKey, qty: item.qty, price: product.price, image: product.image });
+    const itemTotal = qty * product.price;
+    preparedItems.push({ slug: product.slug, name: product.name, size: stockKey, qty, price: product.price, image: product.image });
     total += itemTotal;
-    productsToUpdate.push({ product, size: stockKey, qty: item.qty });
+    productsToUpdate.push({ product, size: stockKey, qty });
   }
 
   if (stockErrors.length) {
@@ -1166,7 +1244,7 @@ app.post('/api/orders', async (req, res) => {
     session.endSession();
 
     if (visitorId) {
-      await ShopperProfile.findOneAndUpdate(
+      ShopperProfile.findOneAndUpdate(
         { visitorId: String(visitorId).trim() },
         {
           $set: {
@@ -1179,7 +1257,9 @@ app.post('/api/orders', async (req, res) => {
             lastActivityAt: new Date()
           }
         }
-      );
+      ).catch(err => {
+        console.error('Checkout profile update failed:', err.message || err);
+      });
     }
 
     const ownerMail = createOrderEmail(order[0]);
@@ -1201,10 +1281,15 @@ app.post('/api/orders', async (req, res) => {
 
     res.status(201).json({ message: 'Order placed successfully', orderNumber });
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error(err);
-    return res.status(500).json({ message: 'Unable to process order', error: err.message });
+    try {
+      await session.abortTransaction();
+    } catch (abortErr) {
+      console.error('Order transaction abort failed:', abortErr.message || abortErr);
+    } finally {
+      session.endSession();
+    }
+    console.error('Order processing failed:', err.message || err);
+    return res.status(500).json({ message: 'Unable to process order' });
   }
 });
 
@@ -1242,14 +1327,22 @@ async function verifyPaystackPayment(reference) {
     });
 
     req.on('error', reject);
+    req.setTimeout(15000, () => {
+      req.destroy(new Error('Paystack verification timed out'));
+    });
     req.end();
   });
 }
 
 app.get('/api/admin/orders', authMiddleware, async (req, res) => {
-  const { status } = req.query;
+  const status = String(req.query.status || '').trim();
   const filter = {};
-  if (status) filter.status = status;
+  if (status) {
+    if (!['pending', 'confirmed', 'shipped', 'delivered'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    filter.status = status;
+  }
   const orders = await Order.find(filter).sort({ createdAt: -1 }).lean();
   res.json(orders);
 });
@@ -1314,7 +1407,9 @@ app.post('/api/admin/promocodes', authMiddleware, async (req, res) => {
   const code = String(req.body?.code || '').trim().toUpperCase();
   const discountPercent = Number(req.body?.discountPercent);
   const active = req.body?.active === false ? false : true;
-  if (!code || !discountPercent) return res.status(400).json({ message: 'Code and discountPercent are required' });
+  if (!code || !Number.isFinite(discountPercent) || discountPercent < 1 || discountPercent > 100) {
+    return res.status(400).json({ message: 'Code and a discountPercent from 1 to 100 are required' });
+  }
   const promo = await PromoCode.create({ code, discountPercent, active });
   res.status(201).json(promo);
 });
@@ -1322,7 +1417,13 @@ app.post('/api/admin/promocodes', authMiddleware, async (req, res) => {
 app.patch('/api/admin/promocodes/:id', authMiddleware, async (req, res) => {
   const update = {};
   if (req.body.code !== undefined) update.code = String(req.body.code || '').trim().toUpperCase();
-  if (req.body.discountPercent !== undefined) update.discountPercent = Number(req.body.discountPercent);
+  if (req.body.discountPercent !== undefined) {
+    const discountPercent = Number(req.body.discountPercent);
+    if (!Number.isFinite(discountPercent) || discountPercent < 1 || discountPercent > 100) {
+      return res.status(400).json({ message: 'discountPercent must be from 1 to 100' });
+    }
+    update.discountPercent = discountPercent;
+  }
   if (typeof req.body.active === 'boolean') update.active = req.body.active;
   const promo = await PromoCode.findByIdAndUpdate(req.params.id, { $set: update }, { new: true }).lean();
   if (!promo) return res.status(404).json({ message: 'Promo code not found' });
@@ -1369,12 +1470,10 @@ app.post('/api/admin/broadcasts', authMiddleware, async (req, res) => {
 
 // ─── ADMIN: PRODUCT IMAGE UPLOAD ───────────────────────────────
 app.post('/api/admin/products/:slug/image', authMiddleware, async (req, res) => {
-  const startedAt = Date.now();
   let slug;
 
   try {
     slug = decodeURIComponent(req.params.slug);
-    console.log('[upload] primary image request started', { slug });
     await runUploadMiddleware(req, res, upload.single('image'), `primary image for ${slug}`);
 
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
@@ -1390,11 +1489,6 @@ app.post('/api/admin/products/:slug/image', authMiddleware, async (req, res) => 
       { new: true, runValidators: true }
     ).lean();
 
-    console.log('[upload] primary image request completed', {
-      slug,
-      ms: Date.now() - startedAt,
-      image: imagePath
-    });
     return res.status(201).json({ message: 'Uploaded', image: imagePath, product });
   } catch (err) {
     return sendUploadError(res, err, `primary image${slug ? ` for ${slug}` : ''}`);
@@ -1402,12 +1496,10 @@ app.post('/api/admin/products/:slug/image', authMiddleware, async (req, res) => 
 });
 
 app.post('/api/admin/products/:slug/gallery', authMiddleware, async (req, res) => {
-  const startedAt = Date.now();
   let slug;
 
   try {
     slug = decodeURIComponent(req.params.slug);
-    console.log('[upload] gallery request started', { slug });
     await runUploadMiddleware(req, res, upload.array('gallery', 4), `gallery for ${slug}`);
 
     if (!req.files?.length) return res.status(400).json({ message: 'No files uploaded' });
@@ -1425,11 +1517,6 @@ app.post('/api/admin/products/:slug/gallery', authMiddleware, async (req, res) =
       { new: true, runValidators: true }
     ).lean();
 
-    console.log('[upload] gallery request completed', {
-      slug,
-      ms: Date.now() - startedAt,
-      count: paths.length
-    });
     return res.status(201).json({ message: 'Gallery uploaded', images: paths, product });
   } catch (err) {
     return sendUploadError(res, err, `gallery${slug ? ` for ${slug}` : ''}`);
@@ -1438,13 +1525,16 @@ app.post('/api/admin/products/:slug/gallery', authMiddleware, async (req, res) =
 
 app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
   const slugParam = decodeURIComponent(req.params.slug);
-  console.log('[admin] PATCH /api/admin/products/:slug', slugParam, req.body);
   const { sizes, active, name, price, description, tag, image, images, sortOrder } = req.body;
   const update = {};
   if (sizes && typeof sizes === 'object') {
     for (const [key, value] of Object.entries(sizes)) {
       if (['S', 'M', 'L', 'XL', 'ONE SIZE'].includes(key)) {
-        update[`sizes.${key}`] = Number(value);
+        const stock = Number(value);
+        if (!Number.isFinite(stock) || stock < 0) {
+          return res.status(400).json({ message: 'Stock values must be non-negative numbers' });
+        }
+        update[`sizes.${key}`] = stock;
       }
     }
   }
@@ -1452,18 +1542,26 @@ app.patch('/api/admin/products/:slug', authMiddleware, async (req, res) => {
     update.active = active;
   }
   if (name) update.name = name.trim();
-  if (price !== undefined) update.price = Number(price);
+  if (price !== undefined) {
+    const productPrice = Number(price);
+    if (!Number.isFinite(productPrice) || productPrice < 0) {
+      return res.status(400).json({ message: 'Price must be a non-negative number' });
+    }
+    update.price = productPrice;
+  }
   if (description !== undefined) update.description = description.trim();
   if (tag !== undefined) update.tag = tag.trim();
   if (image !== undefined) update.image = image.trim();
   if (Array.isArray(images)) {
     update.images = images.map(s => String(s).trim()).filter(Boolean).slice(0, 4);
   }
-  if (sortOrder !== undefined) update.sortOrder = Number(sortOrder);
-  console.log('[admin] product update $set', slugParam, update);
+  if (sortOrder !== undefined) {
+    const nextSortOrder = Number(sortOrder);
+    if (!Number.isFinite(nextSortOrder)) return res.status(400).json({ message: 'sortOrder must be a number' });
+    update.sortOrder = nextSortOrder;
+  }
   const product = await Product.findOneAndUpdate({ slug: slugParam }, { $set: update }, { new: true, runValidators: true }).lean();
   if (!product) return res.status(404).json({ message: 'Product not found' });
-  console.log('[admin] updated product', { slug: product.slug, price: product.price, active: product.active, tag: product.tag });
   res.json(product);
 });
 
@@ -1507,7 +1605,8 @@ app.delete('/api/admin/products/:slug', authMiddleware, async (req, res) => {
 
 app.post('/api/admin/products', authMiddleware, async (req, res) => {
   const { name, slug, description, price, tag, image, images, sizes, active, sortOrder } = req.body;
-  if (!name || !price) {
+  const productPrice = Number(price);
+  if (!name || !Number.isFinite(productPrice) || productPrice < 0) {
     return res.status(400).json({ message: 'Name and price are required' });
   }
   const normalizedSlug = slug?.toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -1519,20 +1618,35 @@ app.post('/api/admin/products', authMiddleware, async (req, res) => {
 
   const defaultSizes = { S: 0, M: 0, L: 0, XL: 0, 'ONE SIZE': 0 };
   const productSizes = { ...defaultSizes, ...(sizes && typeof sizes === 'object' ? sizes : {}) };
+  for (const [key, value] of Object.entries(productSizes)) {
+    if (!['S', 'M', 'L', 'XL', 'ONE SIZE'].includes(key)) {
+      delete productSizes[key];
+      continue;
+    }
+    const stock = Number(value);
+    if (!Number.isFinite(stock) || stock < 0) {
+      return res.status(400).json({ message: 'Stock values must be non-negative numbers' });
+    }
+    productSizes[key] = stock;
+  }
 
   const gallery = Array.isArray(images)
     ? images.map(s => String(s).trim()).filter(Boolean).slice(0, 4)
     : [];
+  const nextSortOrder = sortOrder !== undefined ? Number(sortOrder) : Date.now();
+  if (!Number.isFinite(nextSortOrder)) {
+    return res.status(400).json({ message: 'sortOrder must be a number' });
+  }
 
   const newProduct = await Product.create({
     slug: finalSlug,
     name: name.trim(),
     description: description?.trim() || '',
-    price: Number(price),
+    price: productPrice,
     image: image?.trim() || '',
     images: gallery,
     tag: tag?.trim() || '',
-    sortOrder: sortOrder !== undefined ? Number(sortOrder) : Date.now(),
+    sortOrder: nextSortOrder,
     sizes: productSizes,
     active: active === false ? false : true
   });
@@ -1925,7 +2039,7 @@ app.get('/api/admin/analytics/export.pdf', authMiddleware, async (req, res) => {
   writePdfSection(doc, 'Business insights');
   report.insights.forEach(insight => doc.fontSize(10).text(`• ${insight}`));
   writePdfSection(doc, 'Recommendations');
-  report.insights.forEach(insight => doc.fontSize(10).text(`• ${insight}`));
+  report.recommendations.forEach(recommendation => doc.fontSize(10).text(`• ${recommendation}`));
   doc.end();
 });
 
@@ -2030,6 +2144,22 @@ app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-login.html'));
 });
 
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const status = err?.status || err?.statusCode || (err?.name === 'ValidationError' || err?.name === 'CastError' ? 400 : 500);
+  const normalizedStatus = err instanceof URIError ? 400 : status;
+  if (normalizedStatus >= 500) {
+    console.error('Unhandled request error', {
+      method: req.method,
+      path: req.path,
+      message: err?.message || err
+    });
+  }
+  return res.status(normalizedStatus).json({
+    message: normalizedStatus >= 500 ? 'Internal server error' : (err?.message || 'Request failed')
+  });
+});
+
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, '..', 'public', '404.html'));
 });
@@ -2038,17 +2168,14 @@ connectDB().then(() => seedProducts()).then(() => normalizeProductSortOrder()).t
   processAbandonedCartReminders().catch(err => {
     console.error('Abandoned cart reminder run failed:', err.message || err);
   });
-  setInterval(() => {
+  const reminderInterval = setInterval(() => {
     processAbandonedCartReminders().catch(err => {
       console.error('Abandoned cart reminder run failed:', err.message || err);
     });
   }, 60 * 60 * 1000);
+  reminderInterval.unref?.();
 
-  app.listen(PORT, () => {
-    console.log(`KRO PK backend running on http://localhost:${PORT}`);
-    console.log(`COMING_SOON raw value: ${COMING_SOON_RAW === undefined ? '(unset)' : JSON.stringify(COMING_SOON_RAW)}; enabled: ${COMING_SOON_ENABLED}`);
-    if (COMING_SOON_ENABLED) console.log('COMING_SOON mode: public routes redirect to /coming-soon');
-  });
+  app.listen(PORT);
 }).catch(err => {
   console.error('Failed to start server', err);
   process.exit(1);

@@ -13,7 +13,12 @@ function getCart() {
 }
 
 function saveCart(cart) {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    try {
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    } catch (err) {
+        showToast('Unable to save cart in this browser.');
+        return;
+    }
     window.KroAnalytics?.updateProfile({ cartItems: cart });
 }
 
@@ -30,11 +35,17 @@ function getUser() {
 }
 
 function saveUser(user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    try {
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch (err) {
+        showToast('Unable to save account in this browser.');
+    }
 }
 
 function logoutUser() {
-    localStorage.removeItem(USER_KEY);
+    try {
+        localStorage.removeItem(USER_KEY);
+    } catch (err) {}
     updateHeader();
     showToast('Logged out successfully');
 }

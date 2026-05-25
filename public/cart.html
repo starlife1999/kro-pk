@@ -807,7 +807,6 @@ async function payWithPaystack(payload, totalAmount) {
                         <a href="shop1.html" class="shop-btn">← BACK TO SHOP</a>
                     </div>`;
             })().catch(err => {
-                console.error(err);
                 showToast('Unable to send order after payment.');
             });
         },
@@ -820,7 +819,12 @@ async function payWithPaystack(payload, totalAmount) {
 }
 
 function saveCart(cart) {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    try {
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    } catch {
+        showToast('Unable to save cart in this browser.');
+        return;
+    }
     window.KroAnalytics?.updateProfile({ cartItems: cart });
 }
 
@@ -945,7 +949,6 @@ async function handleCheckout() {
         const total = afterPromo + FLAT_DELIVERY_FEE_NGN;
         await payWithPaystack(payload, total);
     } catch (err) {
-        console.error(err);
         showToast(err?.message || 'Unable to process payment. Try again.');
     }
 }

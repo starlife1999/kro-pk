@@ -21,7 +21,7 @@ const productSchema = new mongoose.Schema({
   sizes: {
     type: Map,
     of: Number,
-    default: { S: 0, M: 0, L: 0, XL: 0, 'ONE SIZE': 0 }
+    default: () => ({ S: 0, M: 0, L: 0, XL: 0, 'ONE SIZE': 0 })
   },
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }

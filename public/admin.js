@@ -61,17 +61,12 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000) => {
 };
 
 const fetchJson = async (url, options = {}) => {
-  console.log('[admin] request', url, options);
   const timeoutMs = options.timeoutMs || 30000;
   const { timeoutMs: _timeoutMs, ...fetchOptions } = options;
   const res = await fetchWithTimeout(url, fetchOptions, timeoutMs);
   const raw = await res.text();
-  if (url.includes('/api/products/all')) {
-    console.log('[admin] raw products/all response', raw);
-  }
   let body = {};
   try { body = raw ? JSON.parse(raw) : {}; } catch { body = { raw }; }
-  console.log('[admin] response', url, res.status, body);
   if (!res.ok) {
     throw new Error(body.message || `Request failed (${res.status})`);
   }
@@ -83,6 +78,8 @@ const normalizeProductsResponse = data => {
   if (Array.isArray(data?.products)) return data.products;
   return [];
 };
+
+const normalizeProductSizes = product => product?.sizes && typeof product.sizes === 'object' ? product.sizes : {};
 
 const parseUploadResponse = async res => {
   const raw = await res.text();
@@ -248,7 +245,8 @@ const deleteAllOrders = async () => {
 const loadInventory = async () => {
   products = normalizeProductsResponse(await fetchJson('/api/products/all', { credentials: 'include' }));
   inventoryGrid.innerHTML = products.map(product => {
-    const lowStock = Object.values(product.sizes).some(x => x <= 2 && x >= 0);
+    const sizes = normalizeProductSizes(product);
+    const lowStock = Object.values(sizes).some(x => x <= 2 && x >= 0);
     return `
       <div class="product-card" data-slug="${product.slug}">
         <div class="product-row">
@@ -264,7 +262,7 @@ const loadInventory = async () => {
           ${['S','M','L','XL','ONE SIZE'].map(size => `
             <div>
               <label style="font-size:.8rem;color:#94a3b8;">${size}</label>
-              <input class="stock-input" data-size="${size}" value="${product.sizes[size] ?? 0}" type="number" min="0">
+              <input class="stock-input" data-size="${size}" value="${sizes[size] ?? 0}" type="number" min="0">
             </div>
           `).join('')}
         </div>
@@ -288,7 +286,6 @@ const loadInventory = async () => {
         });
         const active = card.querySelector('input[type="checkbox"]').checked;
         const payload = { sizes, active };
-        console.log('[admin] inventory save payload', slug, payload);
         await fetchJson(`/api/admin/products/${slug}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -298,7 +295,6 @@ const loadInventory = async () => {
         showMessage('Product stock updated');
         await loadInventory();
       } catch (err) {
-        console.error(err);
         showMessage(err.message || 'Unable to save inventory changes');
       }
     });
@@ -388,7 +384,6 @@ const loadProducts = async () => {
         showMessage('Primary image uploaded');
         await loadProducts();
       } catch (err) {
-        console.error(err);
         setCardBusy(card, false, err.message || 'Image upload failed', 'error');
         showMessage(err.message || 'Image upload failed');
       } finally {
@@ -422,7 +417,6 @@ const loadProducts = async () => {
         showMessage('Gallery images uploaded');
         await loadProducts();
       } catch (err) {
-        console.error(err);
         setCardBusy(card, false, err.message || 'Gallery upload failed', 'error');
         showMessage(err.message || 'Gallery upload failed');
       } finally {
@@ -451,7 +445,6 @@ const loadProducts = async () => {
           sortOrder: Number(card.dataset.sortOrder || 0),
           active: card.querySelector('.product-active').checked
         };
-        console.log('[admin] products save payload', slug, payload);
         await fetchJson(`/api/admin/products/${encodeURIComponent(slug)}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -462,7 +455,6 @@ const loadProducts = async () => {
         await loadProducts();
         await loadInventory();
       } catch (err) {
-        console.error(err);
         showMessage(err.message || 'Unable to save product changes');
       }
     });
@@ -485,7 +477,6 @@ const loadProducts = async () => {
         await loadProducts();
         await loadInventory();
       } catch (err) {
-        console.error(err);
         showMessage(err.message || 'Unable to archive product');
       }
     });
@@ -506,7 +497,6 @@ const loadProducts = async () => {
         await loadProducts();
         await loadInventory();
       } catch (err) {
-        console.error(err);
         showMessage(err.message || 'Unable to delete product');
       }
     });
@@ -528,7 +518,6 @@ const loadProducts = async () => {
         await loadProducts();
         await loadInventory();
       } catch (err) {
-        console.error(err);
         showMessage(err.message || 'Unable to reorder product');
       }
     });
@@ -570,7 +559,6 @@ const createProduct = async () => {
     await loadProducts();
     await loadInventory();
   } catch (err) {
-    console.error(err);
     showMessage(err.message || 'Unable to create product');
   } finally {
     createBtn.disabled = false;
@@ -864,7 +852,6 @@ const init = async () => {
     if (err.message.includes('Authentication')) {
       window.location.href = '/admin/login';
     } else {
-      console.error(err);
       showMessage(err.message);
     }
   }
