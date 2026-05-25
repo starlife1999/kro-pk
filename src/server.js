@@ -72,6 +72,12 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+app.use((req, res, next) => {
+  if (req.path === '/admin' || req.path === '/admin.js') {
+    res.set('Cache-Control', 'no-store');
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/coming-soon', (_req, res) => {

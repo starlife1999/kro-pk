@@ -66,6 +66,9 @@ const fetchJson = async (url, options = {}) => {
   const { timeoutMs: _timeoutMs, ...fetchOptions } = options;
   const res = await fetchWithTimeout(url, fetchOptions, timeoutMs);
   const raw = await res.text();
+  if (url.includes('/api/products/all')) {
+    console.log('[admin] raw products/all response', raw);
+  }
   let body = {};
   try { body = raw ? JSON.parse(raw) : {}; } catch { body = { raw }; }
   console.log('[admin] response', url, res.status, body);
