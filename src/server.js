@@ -52,10 +52,11 @@ app.use((req, res, next) => {
 
   const p = req.path;
   const isComingSoonPage = p === '/coming-soon';
-  const isAdminRoute = p.startsWith('/admin') || p.startsWith('/api/admin');
-  const isSubscriberSignup = p === '/api/subscribe';
-  const isComingSoonLogin = p === '/api/coming-soon/login';
+  const isApiRoute = p.startsWith('/api');
+  const isAdminRoute = p.startsWith('/admin');
   const isAsset = /\.(css|js|mjs|map|jpg|jpeg|png|gif|webp|ico|svg|woff2?|ttf|txt|xml|webmanifest)$/i.test(p);
+
+  if (isApiRoute) return next();
 
   try {
     const access = req.cookies?.[COMING_SOON_ACCESS_COOKIE];
@@ -65,7 +66,7 @@ app.use((req, res, next) => {
     }
   } catch {}
 
-  if (isComingSoonPage || isAdminRoute || isSubscriberSignup || isComingSoonLogin || isAsset) {
+  if (isComingSoonPage || isAdminRoute || isAsset) {
     return next();
   }
   return res.redirect(302, '/coming-soon');
