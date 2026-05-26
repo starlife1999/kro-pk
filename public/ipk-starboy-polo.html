@@ -1,577 +1,703 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>IPK Starboy Polo — KRO PK</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
- <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="site.css">
- <style>
-     * {
-         margin: 0;
-         padding: 0;
-         box-sizing: border-box;
-     }
-
-     :root {
-         --navy: #0f172a;
-         --navy-light: #1e293b;
-         --white: #f8fafc;
-         --red: #ef4444;
-         --yellow: #fbbf24;
-         --blue: #3b82f6;
-         --outline: 3px solid var(--white);
-     }
-
-     body {
-         font-family: 'Comic Neue', cursive;
-         background: var(--navy);
-         color: var(--white);
-         overflow-x: hidden;
-     }
-
-     /* Halftone overlay */
-     body::before {
-         content: '';
-         position: fixed;
-         top: 0;
-         left: 0;
-         width: 100%;
-         height: 100%;
-         background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-         background-size: 8px 8px;
-         pointer-events: none;
-         z-index: 1;
-     }
-
-     /* Remove halftone from ALL product images - STRONGER FIX */
-     .image-section {
-         position: relative;
-         z-index: 10000;
-     }
-
-     .main-image-panel img {
-         position: relative;
-         z-index: 10001 !important;
-     }
-
-     .thumb-panel img {
-         position: relative;
-         z-index: 10001 !important;
-     }
-
-     /* Back button */
-     .back-link {
-         position: fixed;
-         top: 20px;
-         left: 20px;
-         z-index: 100;
-         font-family: 'Permanent Marker', cursive;
-         font-size: 1.1rem;
-         color: var(--white);
-         text-decoration: none;
-         background: var(--navy-light);
-         padding: 0.8rem 1.5rem;
-         border: var(--outline);
-         box-shadow: 4px 4px 0 var(--red);
-         transition: all 0.2s ease;
-     }
-
-     .back-link:hover {
-         transform: translateY(-2px);
-         box-shadow: 6px 6px 0 var(--yellow);
-     }
-
-     /* Product Hero */
-     .product-hero {
-         min-height: 100vh;
-         display: grid;
-         grid-template-columns: 1fr 1fr;
-         gap: 3rem;
-         padding: 6rem 4rem 4rem;
-         align-items: center;
-         max-width: 1400px;
-         margin: 0 auto;
-     }
-
-     /* Image Side */
-     .image-section {
-         position: relative;
-     }
-
-     .main-image-panel {
-         border: var(--outline);
-         background: var(--navy-light);
-         box-shadow: 8px 8px 0 var(--red);
-         overflow: hidden;
-         aspect-ratio: 1;
-         position: relative;
-     }
-
-     .zoom-hint {
-         position: absolute;
-         bottom: 20px;
-         right: 20px;
-         background: var(--yellow);
-         color: var(--navy);
-         font-family: 'Bangers', cursive;
-         padding: 0.5rem 1rem;
-         border: var(--outline);
-         font-size: 0.9rem;
-     }
-
-     /* Thumbnail Panels */
-     .thumbnail-grid {
-         display: grid;
-         grid-template-columns: repeat(3, 1fr);
-         gap: 1rem;
-         margin-top: 1.5rem;
-     }
-
-     .thumb-panel {
-         border: 2px solid var(--white);
-         aspect-ratio: 1;
-         background: var(--navy-light);
-         cursor: pointer;
-         transition: all 0.2s ease;
-         overflow: hidden;
-     }
-
-     .thumb-panel:hover {
-         border-color: var(--yellow);
-         transform: scale(1.05);
-     }
-
-     .thumb-panel.active {
-         border-color: var(--red);
-         border-width: 3px;
-     }
-
-     /* Info Side */
-     .info-section {
-         position: relative;
-     }
-
-     .product-badge {
-         display: inline-block;
-         background: var(--red);
-         color: var(--white);
-         font-family: 'Permanent Marker', cursive;
-         padding: 0.5rem 1.5rem;
-         border: var(--outline);
-         transform: rotate(-3deg);
-         margin-bottom: 1.5rem;
-         box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
-     }
-
-     .product-title {
-         font-family: 'Bangers', cursive;
-         font-size: clamp(3rem, 6vw, 5rem);
-         line-height: 0.9;
-         text-shadow: 4px 4px 0 var(--red);
-         margin-bottom: 1rem;
-         transform: rotate(-2deg);
-     }
-
-     .product-price {
-         font-family: 'Permanent Marker', cursive;
-         font-size: 2.5rem;
-         color: var(--yellow);
-         margin-bottom: 0.5rem;
-     }
-
-     .installment {
-         font-size: 1rem;
-         color: #94a3b8;
-         margin-bottom: 2rem;
-     }
-
-     .product-desc {
-         font-size: 1.1rem;
-         line-height: 1.6;
-         color: #cbd5e1;
-         margin-bottom: 2rem;
-         padding-left: 1.5rem;
-         border-left: 4px solid var(--red);
-     }
-
-     /* Size Selection */
-     .size-section {
-         margin-bottom: 2rem;
-     }
-
-     .size-label {
-         font-family: 'Bangers', cursive;
-         font-size: 1.3rem;
-         margin-bottom: 1rem;
-         display: block;
-     }
-
-     .size-buttons {
-         display: flex;
-         gap: 1rem;
-         flex-wrap: wrap;
-     }
-
-     .size-btn {
-         width: 60px;
-         height: 60px;
-         background: var(--navy-light);
-         border: var(--outline);
-         color: var(--white);
-         font-family: 'Bangers', cursive;
-         font-size: 1.3rem;
-         cursor: pointer;
-         transition: all 0.2s ease;
-         position: relative;
-     }
-
-     .size-btn:hover {
-         background: var(--yellow);
-         color: var(--navy);
-         transform: scale(1.1);
-     }
-
-     .size-btn.selected {
-         background: var(--red);
-         box-shadow: 4px 4px 0 var(--white);
-     }
-
-     .size-btn.selected::after {
-         content: 'POP!';
-         position: absolute;
-         top: -30px;
-         left: 50%;
-         transform: translateX(-50%);
-         font-family: 'Bangers', cursive;
-         font-size: 0.9rem;
-         color: var(--yellow);
-         animation: popUp 0.3s ease-out;
-     }
-
-     @keyframes popUp {
-         0% { transform: translateX(-50%) scale(0); }
-         50% { transform: translateX(-50%) scale(1.2); }
-         100% { transform: translateX(-50%) scale(1); }
-     }
-
-     /* Details Grid */
-     .details-grid {
-         display: grid;
-         grid-template-columns: repeat(2, 1fr);
-         gap: 1.5rem;
-         margin-top: 3rem;
-         padding-top: 3rem;
-         border-top: 2px solid rgba(255,255,255,0.1);
-     }
-
-     .detail-item {
-         background: var(--navy-light);
-         padding: 1rem;
-         border: 2px solid rgba(255,255,255,0.2);
-     }
-
-     .detail-label {
-         font-family: 'Bangers', cursive;
-         color: var(--yellow);
-         font-size: 0.9rem;
-         margin-bottom: 0.3rem;
-     }
-
-     .detail-value {
-         font-size: 1rem;
-     }
-
-     /* You May Also Like */
-     .also-like {
-         padding: 4rem;
-         background: var(--navy-light);
-         border-top: var(--outline);
-     }
-
-     .also-title {
-         font-family: 'Bangers', cursive;
-         font-size: 2.5rem;
-         text-align: center;
-         margin-bottom: 3rem;
-         text-shadow: 3px 3px 0 var(--red);
-     }
-
-     .mini-grid {
-         display: grid;
-         grid-template-columns: repeat(4, 1fr);
-         gap: 2rem;
-         max-width: 1200px;
-         margin: 0 auto;
-     }
-
-     .mini-card {
-         border: var(--outline);
-         background: var(--navy);
-         transition: all 0.2s ease;
-         text-decoration: none;
-         color: var(--white);
-     }
-
-     .mini-card:hover {
-         transform: translateY(-5px);
-         box-shadow: 6px 6px 0 var(--yellow);
-     }
-
-     .mini-image {
-         aspect-ratio: 1;
-         background: linear-gradient(135deg, var(--navy-light) 0%, #0f172a 100%);
-         display: flex;
-         align-items: center;
-         justify-content: center;
-         font-family: 'Bangers', cursive;
-         font-size: 1.5rem;
-         opacity: 0.5;
-         border-bottom: var(--outline);
-     }
-
-     .mini-info {
-         padding: 1rem;
-     }
-
-     .mini-name {
-         font-family: 'Bangers', cursive;
-         font-size: 1.1rem;
-         margin-bottom: 0.3rem;
-     }
-
-     .mini-price {
-         font-family: 'Permanent Marker', cursive;
-         color: var(--yellow);
-     }
-
-     /* Footer */
-     footer {
-         background: #020617;
-         padding: 2rem;
-         text-align: center;
-         border-top: var(--outline);
-     }
-
-     .footer-logo {
-         font-family: 'Bangers', cursive;
-         font-size: 2rem;
-         color: var(--white);
-         margin-bottom: 1rem;
-     }
-
-     /* Mobile */
-     @media (max-width: 968px) {
-         .product-hero {
-             grid-template-columns: 1fr;
-             padding: 6rem 1.5rem 3rem;
-         }
-
-         .mini-grid {
-             grid-template-columns: repeat(2, 1fr);
-         }
-
-         .also-like {
-             padding: 3rem 1.5rem;
-         }
-     }
-
-     @media (max-width: 480px) {
-         .mini-grid {
-             grid-template-columns: 1fr;
-         }
-     }
- </style>
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <meta name="theme-color" content="#0f172a">
-</head>
-<body>
- <header class="site-header">
-     <a href="shop1.html" class="site-logo">KRO PK<span>DROP 2026</span></a>
-     <div class="site-actions">
-         <a class="shop-link" href="shop1.html">SHOP</a>
-         <a class="cart-link" href="cart.html">CART <span class="cart-badge">0</span></a>
-     </div>
- </header>
- <!-- Back to Catalogue -->
- <a href="shop1.html" class="back-link">← BACK TO DROP</a>
-
- <!-- Product Hero -->
- <section class="product-hero">
-     
-     <!-- Image Side -->
-     <div class="image-section">
-         <div class="main-image-panel">
-             <img id="mainImage" src="ipk-polo-front.png" alt="IPK Starboy Polo" style="width: 100%; height: 100%; object-fit: cover;">
-             <div class="zoom-hint">CLICK TO ZOOM</div>
-         </div>
-
-         <!-- Thumbnails -->
-         <div class="thumbnail-grid">
-             <div class="thumb-panel active" onclick="changeImage('ipk-polo-front.png', this)">
-                 <img src="ipk-polo-front.png" style="width: 100%; height: 100%; object-fit: cover;">
-             </div>
-             <div class="thumb-panel" onclick="changeImage('ipk-polo-back.png', this)">
-                 <img src="ipk-polo-back.png" style="width: 100%; height: 100%; object-fit: cover;">
-             </div>
-             <div class="thumb-panel" style="opacity: 0.3; pointer-events: none;">
-                 <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Bangers', cursive; color: var(--white); font-size: 1.5rem;">—</div>
-             </div>
-         </div>
-     </div>
-
-     <!-- Info Side -->
-     <div class="info-section">
-         <div class="product-badge">BEST SELLER</div>
-         
-         <h1 class="product-title">IPK STARBOY POLO</h1>
-         
-        <div class="product-price">₦25,000</div>
-         
-         <p class="product-desc">
-             Black motorsport polo with double white stripes on collar. 
-             "OVER DRIVE" on left shoulder, "TOP GEAR" on right. 
-             IPK Starboy chest hit in racing colors. 
-             That effortlessly swag energy.
-         </p>
-
-         <!-- Size Selection -->
-         <div class="size-section">
-             <label class="size-label">SELECT SIZE:</label>
-             <div class="size-buttons">
-                 <button class="size-btn" onclick="selectSize(this, 'S')">S</button>
-                 <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
-                 <button class="size-btn selected" onclick="selectSize(this, 'L')">L</button>
-                 <button class="size-btn" onclick="selectSize(this, 'XL')">XL</button>
-             </div>
-         </div>
-
-         <button class="add-cart-button" type="button" onclick="addToCart('ipk-starboy-polo','IPK STARBOY POLO',25000,selectedSize,'ipk-polo-front.png')">ADD TO CART</button>
-
-         <!-- Details -->
-         <div class="details-grid">
-             <div class="detail-item">
-                 <div class="detail-label">MATERIAL</div>
-                 <div class="detail-value">Premium Cotton Blend</div>
-             </div>
-             <div class="detail-item">
-                 <div class="detail-label">FIT</div>
-                 <div class="detail-value">Oversized Street Fit</div>
-             </div>
-             <div class="detail-item">
-                 <div class="detail-label">DROP</div>
-                 <div class="detail-value">Motorsport 2026</div>
-             </div>
-             <div class="detail-item">
-                 <div class="detail-label">DELIVERY</div>
-                    <div class="detail-value">3&ndash;5 working days</div>
-             </div>
-         </div>
-     </div>
- </section>
-
- <!-- You May Also Like -->
- <section class="also-like">
-     <h2 class="also-title">YOU MAY ALSO LIKE</h2>
-     
-     <div class="mini-grid">
-         <!-- PK Thermal -->
-         <a href="product.html?slug=pk-thermal" class="mini-card">
-             <div class="mini-image">THERMAL</div>
-             <div class="mini-info">
-                 <div class="mini-name">PK THERMAL</div>
-                 <div class="mini-price">₦20,000</div>
-             </div>
-         </a>
-
-         <!-- Beanie -->
-         <a href="product.html?slug=beanie" class="mini-card">
-             <div class="mini-image">BEANIE</div>
-             <div class="mini-info">
-                 <div class="mini-name">KRO PK BEANIE</div>
-                 <div class="mini-price">₦10,000</div>
-             </div>
-         </a>
-
-         <!-- KRO PK Tee -->
-         <a href="product.html?slug=kro-tee" class="mini-card">
-             <div class="mini-image">TEE</div>
-             <div class="mini-info">
-                 <div class="mini-name">KRO PK TEE</div>
-                 <div class="mini-price">₦10,000</div>
-             </div>
-         </a>
-
-         <!-- Stargirl Top -->
-         <a href="product.html?slug=stargirl-top" class="mini-card">
-             <div class="mini-image">STAR</div>
-             <div class="mini-info">
-                 <div class="mini-name">STARGIRL TOP</div>
-                 <div class="mini-price">₦12,000</div>
-             </div>
-         </a>
-     </div>
- </section>
-
- <footer>
-     <div class="footer-logo">KRO PK</div>
-     <div style="color: #64748b; font-family: 'Permanent Marker';">KEEP ROCKING © 2026</div>
-   <div class="footer-policy-link" style="margin-top:0.75rem;"><a href="/returns.html" style="color:#fbbf24;font-family:'Permanent Marker',cursive;text-decoration:none;">Returns &amp; Refunds</a></div>
-  </footer>
-
- <script>
-     let selectedSize = 'L';
-
-     function selectSize(btn, size) {
-         // Remove selected from all
-         document.querySelectorAll('.size-btn').forEach(b => {
-             b.classList.remove('selected');
-         });
-         
-         // Add to clicked
-         btn.classList.add('selected');
-         selectedSize = size;
-         checkProductAvailability('ipk-starboy-polo');
-         
-         // Play pop sound effect (visual)
-         const pop = document.createElement('div');
-         pop.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUp 0.5s ease-out forwards; z-index: 9999;';
-         pop.textContent = 'POP!';
-         document.body.appendChild(pop);
-         setTimeout(() => pop.remove(), 500);
-     }
-
-     // Change main image when thumbnail clicked
-     function changeImage(imageSrc, thumbElement) {
-         // Update main image
-         document.getElementById('mainImage').src = imageSrc;
-         
-         // Remove active class from all thumbnails
-         document.querySelectorAll('.thumb-panel').forEach(thumb => {
-             thumb.classList.remove('active');
-         });
-         
-         // Add active class to clicked thumbnail
-         thumbElement.classList.add('active');
-     }
-
-     async function checkProductAvailability(slug) {
-         try {
-             const product = await getProductBySlug(slug);
-             if (!product) return;
-             setAddCartButtonState(isSizeInStock(product, selectedSize));
-         } catch (err) {}
-     }
-
-     window.addEventListener('DOMContentLoaded', () => checkProductAvailability('ipk-starboy-polo'));
- </script>
- <script src="analytics.js"></script>
-    <script src="site.js"></script>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>IPK Starboy Polo — KRO PK</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="site.css" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            :root {
+                --navy: #0f172a;
+                --navy-light: #1e293b;
+                --white: #f8fafc;
+                --red: #ef4444;
+                --yellow: #fbbf24;
+                --blue: #3b82f6;
+                --outline: 3px solid var(--white);
+            }
+
+            body {
+                font-family: "Comic Neue", cursive;
+                background: var(--navy);
+                color: var(--white);
+                overflow-x: hidden;
+            }
+
+            /* Halftone overlay */
+            body::before {
+                content: "";
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-image: radial-gradient(
+                    circle,
+                    rgba(255, 255, 255, 0.08) 1px,
+                    transparent 1px
+                );
+                background-size: 8px 8px;
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            /* Remove halftone from ALL product images - STRONGER FIX */
+            .image-section {
+                position: relative;
+                z-index: 10000;
+            }
+
+            .main-image-panel img {
+                position: relative;
+                z-index: 10001 !important;
+            }
+
+            .thumb-panel img {
+                position: relative;
+                z-index: 10001 !important;
+            }
+
+            /* Back button */
+            .back-link {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 100;
+                font-family: "Permanent Marker", cursive;
+                font-size: 1.1rem;
+                color: var(--white);
+                text-decoration: none;
+                background: var(--navy-light);
+                padding: 0.8rem 1.5rem;
+                border: var(--outline);
+                box-shadow: 4px 4px 0 var(--red);
+                transition: all 0.2s ease;
+            }
+
+            .back-link:hover {
+                transform: translateY(-2px);
+                box-shadow: 6px 6px 0 var(--yellow);
+            }
+
+            /* Product Hero */
+            .product-hero {
+                min-height: 100vh;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 3rem;
+                padding: 6rem 4rem 4rem;
+                align-items: center;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            /* Image Side */
+            .image-section {
+                position: relative;
+            }
+
+            .main-image-panel {
+                border: var(--outline);
+                background: var(--navy-light);
+                box-shadow: 8px 8px 0 var(--red);
+                overflow: hidden;
+                aspect-ratio: 1;
+                position: relative;
+            }
+
+            .zoom-hint {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                background: var(--yellow);
+                color: var(--navy);
+                font-family: "Bangers", cursive;
+                padding: 0.5rem 1rem;
+                border: var(--outline);
+                font-size: 0.9rem;
+            }
+
+            /* Thumbnail Panels */
+            .thumbnail-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            .thumb-panel {
+                border: 2px solid var(--white);
+                aspect-ratio: 1;
+                background: var(--navy-light);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                overflow: hidden;
+            }
+
+            .thumb-panel:hover {
+                border-color: var(--yellow);
+                transform: scale(1.05);
+            }
+
+            .thumb-panel.active {
+                border-color: var(--red);
+                border-width: 3px;
+            }
+
+            /* Info Side */
+            .info-section {
+                position: relative;
+            }
+
+            .product-badge {
+                display: inline-block;
+                background: var(--red);
+                color: var(--white);
+                font-family: "Permanent Marker", cursive;
+                padding: 0.5rem 1.5rem;
+                border: var(--outline);
+                transform: rotate(-3deg);
+                margin-bottom: 1.5rem;
+                box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+            }
+
+            .product-title {
+                font-family: "Bangers", cursive;
+                font-size: clamp(3rem, 6vw, 5rem);
+                line-height: 0.9;
+                text-shadow: 4px 4px 0 var(--red);
+                margin-bottom: 1rem;
+                transform: rotate(-2deg);
+            }
+
+            .product-price {
+                font-family: "Permanent Marker", cursive;
+                font-size: 2.5rem;
+                color: var(--yellow);
+                margin-bottom: 0.5rem;
+            }
+
+            .installment {
+                font-size: 1rem;
+                color: #94a3b8;
+                margin-bottom: 2rem;
+            }
+
+            .product-desc {
+                font-size: 1.1rem;
+                line-height: 1.6;
+                color: #cbd5e1;
+                margin-bottom: 2rem;
+                padding-left: 1.5rem;
+                border-left: 4px solid var(--red);
+            }
+
+            /* Size Selection */
+            .size-section {
+                margin-bottom: 2rem;
+            }
+
+            .size-label {
+                font-family: "Bangers", cursive;
+                font-size: 1.3rem;
+                margin-bottom: 1rem;
+                display: block;
+            }
+
+            .size-buttons {
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .size-btn {
+                width: 60px;
+                height: 60px;
+                background: var(--navy-light);
+                border: var(--outline);
+                color: var(--white);
+                font-family: "Bangers", cursive;
+                font-size: 1.3rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                position: relative;
+            }
+
+            .size-btn:hover {
+                background: var(--yellow);
+                color: var(--navy);
+                transform: scale(1.1);
+            }
+
+            .size-btn.selected {
+                background: var(--red);
+                box-shadow: 4px 4px 0 var(--white);
+            }
+
+            .size-btn.selected::after {
+                content: "POP!";
+                position: absolute;
+                top: -30px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-family: "Bangers", cursive;
+                font-size: 0.9rem;
+                color: var(--yellow);
+                animation: popUp 0.3s ease-out;
+            }
+
+            @keyframes popUp {
+                0% {
+                    transform: translateX(-50%) scale(0);
+                }
+                50% {
+                    transform: translateX(-50%) scale(1.2);
+                }
+                100% {
+                    transform: translateX(-50%) scale(1);
+                }
+            }
+
+            /* Details Grid */
+            .details-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+                margin-top: 3rem;
+                padding-top: 3rem;
+                border-top: 2px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .detail-item {
+                background: var(--navy-light);
+                padding: 1rem;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .detail-label {
+                font-family: "Bangers", cursive;
+                color: var(--yellow);
+                font-size: 0.9rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .detail-value {
+                font-size: 1rem;
+            }
+
+            /* You May Also Like */
+            .also-like {
+                padding: 4rem;
+                background: var(--navy-light);
+                border-top: var(--outline);
+            }
+
+            .also-title {
+                font-family: "Bangers", cursive;
+                font-size: 2.5rem;
+                text-align: center;
+                margin-bottom: 3rem;
+                text-shadow: 3px 3px 0 var(--red);
+            }
+
+            .mini-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 2rem;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .mini-card {
+                border: var(--outline);
+                background: var(--navy);
+                transition: all 0.2s ease;
+                text-decoration: none;
+                color: var(--white);
+            }
+
+            .mini-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 6px 6px 0 var(--yellow);
+            }
+
+            .mini-image {
+                aspect-ratio: 1;
+                background: linear-gradient(
+                    135deg,
+                    var(--navy-light) 0%,
+                    #0f172a 100%
+                );
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: "Bangers", cursive;
+                font-size: 1.5rem;
+                opacity: 0.5;
+                border-bottom: var(--outline);
+            }
+
+            .mini-info {
+                padding: 1rem;
+            }
+
+            .mini-name {
+                font-family: "Bangers", cursive;
+                font-size: 1.1rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .mini-price {
+                font-family: "Permanent Marker", cursive;
+                color: var(--yellow);
+            }
+
+            /* Footer */
+            footer {
+                background: #020617;
+                padding: 2rem;
+                text-align: center;
+                border-top: var(--outline);
+            }
+
+            .footer-logo {
+                font-family: "Bangers", cursive;
+                font-size: 2rem;
+                color: var(--white);
+                margin-bottom: 1rem;
+            }
+
+            /* Mobile */
+            @media (max-width: 968px) {
+                .product-hero {
+                    grid-template-columns: 1fr;
+                    padding: 6rem 1.5rem 3rem;
+                }
+
+                .mini-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+
+                .also-like {
+                    padding: 3rem 1.5rem;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .mini-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="16x16"
+            href="/favicon-16x16.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="32x32"
+            href="/favicon-32x32.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="48x48"
+            href="/favicon-48x48.png"
+        />
+        <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/apple-touch-icon.png"
+        />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#0f172a" />
+    </head>
+    <body>
+        <header class="site-header">
+            <a href="shop1.html" class="site-logo"
+                >KRO PK<span>DROP 2026</span></a
+            >
+            <div class="site-actions">
+                <a class="shop-link" href="shop1.html">SHOP</a>
+                <a class="cart-link" href="cart.html"
+                    >CART <span class="cart-badge">0</span></a
+                >
+            </div>
+        </header>
+        <!-- Back to Catalogue -->
+        <a href="shop1.html" class="back-link">← BACK TO DROP</a>
+
+        <!-- Product Hero -->
+        <section class="product-hero">
+            <!-- Image Side -->
+            <div class="image-section">
+                <div class="main-image-panel">
+                    <img
+                        id="mainImage"
+                        src="ipk-polo-front.png"
+                        alt="IPK Starboy Polo"
+                        style="width: 100%; height: 100%; object-fit: cover"
+                    />
+                    <div class="zoom-hint">CLICK TO ZOOM</div>
+                </div>
+
+                <!-- Thumbnails -->
+                <div class="thumbnail-grid">
+                    <div
+                        class="thumb-panel active"
+                        onclick="changeImage('ipk-polo-front.png', this)"
+                    >
+                        <img
+                            src="ipk-polo-front.png"
+                            style="width: 100%; height: 100%; object-fit: cover"
+                        />
+                    </div>
+                    <div
+                        class="thumb-panel"
+                        onclick="changeImage('ipk-polo-back.png', this)"
+                    >
+                        <img
+                            src="ipk-polo-back.png"
+                            style="width: 100%; height: 100%; object-fit: cover"
+                        />
+                    </div>
+                    <div
+                        class="thumb-panel"
+                        style="opacity: 0.3; pointer-events: none"
+                    >
+                        <div
+                            style="
+                                width: 100%;
+                                height: 100%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-family: &quot;Bangers&quot;, cursive;
+                                color: var(--white);
+                                font-size: 1.5rem;
+                            "
+                        >
+                            —
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Side -->
+            <div class="info-section">
+                <div class="product-badge">BEST SELLER</div>
+
+                <h1 class="product-title">IPK STARBOY POLO</h1>
+
+                <div class="product-price">₦25,000</div>
+
+                <p class="product-desc">
+                    Black motorsport polo with double white stripes on collar.
+                    "OVER DRIVE" on left shoulder, "TOP GEAR" on right. IPK
+                    Starboy chest hit in racing colors. That effortlessly swag
+                    energy.
+                </p>
+
+                <!-- Size Selection -->
+                <div class="size-section">
+                    <label class="size-label">SELECT SIZE:</label>
+                    <div class="size-buttons">
+                        <button
+                            class="size-btn"
+                            onclick="selectSize(this, 'S')"
+                        >
+                            S
+                        </button>
+                        <button
+                            class="size-btn"
+                            onclick="selectSize(this, 'M')"
+                        >
+                            M
+                        </button>
+                        <button
+                            class="size-btn selected"
+                            onclick="selectSize(this, 'L')"
+                        >
+                            L
+                        </button>
+                        <button
+                            class="size-btn"
+                            onclick="selectSize(this, 'XL')"
+                        >
+                            XL
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    class="add-cart-button"
+                    type="button"
+                    onclick="
+                        addToCart(
+                            'ipk-starboy-polo',
+                            'IPK STARBOY POLO',
+                            25000,
+                            selectedSize,
+                            'ipk-polo-front.png',
+                        )
+                    "
+                >
+                    ADD TO CART
+                </button>
+
+                <!-- Details -->
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">MATERIAL</div>
+                        <div class="detail-value">Premium Cotton Blend</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">FIT</div>
+                        <div class="detail-value">Oversized Street Fit</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">DROP</div>
+                        <div class="detail-value">Motorsport 2026</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">DELIVERY</div>
+                        <div class="detail-value">3&ndash;5 working days</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- You May Also Like -->
+        <section class="also-like">
+            <h2 class="also-title">YOU MAY ALSO LIKE</h2>
+
+            <div class="mini-grid">
+                <!-- PK Thermal -->
+                <a href="product.html?slug=pk-thermal" class="mini-card">
+                    <div class="mini-image">THERMAL</div>
+                    <div class="mini-info">
+                        <div class="mini-name">PK THERMAL</div>
+                        <div class="mini-price">₦20,000</div>
+                    </div>
+                </a>
+
+                <!-- Beanie -->
+                <a href="product.html?slug=beanie" class="mini-card">
+                    <div class="mini-image">BEANIE</div>
+                    <div class="mini-info">
+                        <div class="mini-name">KRO PK BEANIE</div>
+                        <div class="mini-price">₦10,000</div>
+                    </div>
+                </a>
+
+                <!-- KRO PK Tee -->
+                <a href="product.html?slug=kro-tee" class="mini-card">
+                    <div class="mini-image">TEE</div>
+                    <div class="mini-info">
+                        <div class="mini-name">KRO PK TEE</div>
+                        <div class="mini-price">₦10,000</div>
+                    </div>
+                </a>
+
+                <!-- Stargirl Top -->
+                <a href="product.html?slug=stargirl-top" class="mini-card">
+                    <div class="mini-image">STAR</div>
+                    <div class="mini-info">
+                        <div class="mini-name">STARGIRL TOP</div>
+                        <div class="mini-price">₦12,000</div>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-logo">KRO PK</div>
+            <div
+                style="
+                    color: #64748b;
+                    font-family: &quot;Permanent Marker&quot;;
+                "
+            >
+                KEEP ROCKING © 2026
+            </div>
+            <div class="footer-policy-link" style="margin-top: 0.75rem">
+                <a
+                    href="/returns.html"
+                    style="
+                        color: #fbbf24;
+                        font-family: &quot;Permanent Marker&quot;, cursive;
+                        text-decoration: none;
+                    "
+                    >Returns &amp; Refunds</a
+                >
+            </div>
+        </footer>
+
+        <script>
+            let selectedSize = "L";
+
+            function selectSize(btn, size) {
+                // Remove selected from all
+                document.querySelectorAll(".size-btn").forEach((b) => {
+                    b.classList.remove("selected");
+                });
+
+                // Add to clicked
+                btn.classList.add("selected");
+                selectedSize = size;
+                checkProductAvailability("ipk-starboy-polo");
+
+                // Play pop sound effect (visual)
+                const pop = document.createElement("div");
+                pop.style.cssText =
+                    "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUpCenter 0.5s ease-out forwards; z-index: 9999;";
+                pop.textContent = "POP!";
+                document.body.appendChild(pop);
+                setTimeout(() => pop.remove(), 500);
+            }
+
+            // Change main image when thumbnail clicked
+            function changeImage(imageSrc, thumbElement) {
+                // Update main image
+                document.getElementById("mainImage").src = imageSrc;
+
+                // Remove active class from all thumbnails
+                document.querySelectorAll(".thumb-panel").forEach((thumb) => {
+                    thumb.classList.remove("active");
+                });
+
+                // Add active class to clicked thumbnail
+                thumbElement.classList.add("active");
+            }
+
+            async function checkProductAvailability(slug) {
+                try {
+                    const product = await getProductBySlug(slug);
+                    if (!product) return;
+                    setAddCartButtonState(isSizeInStock(product, selectedSize));
+                } catch (err) {}
+            }
+
+            window.addEventListener("DOMContentLoaded", () =>
+                checkProductAvailability("ipk-starboy-polo"),
+            );
+        </script>
+        <script src="analytics.js"></script>
+        <script src="site.js"></script>
+    </body>
 </html>

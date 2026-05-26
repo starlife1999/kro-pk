@@ -398,7 +398,7 @@
      </div>
  </header>
 
-        
+
         <div class="image-section">
             <div class="main-image-panel">
                 <div class="main-image-placeholder">
@@ -422,14 +422,14 @@
 
         <div class="info-section">
             <div class="product-badge">FIRE</div>
-            
+
             <h1 class="product-title">STARGIRL TOP</h1>
-            
+
             <div class="product-price">₦12,000</div>
-            
+
             <p class="product-desc">
-                Crop top for the stargirls. Starboy companion piece. 
-                Racing graphics on front. Cropped fit, raw hem. 
+                Crop top for the stargirls. Starboy companion piece.
+                Racing graphics on front. Cropped fit, raw hem.
                 For the squad, by the squad. Keep rocking.
             </p>
 
@@ -468,7 +468,7 @@
 
     <section class="also-like">
         <h2 class="also-title">YOU MAY ALSO LIKE</h2>
-        
+
         <div class="mini-grid">
             <a href="product.html?slug=ipk-starboy-polo" class="mini-card">
                 <div class="mini-image">POLO</div>
@@ -517,13 +517,13 @@
             document.querySelectorAll('.size-btn').forEach(b => {
                 b.classList.remove('selected');
             });
-            
+
             btn.classList.add('selected');
             selectedSize = size;
             checkProductAvailability('stargirl-top');
-            
+
             const pop = document.createElement('div');
-            pop.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUp 0.5s ease-out forwards; z-index: 9999;';
+            pop.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUpCenter 0.5s ease-out forwards; z-index: 9999;';
             pop.textContent = 'POP!';
             document.body.appendChild(pop);
             setTimeout(() => pop.remove(), 500);

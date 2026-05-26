@@ -7,10 +7,6 @@
     --gray: #94a3b8;
 }
 
-body {
-    font-family: 'Comic Neue', cursive;
-}
-
 .site-header {
     position: fixed;
     top: 0;
@@ -33,7 +29,7 @@ body {
 }
 
 .site-logo {
-    font-family: 'Bangers', cursive;
+    font-family: "Bangers", cursive;
     color: var(--white);
     font-size: 1.9rem;
     text-decoration: none;
@@ -44,7 +40,7 @@ body {
     display: block;
     font-size: 0.85rem;
     color: var(--yellow);
-    font-family: 'Permanent Marker', cursive;
+    font-family: "Permanent Marker", cursive;
     margin-top: 0.2rem;
 }
 
@@ -65,8 +61,10 @@ body {
     padding: 0.75rem 1rem;
     border: 2px solid var(--white);
     text-decoration: none;
-    font-family: 'Permanent Marker', cursive;
-    transition: transform 0.2s ease, background 0.2s ease;
+    font-family: "Permanent Marker", cursive;
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
 }
 
 .cart-link:hover,
@@ -88,12 +86,16 @@ body {
     border-radius: 999px;
     font-size: 0.85rem;
     padding: 0 0.4rem;
-    font-family: 'Bangers', cursive;
+    font-family: "Bangers", cursive;
 }
 
 .newsletter-panel {
     margin-top: 4rem;
-    background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(30,41,59,0.97));
+    background: linear-gradient(
+        180deg,
+        rgba(15, 23, 42, 0.95),
+        rgba(30, 41, 59, 0.97)
+    );
     border: 3px solid var(--white);
     padding: 2.5rem;
     border-radius: 24px;
@@ -102,7 +104,7 @@ body {
 }
 
 .newsletter-panel h2 {
-    font-family: 'Bangers', cursive;
+    font-family: "Bangers", cursive;
     font-size: clamp(2rem, 3.5vw, 3rem);
     color: var(--yellow);
     margin-bottom: 0.5rem;
@@ -123,7 +125,7 @@ body {
 .newsletter-input {
     border: 2px solid var(--white);
     padding: 1rem 1.2rem;
-    background: rgba(15,23,42,0.95);
+    background: rgba(15, 23, 42, 0.95);
     color: var(--white);
     font-size: 1rem;
     outline: none;
@@ -139,8 +141,10 @@ body {
     border: 2px solid var(--white);
     padding: 1rem 1.5rem;
     cursor: pointer;
-    font-family: 'Bangers', cursive;
-    transition: transform 0.2s ease, background 0.2s ease;
+    font-family: "Bangers", cursive;
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
 }
 
 .newsletter-submit:hover {
@@ -156,13 +160,15 @@ body {
     padding: 1rem 1rem;
     background: var(--yellow);
     color: var(--navy);
-    font-family: 'Bangers', cursive;
+    font-family: "Bangers", cursive;
     font-size: 1rem;
     border: 2px solid var(--white);
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    transition: transform 0.2s ease, background 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
 }
 
 .add-cart-button:hover {
@@ -182,7 +188,8 @@ body {
 
 @media (max-width: 480px) {
     .site-header {
-        padding: 0.65rem max(0.75rem, env(safe-area-inset-left)) 0.65rem max(0.75rem, env(safe-area-inset-right));
+        padding: 0.65rem max(0.75rem, env(safe-area-inset-left)) 0.65rem
+            max(0.75rem, env(safe-area-inset-right));
         padding-top: max(0.65rem, env(safe-area-inset-top));
         flex-wrap: wrap;
         row-gap: 0.35rem;
@@ -219,9 +226,25 @@ html {
 }
 
 body {
-    font-family: 'Comic Neue', cursive;
+    font-family: "Comic Neue", cursive;
     margin: 0;
     padding: 0;
+}
+
+/* Centered pop animation for floating product-page "POP!" element */
+@keyframes popUpCenter {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.4);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
 }
 
 /* Improve button hover effects */

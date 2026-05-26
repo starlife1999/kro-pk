@@ -1,528 +1,614 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KRO PK Beanie — KRO PK</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="site.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --navy: #0f172a;
-            --navy-light: #1e293b;
-            --white: #f8fafc;
-            --red: #ef4444;
-            --yellow: #fbbf24;
-            --blue: #3b82f6;
-            --outline: 3px solid var(--white);
-        }
-
-        body {
-            font-family: 'Comic Neue', cursive;
-            background: var(--navy);
-            color: var(--white);
-            overflow-x: hidden;
-        }
-
-        /* Halftone overlay - behind images */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-            background-size: 8px 8px;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* Image sections above halftone */
-        .image-section, .main-image-panel, .thumb-panel {
-            position: relative;
-            z-index: 10;
-        }
-
-        .main-image-panel img, .thumb-panel img {
-            position: relative;
-            z-index: 11;
-            display: block;
-        }
-
-        /* Back button */
-        .back-link {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
-            font-family: 'Permanent Marker', cursive;
-            font-size: 1.1rem;
-            color: var(--white);
-            text-decoration: none;
-            background: var(--navy-light);
-            padding: 0.8rem 1.5rem;
-            border: var(--outline);
-            box-shadow: 4px 4px 0 var(--red);
-            transition: all 0.2s ease;
-        }
-
-        .back-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 6px 6px 0 var(--yellow);
-        }
-
-        .product-hero {
-            min-height: 100vh;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            padding: 6rem 4rem 4rem;
-            align-items: center;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .image-section {
-            position: relative;
-        }
-
-        .main-image-panel {
-            border: var(--outline);
-            background: var(--navy-light);
-            box-shadow: 8px 8px 0 var(--red);
-            overflow: hidden;
-            aspect-ratio: 1;
-            position: relative;
-        }
-
-        .zoom-hint {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: var(--yellow);
-            color: var(--navy);
-            font-family: 'Bangers', cursive;
-            padding: 0.5rem 1rem;
-            border: var(--outline);
-            font-size: 0.9rem;
-            z-index: 12;
-        }
-
-        .thumbnail-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .thumb-panel {
-            border: 2px solid var(--white);
-            aspect-ratio: 1;
-            background: var(--navy-light);
-            overflow: hidden;
-        }
-
-        .thumb-panel:empty {
-            opacity: 0.3;
-        }
-
-        .info-section {
-            position: relative;
-            z-index: 10;
-        }
-
-        .product-badge {
-            display: inline-block;
-            background: var(--yellow);
-            color: var(--navy);
-            font-family: 'Permanent Marker', cursive;
-            padding: 0.5rem 1.5rem;
-            border: var(--outline);
-            transform: rotate(-3deg);
-            margin-bottom: 1.5rem;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
-        }
-
-        .product-title {
-            font-family: 'Bangers', cursive;
-            font-size: clamp(3rem, 6vw, 5rem);
-            line-height: 0.9;
-            text-shadow: 4px 4px 0 var(--red);
-            margin-bottom: 1rem;
-            transform: rotate(-2deg);
-        }
-
-        .product-price {
-            font-family: 'Permanent Marker', cursive;
-            font-size: 2.5rem;
-            color: var(--yellow);
-            margin-bottom: 0.5rem;
-        }
-
-        .installment {
-            font-size: 1rem;
-            color: #94a3b8;
-            margin-bottom: 2rem;
-        }
-
-        .product-desc {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            color: #cbd5e1;
-            margin-bottom: 2rem;
-            padding-left: 1.5rem;
-            border-left: 4px solid var(--red);
-        }
-
-        .size-section {
-            margin-bottom: 2rem;
-        }
-
-        .size-label {
-            font-family: 'Bangers', cursive;
-            font-size: 1.3rem;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        .size-buttons {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .size-btn {
-            width: 60px;
-            height: 60px;
-            background: var(--navy-light);
-            border: var(--outline);
-            color: var(--white);
-            font-family: 'Bangers', cursive;
-            font-size: 1.3rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .size-btn:hover {
-            background: var(--yellow);
-            color: var(--navy);
-            transform: scale(1.1);
-        }
-
-        .size-btn.selected {
-            background: var(--red);
-            box-shadow: 4px 4px 0 var(--white);
-        }
-
-        .size-btn.selected::after {
-            content: 'POP!';
-            position: absolute;
-            top: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Bangers', cursive;
-            font-size: 0.9rem;
-            color: var(--yellow);
-            animation: popUp 0.3s ease-out;
-        }
-
-        @keyframes popUp {
-            0% { transform: translateX(-50%) scale(0); }
-            50% { transform: translateX(-50%) scale(1.2); }
-            100% { transform: translateX(-50%) scale(1); }
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            margin-top: 3rem;
-            padding-top: 3rem;
-            border-top: 2px solid rgba(255,255,255,0.1);
-        }
-
-        .detail-item {
-            background: var(--navy-light);
-            padding: 1rem;
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-
-        .detail-label {
-            font-family: 'Bangers', cursive;
-            color: var(--yellow);
-            font-size: 0.9rem;
-            margin-bottom: 0.3rem;
-        }
-
-        .detail-value {
-            font-size: 1rem;
-        }
-
-        .also-like {
-            padding: 4rem;
-            background: var(--navy-light);
-            border-top: var(--outline);
-            position: relative;
-            z-index: 10;
-        }
-
-        .also-title {
-            font-family: 'Bangers', cursive;
-            font-size: 2.5rem;
-            text-align: center;
-            margin-bottom: 3rem;
-            text-shadow: 3px 3px 0 var(--red);
-        }
-
-        .mini-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .mini-card {
-            border: var(--outline);
-            background: var(--navy);
-            transition: all 0.2s ease;
-            text-decoration: none;
-            color: var(--white);
-        }
-
-        .mini-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 6px 6px 0 var(--yellow);
-        }
-
-        .mini-image {
-            aspect-ratio: 1;
-            background: linear-gradient(135deg, var(--navy-light) 0%, #0f172a 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Bangers', cursive;
-            font-size: 1.5rem;
-            opacity: 0.5;
-            border-bottom: var(--outline);
-        }
-
-        .mini-info {
-            padding: 1rem;
-        }
-
-        .mini-name {
-            font-family: 'Bangers', cursive;
-            font-size: 1.1rem;
-            margin-bottom: 0.3rem;
-        }
-
-        .mini-price {
-            font-family: 'Permanent Marker', cursive;
-            color: var(--yellow);
-        }
-
-        footer {
-            background: #020617;
-            padding: 2rem;
-            text-align: center;
-            border-top: var(--outline);
-            position: relative;
-            z-index: 10;
-        }
-
-        .footer-logo {
-            font-family: 'Bangers', cursive;
-            font-size: 2rem;
-            color: var(--white);
-            margin-bottom: 1rem;
-        }
-
-        @media (max-width: 968px) {
-            .product-hero {
-                grid-template-columns: 1fr;
-                padding: 6rem 1.5rem 3rem;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>KRO PK Beanie — KRO PK</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="site.css" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
 
-            .mini-grid {
+            :root {
+                --navy: #0f172a;
+                --navy-light: #1e293b;
+                --white: #f8fafc;
+                --red: #ef4444;
+                --yellow: #fbbf24;
+                --blue: #3b82f6;
+                --outline: 3px solid var(--white);
+            }
+
+            body {
+                font-family: "Comic Neue", cursive;
+                background: var(--navy);
+                color: var(--white);
+                overflow-x: hidden;
+            }
+
+            /* Halftone overlay - behind images */
+            body::before {
+                content: "";
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-image: radial-gradient(
+                    circle,
+                    rgba(255, 255, 255, 0.08) 1px,
+                    transparent 1px
+                );
+                background-size: 8px 8px;
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            /* Image sections above halftone */
+            .image-section,
+            .main-image-panel,
+            .thumb-panel {
+                position: relative;
+                z-index: 10;
+            }
+
+            .main-image-panel img,
+            .thumb-panel img {
+                position: relative;
+                z-index: 11;
+                display: block;
+            }
+
+            /* Back button */
+            .back-link {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 100;
+                font-family: "Permanent Marker", cursive;
+                font-size: 1.1rem;
+                color: var(--white);
+                text-decoration: none;
+                background: var(--navy-light);
+                padding: 0.8rem 1.5rem;
+                border: var(--outline);
+                box-shadow: 4px 4px 0 var(--red);
+                transition: all 0.2s ease;
+            }
+
+            .back-link:hover {
+                transform: translateY(-2px);
+                box-shadow: 6px 6px 0 var(--yellow);
+            }
+
+            .product-hero {
+                min-height: 100vh;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 3rem;
+                padding: 6rem 4rem 4rem;
+                align-items: center;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .image-section {
+                position: relative;
+            }
+
+            .main-image-panel {
+                border: var(--outline);
+                background: var(--navy-light);
+                box-shadow: 8px 8px 0 var(--red);
+                overflow: hidden;
+                aspect-ratio: 1;
+                position: relative;
+            }
+
+            .zoom-hint {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                background: var(--yellow);
+                color: var(--navy);
+                font-family: "Bangers", cursive;
+                padding: 0.5rem 1rem;
+                border: var(--outline);
+                font-size: 0.9rem;
+                z-index: 12;
+            }
+
+            .thumbnail-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            .thumb-panel {
+                border: 2px solid var(--white);
+                aspect-ratio: 1;
+                background: var(--navy-light);
+                overflow: hidden;
+            }
+
+            .thumb-panel:empty {
+                opacity: 0.3;
+            }
+
+            .info-section {
+                position: relative;
+                z-index: 10;
+            }
+
+            .product-badge {
+                display: inline-block;
+                background: var(--yellow);
+                color: var(--navy);
+                font-family: "Permanent Marker", cursive;
+                padding: 0.5rem 1.5rem;
+                border: var(--outline);
+                transform: rotate(-3deg);
+                margin-bottom: 1.5rem;
+                box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+            }
+
+            .product-title {
+                font-family: "Bangers", cursive;
+                font-size: clamp(3rem, 6vw, 5rem);
+                line-height: 0.9;
+                text-shadow: 4px 4px 0 var(--red);
+                margin-bottom: 1rem;
+                transform: rotate(-2deg);
+            }
+
+            .product-price {
+                font-family: "Permanent Marker", cursive;
+                font-size: 2.5rem;
+                color: var(--yellow);
+                margin-bottom: 0.5rem;
+            }
+
+            .installment {
+                font-size: 1rem;
+                color: #94a3b8;
+                margin-bottom: 2rem;
+            }
+
+            .product-desc {
+                font-size: 1.1rem;
+                line-height: 1.6;
+                color: #cbd5e1;
+                margin-bottom: 2rem;
+                padding-left: 1.5rem;
+                border-left: 4px solid var(--red);
+            }
+
+            .size-section {
+                margin-bottom: 2rem;
+            }
+
+            .size-label {
+                font-family: "Bangers", cursive;
+                font-size: 1.3rem;
+                margin-bottom: 1rem;
+                display: block;
+            }
+
+            .size-buttons {
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .size-btn {
+                width: 60px;
+                height: 60px;
+                background: var(--navy-light);
+                border: var(--outline);
+                color: var(--white);
+                font-family: "Bangers", cursive;
+                font-size: 1.3rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                position: relative;
+            }
+
+            .size-btn:hover {
+                background: var(--yellow);
+                color: var(--navy);
+                transform: scale(1.1);
+            }
+
+            .size-btn.selected {
+                background: var(--red);
+                box-shadow: 4px 4px 0 var(--white);
+            }
+
+            .size-btn.selected::after {
+                content: "POP!";
+                position: absolute;
+                top: -30px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-family: "Bangers", cursive;
+                font-size: 0.9rem;
+                color: var(--yellow);
+                animation: popUp 0.3s ease-out;
+            }
+
+            @keyframes popUp {
+                0% {
+                    transform: translateX(-50%) scale(0);
+                }
+                50% {
+                    transform: translateX(-50%) scale(1.2);
+                }
+                100% {
+                    transform: translateX(-50%) scale(1);
+                }
+            }
+
+            .details-grid {
+                display: grid;
                 grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+                margin-top: 3rem;
+                padding-top: 3rem;
+                border-top: 2px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .detail-item {
+                background: var(--navy-light);
+                padding: 1rem;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .detail-label {
+                font-family: "Bangers", cursive;
+                color: var(--yellow);
+                font-size: 0.9rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .detail-value {
+                font-size: 1rem;
             }
 
             .also-like {
-                padding: 3rem 1.5rem;
+                padding: 4rem;
+                background: var(--navy-light);
+                border-top: var(--outline);
+                position: relative;
+                z-index: 10;
             }
-        }
 
-        @media (max-width: 480px) {
+            .also-title {
+                font-family: "Bangers", cursive;
+                font-size: 2.5rem;
+                text-align: center;
+                margin-bottom: 3rem;
+                text-shadow: 3px 3px 0 var(--red);
+            }
+
             .mini-grid {
-                grid-template-columns: 1fr;
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 2rem;
+                max-width: 1200px;
+                margin: 0 auto;
             }
-        }
-    </style>
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <meta name="theme-color" content="#0f172a">
-</head>
-<body>
 
-    <a href="shop1.html" class="back-link">← BACK TO DROP</a>
+            .mini-card {
+                border: var(--outline);
+                background: var(--navy);
+                transition: all 0.2s ease;
+                text-decoration: none;
+                color: var(--white);
+            }
 
-    <section class="product-hero">
-        
-        <div class="image-section">
-            <div class="main-image-panel">
-                <img src="beanie-front.png" alt="KRO PK Beanie" style="width: 100%; height: 100%; object-fit: cover;">
-                <div class="zoom-hint">CLICK TO ZOOM</div>
+            .mini-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 6px 6px 0 var(--yellow);
+            }
+
+            .mini-image {
+                aspect-ratio: 1;
+                background: linear-gradient(
+                    135deg,
+                    var(--navy-light) 0%,
+                    #0f172a 100%
+                );
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: "Bangers", cursive;
+                font-size: 1.5rem;
+                opacity: 0.5;
+                border-bottom: var(--outline);
+            }
+
+            .mini-info {
+                padding: 1rem;
+            }
+
+            .mini-name {
+                font-family: "Bangers", cursive;
+                font-size: 1.1rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .mini-price {
+                font-family: "Permanent Marker", cursive;
+                color: var(--yellow);
+            }
+
+            footer {
+                background: #020617;
+                padding: 2rem;
+                text-align: center;
+                border-top: var(--outline);
+                position: relative;
+                z-index: 10;
+            }
+
+            .footer-logo {
+                font-family: "Bangers", cursive;
+                font-size: 2rem;
+                color: var(--white);
+                margin-bottom: 1rem;
+            }
+
+            @media (max-width: 968px) {
+                .product-hero {
+                    grid-template-columns: 1fr;
+                    padding: 6rem 1.5rem 3rem;
+                }
+
+                .mini-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+
+                .also-like {
+                    padding: 3rem 1.5rem;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .mini-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="16x16"
+            href="/favicon-16x16.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="32x32"
+            href="/favicon-32x32.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="48x48"
+            href="/favicon-48x48.png"
+        />
+        <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/apple-touch-icon.png"
+        />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#0f172a" />
+    </head>
+    <body>
+        <a href="shop1.html" class="back-link">← BACK TO DROP</a>
+
+        <section class="product-hero">
+            <div class="image-section">
+                <div class="main-image-panel">
+                    <img
+                        src="beanie-front.png"
+                        alt="KRO PK Beanie"
+                        style="width: 100%; height: 100%; object-fit: cover"
+                    />
+                    <div class="zoom-hint">CLICK TO ZOOM</div>
+                </div>
+
+                <div class="thumbnail-grid">
+                    <div class="thumb-panel">
+                        <img
+                            src="beanie-front.png"
+                            alt="Beanie"
+                            style="width: 100%; height: 100%; object-fit: cover"
+                        />
+                    </div>
+                    <div class="thumb-panel" style="opacity: 0.3"></div>
+                    <div class="thumb-panel" style="opacity: 0.3"></div>
+                </div>
             </div>
 
-            <div class="thumbnail-grid">
-                <div class="thumb-panel">
-                    <img src="beanie-front.png" alt="Beanie" style="width: 100%; height: 100%; object-fit: cover;">
+            <div class="info-section">
+                <div class="product-badge">ESSENTIAL</div>
+
+                <h1 class="product-title">KRO PK BEANIE</h1>
+
+                <div class="product-price">₦10,000</div>
+
+                <p class="product-desc">
+                    Cuffed beanie. Heavyweight knit. Embroidered KRO PK logo.
+                    Fold up or slouch style. Winter essential, year-round
+                    attitude. Keep rocking through the cold.
+                </p>
+
+                <div class="size-section">
+                    <label class="size-label">SELECT SIZE:</label>
+                    <div class="size-buttons">
+                        <button
+                            class="size-btn selected"
+                            onclick="selectSize(this, 'ONE SIZE')"
+                        >
+                            OS
+                        </button>
+                    </div>
                 </div>
-                <div class="thumb-panel" style="opacity: 0.3;"></div>
-                <div class="thumb-panel" style="opacity: 0.3;"></div>
+
+                <button
+                    class="add-cart-button"
+                    type="button"
+                    onclick="
+                        addToCart(
+                            'beanie',
+                            'KRO PK BEANIE',
+                            10000,
+                            selectedSize,
+                            'beanie-front.png',
+                        )
+                    "
+                >
+                    ADD TO CART
+                </button>
+
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">MATERIAL</div>
+                        <div class="detail-value">Heavyweight Acrylic Knit</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">FIT</div>
+                        <div class="detail-value">One Size Fits All</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">DROP</div>
+                        <div class="detail-value">Motorsport 2026</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">DELIVERY</div>
+                        <div class="detail-value">3&ndash;5 working days</div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <div class="info-section">
-            <div class="product-badge">ESSENTIAL</div>
-            
-            <h1 class="product-title">KRO PK BEANIE</h1>
-            
-            <div class="product-price">₦10,000</div>
-            
-            <p class="product-desc">
-                Cuffed beanie. Heavyweight knit. Embroidered KRO PK logo. 
-                Fold up or slouch style. Winter essential, year-round attitude. 
-                Keep rocking through the cold.
-            </p>
+        <section class="also-like">
+            <h2 class="also-title">YOU MAY ALSO LIKE</h2>
 
-            <div class="size-section">
-                <label class="size-label">SELECT SIZE:</label>
-                <div class="size-buttons">
-                    <button class="size-btn selected" onclick="selectSize(this, 'ONE SIZE')">OS</button>
-                </div>
+            <div class="mini-grid">
+                <a href="product.html?slug=ipk-starboy-polo" class="mini-card">
+                    <div class="mini-image">POLO</div>
+                    <div class="mini-info">
+                        <div class="mini-name">IPK STARBOY POLO</div>
+                        <div class="mini-price">₦25,000</div>
+                    </div>
+                </a>
+
+                <a href="product.html?slug=pk-thermal" class="mini-card">
+                    <div class="mini-image">THERMAL</div>
+                    <div class="mini-info">
+                        <div class="mini-name">PK THERMAL</div>
+                        <div class="mini-price">₦20,000</div>
+                    </div>
+                </a>
+
+                <a href="product.html?slug=kro-tee" class="mini-card">
+                    <div class="mini-image">TEE</div>
+                    <div class="mini-info">
+                        <div class="mini-name">KRO PK TEE</div>
+                        <div class="mini-price">₦10,000</div>
+                    </div>
+                </a>
+
+                <a href="product.html?slug=stargirl-top" class="mini-card">
+                    <div class="mini-image">STAR</div>
+                    <div class="mini-info">
+                        <div class="mini-name">STARGIRL TOP</div>
+                        <div class="mini-price">₦12,000</div>
+                    </div>
+                </a>
             </div>
+        </section>
 
-            <button class="add-cart-button" type="button" onclick="addToCart('beanie','KRO PK BEANIE',10000,selectedSize,'beanie-front.png')">ADD TO CART</button>
-
-            <div class="details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">MATERIAL</div>
-                    <div class="detail-value">Heavyweight Acrylic Knit</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">FIT</div>
-                    <div class="detail-value">One Size Fits All</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">DROP</div>
-                    <div class="detail-value">Motorsport 2026</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">DELIVERY</div>
-                    <div class="detail-value">3&ndash;5 working days</div>
-                </div>
+        <footer>
+            <div class="footer-logo">KRO PK</div>
+            <div
+                style="
+                    color: #64748b;
+                    font-family: &quot;Permanent Marker&quot;;
+                "
+            >
+                KEEP ROCKING © 2026
             </div>
-        </div>
-    </section>
+            <div class="footer-policy-link" style="margin-top: 0.75rem">
+                <a
+                    href="/returns.html"
+                    style="
+                        color: #fbbf24;
+                        font-family: &quot;Permanent Marker&quot;, cursive;
+                        text-decoration: none;
+                    "
+                    >Returns &amp; Refunds</a
+                >
+            </div>
+        </footer>
 
-    <section class="also-like">
-        <h2 class="also-title">YOU MAY ALSO LIKE</h2>
-        
-        <div class="mini-grid">
-            <a href="product.html?slug=ipk-starboy-polo" class="mini-card">
-                <div class="mini-image">POLO</div>
-                <div class="mini-info">
-                    <div class="mini-name">IPK STARBOY POLO</div>
-                    <div class="mini-price">₦25,000</div>
-                </div>
-            </a>
+        <script>
+            let selectedSize = "ONE SIZE";
 
-            <a href="product.html?slug=pk-thermal" class="mini-card">
-                <div class="mini-image">THERMAL</div>
-                <div class="mini-info">
-                    <div class="mini-name">PK THERMAL</div>
-                    <div class="mini-price">₦20,000</div>
-                </div>
-            </a>
+            function selectSize(btn, size) {
+                document.querySelectorAll(".size-btn").forEach((b) => {
+                    b.classList.remove("selected");
+                });
 
-            <a href="product.html?slug=kro-tee" class="mini-card">
-                <div class="mini-image">TEE</div>
-                <div class="mini-info">
-                    <div class="mini-name">KRO PK TEE</div>
-                    <div class="mini-price">₦10,000</div>
-                </div>
-            </a>
+                btn.classList.add("selected");
+                selectedSize = size;
+                checkProductAvailability("beanie");
 
-            <a href="product.html?slug=stargirl-top" class="mini-card">
-                <div class="mini-image">STAR</div>
-                <div class="mini-info">
-                    <div class="mini-name">STARGIRL TOP</div>
-                    <div class="mini-price">₦12,000</div>
-                </div>
-            </a>
-        </div>
-    </section>
+                const pop = document.createElement("div");
+                pop.style.cssText =
+                    "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUpCenter 0.5s ease-out forwards; z-index: 9999;";
+                pop.textContent = "POP!";
+                document.body.appendChild(pop);
+                setTimeout(() => pop.remove(), 500);
+            }
 
-    <footer>
-        <div class="footer-logo">KRO PK</div>
-        <div style="color: #64748b; font-family: 'Permanent Marker';">KEEP ROCKING © 2026</div>
-      <div class="footer-policy-link" style="margin-top:0.75rem;"><a href="/returns.html" style="color:#fbbf24;font-family:'Permanent Marker',cursive;text-decoration:none;">Returns &amp; Refunds</a></div>
-  </footer>
+            document
+                .querySelectorAll(".thumb-panel")
+                .forEach((thumb, index) => {
+                    thumb.addEventListener("click", function () {
+                        this.style.borderColor = "#fbbf24";
+                        setTimeout(() => {
+                            this.style.borderColor = "";
+                        }, 300);
+                    });
+                });
 
-    <script>
-        let selectedSize = 'ONE SIZE';
+            async function checkProductAvailability(slug) {
+                try {
+                    const product = await getProductBySlug(slug);
+                    if (!product) return;
+                    setAddCartButtonState(isSizeInStock(product, selectedSize));
+                } catch (err) {}
+            }
 
-        function selectSize(btn, size) {
-            document.querySelectorAll('.size-btn').forEach(b => {
-                b.classList.remove('selected');
-            });
-            
-            btn.classList.add('selected');
-            selectedSize = size;
-            checkProductAvailability('beanie');
-            
-            const pop = document.createElement('div');
-            pop.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Bangers; font-size: 3rem; color: #fbbf24; pointer-events: none; animation: popUp 0.5s ease-out forwards; z-index: 9999;';
-            pop.textContent = 'POP!';
-            document.body.appendChild(pop);
-            setTimeout(() => pop.remove(), 500);
-        }
-
-        document.querySelectorAll('.thumb-panel').forEach((thumb, index) => {
-            thumb.addEventListener('click', function() {
-                this.style.borderColor = '#fbbf24';
-                setTimeout(() => {
-                    this.style.borderColor = '';
-                }, 300);
-            });
-        });
-
-        async function checkProductAvailability(slug) {
-            try {
-                const product = await getProductBySlug(slug);
-                if (!product) return;
-                setAddCartButtonState(isSizeInStock(product, selectedSize));
-            } catch (err) {}
-        }
-
-        window.addEventListener('DOMContentLoaded', () => checkProductAvailability('beanie'));
-    </script>
-    <script src="analytics.js"></script>
-    <script src="site.js"></script>
-</body>
+            window.addEventListener("DOMContentLoaded", () =>
+                checkProductAvailability("beanie"),
+            );
+        </script>
+        <script src="analytics.js"></script>
+        <script src="site.js"></script>
+    </body>
 </html>

@@ -1,898 +1,1023 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Cart — KRO PK</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root {
-            --navy: #0f172a;
-            --navy-light: #1e293b;
-            --white: #f8fafc;
-            --red: #ef4444;
-            --yellow: #fbbf24;
-            --green: #22c55e;
-            --outline: 3px solid var(--white);
-        }
-
-        body {
-            font-family: 'Comic Neue', cursive;
-            background: var(--navy);
-            color: var(--white);
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 10px 10px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* NAV */
-        nav {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: var(--navy);
-            border-bottom: var(--outline);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 2rem;
-        }
-
-        .nav-logo {
-            font-family: 'Bangers', cursive;
-            font-size: 2rem;
-            color: var(--white);
-            text-shadow: 3px 3px 0 var(--red);
-            text-decoration: none;
-        }
-
-        .nav-back {
-            font-family: 'Permanent Marker', cursive;
-            font-size: 1rem;
-            color: var(--white);
-            text-decoration: none;
-            background: var(--navy-light);
-            padding: 0.6rem 1.2rem;
-            border: 2px solid var(--white);
-            box-shadow: 3px 3px 0 var(--red);
-            transition: all 0.2s;
-        }
-
-        .nav-back:hover {
-            background: var(--yellow);
-            color: var(--navy);
-            transform: translateY(-2px);
-        }
-
-        /* RACING STRIPE */
-        .stripe-bar {
-            height: 8px;
-            background: linear-gradient(90deg, var(--red) 0%, var(--yellow) 50%, var(--red) 100%);
-        }
-
-        /* PAGE HEADER */
-        .page-header {
-            text-align: center;
-            padding: 3rem 1rem 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .page-header h1 {
-            font-family: 'Bangers', cursive;
-            font-size: clamp(3rem, 10vw, 5rem);
-            text-shadow: 4px 4px 0 var(--red);
-            letter-spacing: 0.05em;
-        }
-
-        .page-header p {
-            font-family: 'Permanent Marker', cursive;
-            color: var(--yellow);
-            font-size: 1.1rem;
-            margin-top: 0.5rem;
-        }
-
-        /* MAIN LAYOUT */
-        .cart-layout {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem 4rem;
-            display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* EMPTY STATE */
-        .empty-cart {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 6rem 2rem;
-            border: var(--outline);
-            background: var(--navy-light);
-        }
-
-        .empty-cart .empty-icon {
-            font-size: 5rem;
-            margin-bottom: 1rem;
-        }
-
-        .empty-cart h2 {
-            font-family: 'Bangers', cursive;
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: var(--yellow);
-        }
-
-        .empty-cart p {
-            color: #94a3b8;
-            margin-bottom: 2rem;
-            font-size: 1.1rem;
-        }
-
-        .shop-btn {
-            display: inline-block;
-            background: var(--red);
-            color: var(--white);
-            font-family: 'Bangers', cursive;
-            font-size: 1.4rem;
-            padding: 1rem 2.5rem;
-            border: var(--outline);
-            text-decoration: none;
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.4);
-            transition: all 0.2s;
-            letter-spacing: 0.05em;
-        }
-
-        .shop-btn:hover {
-            background: var(--yellow);
-            color: var(--navy);
-            transform: translateY(-3px);
-            box-shadow: 7px 7px 0 var(--red);
-        }
-
-        /* CART ITEMS */
-        .cart-items-col h2 {
-            font-family: 'Bangers', cursive;
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
-            color: var(--yellow);
-            letter-spacing: 0.05em;
-        }
-
-        .cart-item {
-            background: var(--navy-light);
-            border: 2px solid #334155;
-            margin-bottom: 1rem;
-            display: grid;
-            grid-template-columns: 100px 1fr auto;
-            gap: 1rem;
-            align-items: center;
-            padding: 1rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cart-item:hover {
-            border-color: var(--white);
-            box-shadow: 4px 4px 0 var(--red);
-        }
-
-        .cart-item-img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border: 2px solid #334155;
-            background: var(--navy);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Bangers', cursive;
-            font-size: 1.2rem;
-            color: #64748b;
-            flex-shrink: 0;
-        }
-
-        .cart-item-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .cart-item-details h3 {
-            font-family: 'Bangers', cursive;
-            font-size: 1.3rem;
-            margin-bottom: 0.3rem;
-            letter-spacing: 0.03em;
-        }
-
-        .cart-item-size {
-            font-size: 0.85rem;
-            color: #94a3b8;
-            margin-bottom: 0.5rem;
-        }
-
-        .cart-item-size span {
-            background: var(--navy);
-            border: 1px solid #475569;
-            padding: 0.2rem 0.6rem;
-            font-family: 'Permanent Marker', cursive;
-            color: var(--yellow);
-            font-size: 0.8rem;
-        }
-
-        .cart-item-price {
-            font-family: 'Permanent Marker', cursive;
-            color: var(--yellow);
-            font-size: 1.1rem;
-        }
-
-        .cart-item-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.8rem;
-        }
-
-        .qty-control {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            border: 2px solid #334155;
-        }
-
-        .qty-btn {
-            width: 36px;
-            height: 36px;
-            background: var(--navy);
-            border: none;
-            color: var(--white);
-            font-family: 'Bangers', cursive;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .qty-btn:hover { background: var(--red); }
-
-        .qty-num {
-            width: 40px;
-            height: 36px;
-            background: var(--navy-light);
-            color: var(--white);
-            font-family: 'Bangers', cursive;
-            font-size: 1.1rem;
-            text-align: center;
-            border: none;
-            border-left: 1px solid #334155;
-            border-right: 1px solid #334155;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .item-total {
-            font-family: 'Permanent Marker', cursive;
-            color: var(--white);
-            font-size: 1rem;
-        }
-
-        .remove-btn {
-            background: none;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-size: 1.2rem;
-            font-family: 'Bangers', cursive;
-            transition: color 0.2s;
-            padding: 0.2rem 0.5rem;
-        }
-
-        .remove-btn:hover { color: var(--red); }
-
-        /* ORDER SUMMARY */
-        .order-summary {
-            position: sticky;
-            top: 90px;
-            height: fit-content;
-        }
-
-        .summary-box {
-            background: var(--navy-light);
-            border: var(--outline);
-            box-shadow: 6px 6px 0 var(--red);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .summary-box h2 {
-            font-family: 'Bangers', cursive;
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
-            letter-spacing: 0.05em;
-            border-bottom: 2px solid #334155;
-            padding-bottom: 0.8rem;
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.8rem;
-            font-size: 1rem;
-        }
-
-        .summary-row.total {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 2px solid #334155;
-            font-family: 'Permanent Marker', cursive;
-            font-size: 1.3rem;
-        }
-
-        .summary-row.total span:last-child {
-            color: var(--yellow);
-            font-size: 1.5rem;
-        }
-
-        .summary-label { color: #94a3b8; }
-
-        .promo-row {
-            display: flex;
-            gap: 0;
-            margin: 1rem 0;
-        }
-
-        .promo-input {
-            flex: 1;
-            padding: 0.7rem 1rem;
-            background: var(--navy);
-            border: 2px solid #334155;
-            border-right: none;
-            color: var(--white);
-            font-family: 'Comic Neue', cursive;
-            font-size: 0.95rem;
-            outline: none;
-        }
-
-        .promo-input::placeholder { color: #475569; }
-
-        .promo-btn {
-            padding: 0.7rem 1rem;
-            background: var(--navy-light);
-            border: 2px solid #334155;
-            color: var(--yellow);
-            font-family: 'Bangers', cursive;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            letter-spacing: 0.05em;
-        }
-
-        .promo-btn:hover { background: var(--yellow); color: var(--navy); }
-
-        /* CHECKOUT */
-        .checkout-section h2 {
-            font-family: 'Bangers', cursive;
-            font-size: 1.8rem;
-            margin-bottom: 1.2rem;
-            letter-spacing: 0.05em;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-family: 'Permanent Marker', cursive;
-            font-size: 0.85rem;
-            color: #94a3b8;
-            margin-bottom: 0.4rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 0.8rem 1rem;
-            background: var(--navy);
-            border: 2px solid #334155;
-            color: var(--white);
-            font-family: 'Comic Neue', cursive;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            border-color: var(--yellow);
-        }
-
-        .form-group select option { background: var(--navy-light); }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .checkout-btn {
-            display: block;
-            width: 100%;
-            padding: 1.2rem;
-            background: #2563eb;
-            color: var(--white);
-            font-family: 'Bangers', cursive;
-            font-size: 1.5rem;
-            border: var(--outline);
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            letter-spacing: 0.05em;
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.4);
-            transition: all 0.2s;
-            margin-top: 1.5rem;
-        }
-
-        .checkout-btn:hover {
-            background: #1d4ed8;
-            transform: translateY(-3px);
-            box-shadow: 7px 7px 0 rgba(0,0,0,0.5);
-        }
-
-        .checkout-note {
-            text-align: center;
-            color: #64748b;
-            font-size: 0.85rem;
-            margin-top: 1rem;
-            line-height: 1.5;
-        }
-
-        /* TOAST */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--green);
-            color: var(--white);
-            font-family: 'Bangers', cursive;
-            font-size: 1.2rem;
-            padding: 1rem 2rem;
-            border: 2px solid var(--white);
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
-            z-index: 9999;
-            transform: translateX(200%);
-            transition: transform 0.3s ease;
-            letter-spacing: 0.05em;
-        }
-
-        .toast.show { transform: translateX(0); }
-
-        footer {
-            position: relative;
-            z-index: 1;
-            background: #020617;
-            padding: 2rem 1rem;
-            text-align: center;
-            border-top: var(--outline);
-        }
-
-        .footer-logo {
-            font-family: 'Bangers', cursive;
-            font-size: 2rem;
-            text-shadow: 3px 3px 0 var(--red);
-            margin-bottom: 0.75rem;
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-links a {
-            color: var(--yellow);
-            font-family: 'Permanent Marker', cursive;
-            text-decoration: none;
-        }
-
-        /* ITEM REMOVED ANIMATION */
-        .cart-item.removing {
-            animation: slideOut 0.3s ease forwards;
-        }
-
-        @keyframes slideOut {
-            to { opacity: 0; transform: translateX(-100%); height: 0; padding: 0; margin: 0; border: none; }
-        }
-
-        /* MOBILE */
-        @media (max-width: 900px) {
-            .cart-layout {
-                grid-template-columns: 1fr;
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+        />
+        <title>Cart — KRO PK</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
 
-            .order-summary {
-                position: static;
-                order: -1;
+            :root {
+                --navy: #0f172a;
+                --navy-light: #1e293b;
+                --white: #f8fafc;
+                --red: #ef4444;
+                --yellow: #fbbf24;
+                --green: #22c55e;
+                --outline: 3px solid var(--white);
             }
 
-            .cart-item {
-                grid-template-columns: 80px 1fr;
-                grid-template-rows: auto auto;
+            body {
+                font-family: "Comic Neue", cursive;
+                background: var(--navy);
+                color: var(--white);
+                overflow-x: hidden;
+                min-height: 100vh;
             }
 
-            .cart-item-controls {
-                grid-column: 1 / -1;
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-                padding-top: 0.5rem;
-                border-top: 1px solid #334155;
+            body::before {
+                content: "";
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-image: radial-gradient(
+                    circle,
+                    rgba(255, 255, 255, 0.05) 1px,
+                    transparent 1px
+                );
+                background-size: 10px 10px;
+                pointer-events: none;
+                z-index: 0;
             }
 
-            .form-row { grid-template-columns: 1fr; }
-        }
-
-        @media (max-width: 480px) {
+            /* NAV */
             nav {
-                padding: 0.65rem max(0.65rem, env(safe-area-inset-left)) 0.65rem max(0.65rem, env(safe-area-inset-right));
-                padding-top: max(0.65rem, env(safe-area-inset-top));
-                flex-wrap: wrap;
-                gap: 0.5rem;
-                row-gap: 0.35rem;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: var(--navy);
+                border-bottom: var(--outline);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 1rem 2rem;
             }
 
             .nav-logo {
-                font-size: 1.35rem;
-                min-width: 0;
-                flex: 1 1 auto;
+                font-family: "Bangers", cursive;
+                font-size: 2rem;
+                color: var(--white);
+                text-shadow: 3px 3px 0 var(--red);
+                text-decoration: none;
             }
 
             .nav-back {
-                font-size: 0.78rem;
-                padding: 0.5rem 0.65rem;
-                line-height: 1.25;
-                white-space: normal;
-                text-align: center;
-                max-width: 100%;
+                font-family: "Permanent Marker", cursive;
+                font-size: 1rem;
+                color: var(--white);
+                text-decoration: none;
+                background: var(--navy-light);
+                padding: 0.6rem 1.2rem;
+                border: 2px solid var(--white);
+                box-shadow: 3px 3px 0 var(--red);
+                transition: all 0.2s;
             }
 
+            .nav-back:hover {
+                background: var(--yellow);
+                color: var(--navy);
+                transform: translateY(-2px);
+            }
+
+            /* RACING STRIPE */
+            .stripe-bar {
+                height: 8px;
+                background: linear-gradient(
+                    90deg,
+                    var(--red) 0%,
+                    var(--yellow) 50%,
+                    var(--red) 100%
+                );
+            }
+
+            /* PAGE HEADER */
             .page-header {
-                padding: 1.75rem max(0.75rem, env(safe-area-inset-left)) 1.25rem max(0.75rem, env(safe-area-inset-right));
+                text-align: center;
+                padding: 3rem 1rem 2rem;
+                position: relative;
+                z-index: 1;
             }
 
             .page-header h1 {
-                font-size: clamp(2rem, 12vw, 3rem);
+                font-family: "Bangers", cursive;
+                font-size: clamp(3rem, 10vw, 5rem);
+                text-shadow: 4px 4px 0 var(--red);
+                letter-spacing: 0.05em;
             }
 
+            .page-header p {
+                font-family: "Permanent Marker", cursive;
+                color: var(--yellow);
+                font-size: 1.1rem;
+                margin-top: 0.5rem;
+            }
+
+            /* MAIN LAYOUT */
             .cart-layout {
-                padding: 0.85rem max(0.65rem, env(safe-area-inset-left)) 2.5rem max(0.65rem, env(safe-area-inset-right));
-                gap: 1.25rem;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem 1.5rem 4rem;
+                display: grid;
+                grid-template-columns: 1fr 380px;
+                gap: 2rem;
+                position: relative;
+                z-index: 1;
+            }
+
+            /* EMPTY STATE */
+            .empty-cart {
+                grid-column: 1 / -1;
+                text-align: center;
+                padding: 6rem 2rem;
+                border: var(--outline);
+                background: var(--navy-light);
+            }
+
+            .empty-cart .empty-icon {
+                font-size: 5rem;
+                margin-bottom: 1rem;
+            }
+
+            .empty-cart h2 {
+                font-family: "Bangers", cursive;
+                font-size: 2.5rem;
+                margin-bottom: 1rem;
+                color: var(--yellow);
+            }
+
+            .empty-cart p {
+                color: #94a3b8;
+                margin-bottom: 2rem;
+                font-size: 1.1rem;
+            }
+
+            .shop-btn {
+                display: inline-block;
+                background: var(--red);
+                color: var(--white);
+                font-family: "Bangers", cursive;
+                font-size: 1.4rem;
+                padding: 1rem 2.5rem;
+                border: var(--outline);
+                text-decoration: none;
+                box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.4);
+                transition: all 0.2s;
+                letter-spacing: 0.05em;
+            }
+
+            .shop-btn:hover {
+                background: var(--yellow);
+                color: var(--navy);
+                transform: translateY(-3px);
+                box-shadow: 7px 7px 0 var(--red);
+            }
+
+            /* CART ITEMS */
+            .cart-items-col h2 {
+                font-family: "Bangers", cursive;
+                font-size: 1.8rem;
+                margin-bottom: 1.5rem;
+                color: var(--yellow);
+                letter-spacing: 0.05em;
             }
 
             .cart-item {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto;
-                justify-items: center;
-                text-align: center;
-                padding: 1rem 0.75rem;
+                background: var(--navy-light);
+                border: 2px solid #334155;
+                margin-bottom: 1rem;
+                display: grid;
+                grid-template-columns: 100px 1fr auto;
+                gap: 1rem;
+                align-items: center;
+                padding: 1rem;
+                transition:
+                    border-color 0.2s,
+                    box-shadow 0.2s;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .cart-item:hover {
+                border-color: var(--white);
+                box-shadow: 4px 4px 0 var(--red);
             }
 
             .cart-item-img {
-                width: 120px;
-                height: 120px;
-                margin: 0 auto;
+                width: 100px;
+                height: 100px;
+                object-fit: cover;
+                border: 2px solid #334155;
+                background: var(--navy);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: "Bangers", cursive;
+                font-size: 1.2rem;
+                color: #64748b;
+                flex-shrink: 0;
             }
 
-            .cart-item-details {
+            .cart-item-img img {
                 width: 100%;
+                height: 100%;
+                object-fit: cover;
             }
 
             .cart-item-details h3 {
+                font-family: "Bangers", cursive;
+                font-size: 1.3rem;
+                margin-bottom: 0.3rem;
+                letter-spacing: 0.03em;
+            }
+
+            .cart-item-size {
+                font-size: 0.85rem;
+                color: #94a3b8;
+                margin-bottom: 0.5rem;
+            }
+
+            .cart-item-size span {
+                background: var(--navy);
+                border: 1px solid #475569;
+                padding: 0.2rem 0.6rem;
+                font-family: "Permanent Marker", cursive;
+                color: var(--yellow);
+                font-size: 0.8rem;
+            }
+
+            .cart-item-price {
+                font-family: "Permanent Marker", cursive;
+                color: var(--yellow);
                 font-size: 1.1rem;
             }
 
             .cart-item-controls {
-                width: 100%;
-                max-width: 280px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.8rem;
+            }
+
+            .qty-control {
+                display: flex;
+                align-items: center;
+                gap: 0;
+                border: 2px solid #334155;
+            }
+
+            .qty-btn {
+                width: 36px;
+                height: 36px;
+                background: var(--navy);
+                border: none;
+                color: var(--white);
+                font-family: "Bangers", cursive;
+                font-size: 1.2rem;
+                cursor: pointer;
+                transition: background 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .qty-btn:hover {
+                background: var(--red);
+            }
+
+            .qty-num {
+                width: 40px;
+                height: 36px;
+                background: var(--navy-light);
+                color: var(--white);
+                font-family: "Bangers", cursive;
+                font-size: 1.1rem;
+                text-align: center;
+                border: none;
+                border-left: 1px solid #334155;
+                border-right: 1px solid #334155;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .item-total {
+                font-family: "Permanent Marker", cursive;
+                color: var(--white);
+                font-size: 1rem;
+            }
+
+            .remove-btn {
+                background: none;
+                border: none;
+                color: #64748b;
+                cursor: pointer;
+                font-size: 1.2rem;
+                font-family: "Bangers", cursive;
+                transition: color 0.2s;
+                padding: 0.2rem 0.5rem;
+            }
+
+            .remove-btn:hover {
+                color: var(--red);
+            }
+
+            /* ORDER SUMMARY */
+            .order-summary {
+                position: sticky;
+                top: 90px;
+                height: fit-content;
+            }
+
+            .summary-box {
+                background: var(--navy-light);
+                border: var(--outline);
+                box-shadow: 6px 6px 0 var(--red);
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .summary-box h2 {
+                font-family: "Bangers", cursive;
+                font-size: 1.8rem;
+                margin-bottom: 1.5rem;
+                letter-spacing: 0.05em;
+                border-bottom: 2px solid #334155;
+                padding-bottom: 0.8rem;
+            }
+
+            .summary-row {
+                display: flex;
                 justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.8rem;
+                font-size: 1rem;
+            }
+
+            .summary-row.total {
+                margin-top: 1rem;
+                padding-top: 1rem;
+                border-top: 2px solid #334155;
+                font-family: "Permanent Marker", cursive;
+                font-size: 1.3rem;
+            }
+
+            .summary-row.total span:last-child {
+                color: var(--yellow);
+                font-size: 1.5rem;
+            }
+
+            .summary-label {
+                color: #94a3b8;
+            }
+
+            .promo-row {
+                display: flex;
+                gap: 0;
+                margin: 1rem 0;
+            }
+
+            .promo-input {
+                flex: 1;
+                padding: 0.7rem 1rem;
+                background: var(--navy);
+                border: 2px solid #334155;
+                border-right: none;
+                color: var(--white);
+                font-family: "Comic Neue", cursive;
+                font-size: 0.95rem;
+                outline: none;
+            }
+
+            .promo-input::placeholder {
+                color: #475569;
+            }
+
+            .promo-btn {
+                padding: 0.7rem 1rem;
+                background: var(--navy-light);
+                border: 2px solid #334155;
+                color: var(--yellow);
+                font-family: "Bangers", cursive;
+                font-size: 1rem;
+                cursor: pointer;
+                transition: all 0.2s;
+                letter-spacing: 0.05em;
+            }
+
+            .promo-btn:hover {
+                background: var(--yellow);
+                color: var(--navy);
+            }
+
+            /* CHECKOUT */
+            .checkout-section h2 {
+                font-family: "Bangers", cursive;
+                font-size: 1.8rem;
+                margin-bottom: 1.2rem;
+                letter-spacing: 0.05em;
+            }
+
+            .form-group {
+                margin-bottom: 1rem;
+            }
+
+            .form-group label {
+                display: block;
+                font-family: "Permanent Marker", cursive;
+                font-size: 0.85rem;
+                color: #94a3b8;
+                margin-bottom: 0.4rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
 
             .form-group input,
             .form-group select,
             .form-group textarea {
-                min-height: 48px;
-                font-size: 16px;
+                width: 100%;
+                padding: 0.8rem 1rem;
+                background: var(--navy);
+                border: 2px solid #334155;
+                color: var(--white);
+                font-family: "Comic Neue", cursive;
+                font-size: 1rem;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+
+            .form-group input:focus,
+            .form-group select:focus,
+            .form-group textarea:focus {
+                border-color: var(--yellow);
+            }
+
+            .form-group select option {
+                background: var(--navy-light);
+            }
+
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
             }
 
             .checkout-btn {
-                font-size: 1.15rem;
-                padding: 1rem;
-            }
-
-            .summary-box {
-                padding: 1.1rem;
-            }
-
-            .promo-row {
-                flex-direction: column;
-            }
-
-            .promo-input {
-                border-right: 2px solid #334155;
-            }
-
-            .promo-btn {
+                display: block;
                 width: 100%;
+                padding: 1.2rem;
+                background: #2563eb;
+                color: var(--white);
+                font-family: "Bangers", cursive;
+                font-size: 1.5rem;
+                border: var(--outline);
+                cursor: pointer;
+                text-align: center;
+                text-decoration: none;
+                letter-spacing: 0.05em;
+                box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.4);
+                transition: all 0.2s;
+                margin-top: 1.5rem;
             }
 
+            .checkout-btn:hover {
+                background: #1d4ed8;
+                transform: translateY(-3px);
+                box-shadow: 7px 7px 0 rgba(0, 0, 0, 0.5);
+            }
+
+            .checkout-note {
+                text-align: center;
+                color: #64748b;
+                font-size: 0.85rem;
+                margin-top: 1rem;
+                line-height: 1.5;
+            }
+
+            /* TOAST */
             .toast {
-                left: max(0.65rem, env(safe-area-inset-left));
-                right: max(0.65rem, env(safe-area-inset-right));
-                bottom: max(0.75rem, env(safe-area-inset-bottom));
-                width: auto;
-                font-size: 1rem;
-                padding: 0.75rem 1rem;
-            }
-        }
-    </style>
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <meta name="theme-color" content="#0f172a">
-</head>
-<body>
-
-<nav>
-    <a href="shop1.html" class="nav-logo">KRO PK</a>
-    <a href="shop1.html" class="nav-back">← KEEP SHOPPING</a>
-</nav>
-<div class="stripe-bar"></div>
-
-<div class="page-header">
-    <h1>🛒 YOUR CART</h1>
-    <p id="cart-count-label">Loading your picks...</p>
-</div>
-
-<div class="cart-layout" id="cart-layout">
-    <!-- Filled by JS -->
-</div>
-
-<div class="toast" id="toast">REMOVED!</div>
-<footer>
-    <div class="footer-logo">KRO PK</div>
-    <div class="footer-links" aria-label="Footer navigation">
-        <a href="/about.html">About</a>
-        <a href="/shop">Shop</a>
-        <a href="/returns.html">Returns &amp; Refunds</a>
-        <a href="https://www.instagram.com/kro_pk1">Instagram</a>
-        <a href="https://www.tiktok.com/@kro_pk">TikTok</a>
-    </div>
-</footer>
-<script src="analytics.js"></script>
-
-<script>
-// ─── CART ENGINE ────────────────────────────────────────────────
-const CART_KEY = 'kro_pk_cart';
-/** Must match server `FLAT_DELIVERY_FEE_NGN` (src/server.js). */
-const FLAT_DELIVERY_FEE_NGN = 4500;
-let PAYSTACK_PUBLIC_KEY = null;
-let paystackReadyPromise = null;
-let appliedPromo = null;
-
-function getCart() {
-    try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; }
-    catch { return []; }
-}
-
-async function getPaystackPublicKey() {
-    if (PAYSTACK_PUBLIC_KEY) return PAYSTACK_PUBLIC_KEY;
-    const res = await fetch('/api/config/paystack', { cache: 'no-store' });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data?.publicKey) {
-        throw new Error(data?.message || 'Paystack public key unavailable');
-    }
-    PAYSTACK_PUBLIC_KEY = data.publicKey;
-    return PAYSTACK_PUBLIC_KEY;
-}
-
-function loadPaystackInlineScript() {
-    if (window.PaystackPop) return Promise.resolve();
-
-    return new Promise((resolve, reject) => {
-        const existing = document.querySelector('script[data-paystack-inline="true"]');
-        if (existing) {
-            existing.addEventListener('load', () => resolve(), { once: true });
-            existing.addEventListener('error', () => reject(new Error('Failed to load Paystack script')), { once: true });
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.src = 'https://js.paystack.co/v1/inline.js';
-        script.async = true;
-        script.dataset.paystackInline = 'true';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load Paystack script'));
-        document.head.appendChild(script);
-    });
-}
-
-async function ensurePaystackReady() {
-    if (paystackReadyPromise) return paystackReadyPromise;
-    paystackReadyPromise = (async () => {
-        await loadPaystackInlineScript();
-        await getPaystackPublicKey();
-        if (!window.PaystackPop) {
-            throw new Error('PaystackPop is not available (script may be blocked)');
-        }
-    })();
-    return paystackReadyPromise;
-}
-
-async function payWithPaystack(payload, totalAmount) {
-    await ensurePaystackReady();
-
-    const handler = window.PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: payload.customer.email,
-        amount: Math.round(totalAmount * 100),
-        currency: 'NGN',
-        reference: `KROPK-${Date.now()}`,
-        metadata: {
-            customer: {
-                name: payload.customer.name,
-                phone: payload.customer.phone,
-            }
-        },
-        callback: function(response) {
-            if (!response || !response.reference) {
-                showToast('Payment failed. No reference received.');
-                return;
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                background: var(--green);
+                color: var(--white);
+                font-family: "Bangers", cursive;
+                font-size: 1.2rem;
+                padding: 1rem 2rem;
+                border: 2px solid var(--white);
+                box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+                z-index: 9999;
+                transform: translateX(200%);
+                transition: transform 0.3s ease;
+                letter-spacing: 0.05em;
             }
 
-            (async () => {
-                const result = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        ...payload,
-                        paystackReference: response.reference,
-                        visitorId: window.KroAnalytics?.visitorId || '',
-                        sessionId: window.KroAnalytics?.sessionId || ''
-                    })
-                });
+            .toast.show {
+                transform: translateX(0);
+            }
 
-                const data = await result.json().catch(() => ({}));
-                if (!result.ok) {
-                    showToast(data.message || 'Order failed after payment.');
-                    return;
+            footer {
+                position: relative;
+                z-index: 1;
+                background: #020617;
+                padding: 2rem 1rem;
+                text-align: center;
+                border-top: var(--outline);
+            }
+
+            .footer-logo {
+                font-family: "Bangers", cursive;
+                font-size: 2rem;
+                text-shadow: 3px 3px 0 var(--red);
+                margin-bottom: 0.75rem;
+            }
+
+            .footer-links {
+                display: flex;
+                justify-content: center;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .footer-links a {
+                color: var(--yellow);
+                font-family: "Permanent Marker", cursive;
+                text-decoration: none;
+            }
+
+            /* ITEM REMOVED ANIMATION */
+            .cart-item.removing {
+                animation: slideOut 0.3s ease forwards;
+            }
+
+            @keyframes slideOut {
+                to {
+                    opacity: 0;
+                    transform: translateX(-100%);
+                    height: 0;
+                    padding: 0;
+                    margin: 0;
+                    border: none;
+                }
+            }
+
+            /* MOBILE */
+            @media (max-width: 900px) {
+                .cart-layout {
+                    grid-template-columns: 1fr;
                 }
 
-                saveCart([]);
-                window.KroAnalytics?.updateProfile({ cartItems: [], checkedOut: true });
-                updateCartBadge();
-                render();
-                showToast(`ORDER PLACED ${data.orderNumber}`);
-                const layout = document.getElementById('cart-layout');
-                layout.innerHTML = `
+                .order-summary {
+                    position: static;
+                    order: -1;
+                }
+
+                .cart-item {
+                    grid-template-columns: 80px 1fr;
+                    grid-template-rows: auto auto;
+                }
+
+                .cart-item-controls {
+                    grid-column: 1 / -1;
+                    flex-direction: row;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-top: 0.5rem;
+                    border-top: 1px solid #334155;
+                }
+
+                .form-row {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 480px) {
+                nav {
+                    padding: 0.65rem max(0.65rem, env(safe-area-inset-left))
+                        0.65rem max(0.65rem, env(safe-area-inset-right));
+                    padding-top: max(0.65rem, env(safe-area-inset-top));
+                    flex-wrap: wrap;
+                    gap: 0.5rem;
+                    row-gap: 0.35rem;
+                }
+
+                .nav-logo {
+                    font-size: 1.35rem;
+                    min-width: 0;
+                    flex: 1 1 auto;
+                }
+
+                .nav-back {
+                    font-size: 0.78rem;
+                    padding: 0.5rem 0.65rem;
+                    line-height: 1.25;
+                    white-space: normal;
+                    text-align: center;
+                    max-width: 100%;
+                }
+
+                .page-header {
+                    padding: 1.75rem max(0.75rem, env(safe-area-inset-left))
+                        1.25rem max(0.75rem, env(safe-area-inset-right));
+                }
+
+                .page-header h1 {
+                    font-size: clamp(2rem, 12vw, 3rem);
+                }
+
+                .cart-layout {
+                    padding: 0.85rem max(0.65rem, env(safe-area-inset-left))
+                        2.5rem max(0.65rem, env(safe-area-inset-right));
+                    gap: 1.25rem;
+                }
+
+                .cart-item {
+                    grid-template-columns: 1fr;
+                    grid-template-rows: auto;
+                    justify-items: center;
+                    text-align: center;
+                    padding: 1rem 0.75rem;
+                }
+
+                .cart-item-img {
+                    width: 120px;
+                    height: 120px;
+                    margin: 0 auto;
+                }
+
+                .cart-item-details {
+                    width: 100%;
+                }
+
+                .cart-item-details h3 {
+                    font-size: 1.1rem;
+                }
+
+                .cart-item-controls {
+                    width: 100%;
+                    max-width: 280px;
+                    justify-content: space-between;
+                }
+
+                .form-group input,
+                .form-group select,
+                .form-group textarea {
+                    min-height: 48px;
+                    font-size: 16px;
+                }
+
+                .checkout-btn {
+                    font-size: 1.15rem;
+                    padding: 1rem;
+                }
+
+                .summary-box {
+                    padding: 1.1rem;
+                }
+
+                .promo-row {
+                    flex-direction: column;
+                }
+
+                .promo-input {
+                    border-right: 2px solid #334155;
+                }
+
+                .promo-btn {
+                    width: 100%;
+                }
+
+                .toast {
+                    left: max(0.65rem, env(safe-area-inset-left));
+                    right: max(0.65rem, env(safe-area-inset-right));
+                    bottom: max(0.75rem, env(safe-area-inset-bottom));
+                    width: auto;
+                    font-size: 1rem;
+                    padding: 0.75rem 1rem;
+                }
+            }
+        </style>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="16x16"
+            href="/favicon-16x16.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="32x32"
+            href="/favicon-32x32.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="48x48"
+            href="/favicon-48x48.png"
+        />
+        <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/apple-touch-icon.png"
+        />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#0f172a" />
+    </head>
+    <body>
+        <nav>
+            <a href="shop1.html" class="nav-logo">KRO PK</a>
+            <a href="shop1.html" class="nav-back">← KEEP SHOPPING</a>
+        </nav>
+        <div class="stripe-bar"></div>
+
+        <div class="page-header">
+            <h1>🛒 YOUR CART</h1>
+            <p id="cart-count-label">Loading your picks...</p>
+        </div>
+
+        <div class="cart-layout" id="cart-layout">
+            <!-- Filled by JS -->
+        </div>
+
+        <div class="toast" id="toast">REMOVED!</div>
+        <footer>
+            <div class="footer-logo">KRO PK</div>
+            <div class="footer-links" aria-label="Footer navigation">
+                <a href="/about.html">About</a>
+                <a href="/shop">Shop</a>
+                <a href="/returns.html">Returns &amp; Refunds</a>
+                <a href="https://www.instagram.com/kro_pk1">Instagram</a>
+                <a href="https://www.tiktok.com/@kro_pk">TikTok</a>
+            </div>
+        </footer>
+        <script src="analytics.js"></script>
+
+        <script>
+            // ─── CART ENGINE ────────────────────────────────────────────────
+            const CART_KEY = "kro_pk_cart";
+            /** Must match server `FLAT_DELIVERY_FEE_NGN` (src/server.js). */
+            const FLAT_DELIVERY_FEE_NGN = 4500;
+            let PAYSTACK_PUBLIC_KEY = null;
+            let paystackReadyPromise = null;
+            let appliedPromo = null;
+
+            function getCart() {
+                try {
+                    return JSON.parse(localStorage.getItem(CART_KEY)) || [];
+                } catch {
+                    return [];
+                }
+            }
+
+            async function getPaystackPublicKey() {
+                if (PAYSTACK_PUBLIC_KEY) return PAYSTACK_PUBLIC_KEY;
+                const res = await fetch("/api/config/paystack", {
+                    cache: "no-store",
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data?.publicKey) {
+                    throw new Error(
+                        data?.message || "Paystack public key unavailable",
+                    );
+                }
+                PAYSTACK_PUBLIC_KEY = data.publicKey;
+                return PAYSTACK_PUBLIC_KEY;
+            }
+
+            function loadPaystackInlineScript() {
+                if (window.PaystackPop) return Promise.resolve();
+
+                return new Promise((resolve, reject) => {
+                    const existing = document.querySelector(
+                        'script[data-paystack-inline="true"]',
+                    );
+                    if (existing) {
+                        existing.addEventListener("load", () => resolve(), {
+                            once: true,
+                        });
+                        existing.addEventListener(
+                            "error",
+                            () =>
+                                reject(
+                                    new Error("Failed to load Paystack script"),
+                                ),
+                            { once: true },
+                        );
+                        return;
+                    }
+
+                    const script = document.createElement("script");
+                    script.src = "https://js.paystack.co/v1/inline.js";
+                    script.async = true;
+                    script.dataset.paystackInline = "true";
+                    script.onload = () => resolve();
+                    script.onerror = () =>
+                        reject(new Error("Failed to load Paystack script"));
+                    document.head.appendChild(script);
+                });
+            }
+
+            async function ensurePaystackReady() {
+                if (paystackReadyPromise) return paystackReadyPromise;
+                paystackReadyPromise = (async () => {
+                    await loadPaystackInlineScript();
+                    await getPaystackPublicKey();
+                    if (!window.PaystackPop) {
+                        throw new Error(
+                            "PaystackPop is not available (script may be blocked)",
+                        );
+                    }
+                })();
+                return paystackReadyPromise;
+            }
+
+            async function payWithPaystack(payload, totalAmount) {
+                await ensurePaystackReady();
+
+                const handler = window.PaystackPop.setup({
+                    key: PAYSTACK_PUBLIC_KEY,
+                    email: payload.customer.email,
+                    amount: Math.round(totalAmount * 100),
+                    currency: "NGN",
+                    reference: `KROPK-${Date.now()}`,
+                    metadata: {
+                        customer: {
+                            name: payload.customer.name,
+                            phone: payload.customer.phone,
+                        },
+                    },
+                    callback: function (response) {
+                        if (!response || !response.reference) {
+                            showToast("Payment failed. No reference received.");
+                            return;
+                        }
+
+                        (async () => {
+                            const result = await fetch("/api/orders", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    ...payload,
+                                    paystackReference: response.reference,
+                                    visitorId:
+                                        window.KroAnalytics?.visitorId || "",
+                                    sessionId:
+                                        window.KroAnalytics?.sessionId || "",
+                                }),
+                            });
+
+                            const data = await result.json().catch(() => ({}));
+                            if (!result.ok) {
+                                showToast(
+                                    data.message ||
+                                        "Order failed after payment.",
+                                );
+                                return;
+                            }
+
+                            saveCart([]);
+                            window.KroAnalytics?.updateProfile({
+                                cartItems: [],
+                                checkedOut: true,
+                            });
+                            updateCartBadge();
+                            render();
+                            showToast(`ORDER PLACED ${data.orderNumber}`);
+                            const layout =
+                                document.getElementById("cart-layout");
+                            layout.innerHTML = `
                     <div class="empty-cart">
                         <div class="empty-icon">✅</div>
                         <h2>ORDER CONFIRMED</h2>
                         <p>Your order ${data.orderNumber} is in our system.<br>We will contact you shortly with payment details.</p>
                         <a href="shop1.html" class="shop-btn">← BACK TO SHOP</a>
                     </div>`;
-            })().catch(err => {
-                showToast('Unable to send order after payment.');
-            });
-        },
-        onClose: function() {
-            showToast('Payment window closed. Order not completed.');
-        }
-    });
+                        })().catch((err) => {
+                            showToast("Unable to send order after payment.");
+                        });
+                    },
+                    onClose: function () {
+                        showToast(
+                            "Payment window closed. Order not completed.",
+                        );
+                    },
+                });
 
-    handler.openIframe();
-}
+                handler.openIframe();
+            }
 
-function saveCart(cart) {
-    try {
-        localStorage.setItem(CART_KEY, JSON.stringify(cart));
-    } catch {
-        showToast('Unable to save cart in this browser.');
-        return;
-    }
-    window.KroAnalytics?.updateProfile({ cartItems: cart });
-}
+            function saveCart(cart) {
+                try {
+                    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+                } catch {
+                    showToast("Unable to save cart in this browser.");
+                    return;
+                }
+                window.KroAnalytics?.updateProfile({ cartItems: cart });
+            }
 
-let customerProfileTimer = null;
-function syncCustomerProfile() {
-    clearTimeout(customerProfileTimer);
-    customerProfileTimer = setTimeout(() => {
-        window.KroAnalytics?.updateProfile({
-            customer: {
-                name: document.getElementById('f-name')?.value?.trim() || '',
-                phone: document.getElementById('f-phone')?.value?.trim() || '',
-                email: document.getElementById('f-email')?.value?.trim() || ''
-            },
-            cartItems: getCart()
-        });
-    }, 250);
-}
+            let customerProfileTimer = null;
+            function syncCustomerProfile() {
+                clearTimeout(customerProfileTimer);
+                customerProfileTimer = setTimeout(() => {
+                    window.KroAnalytics?.updateProfile({
+                        customer: {
+                            name:
+                                document
+                                    .getElementById("f-name")
+                                    ?.value?.trim() || "",
+                            phone:
+                                document
+                                    .getElementById("f-phone")
+                                    ?.value?.trim() || "",
+                            email:
+                                document
+                                    .getElementById("f-email")
+                                    ?.value?.trim() || "",
+                        },
+                        cartItems: getCart(),
+                    });
+                }, 250);
+            }
 
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-}
+            function showToast(msg) {
+                const t = document.getElementById("toast");
+                t.textContent = msg;
+                t.classList.add("show");
+                setTimeout(() => t.classList.remove("show"), 2000);
+            }
 
-function formatPrice(n) {
-    return '₦' + n.toLocaleString('en-NG');
-}
+            function formatPrice(n) {
+                return "₦" + n.toLocaleString("en-NG");
+            }
 
-function updateQty(id, size, delta) {
-    let cart = getCart();
-    const idx = cart.findIndex(i => i.id === id && i.size === size);
-    if (idx === -1) return;
-    cart[idx].qty = Math.max(1, cart[idx].qty + delta);
-    saveCart(cart);
-    window.KroAnalytics?.track('cart_update', {
-        productSlug: id,
-        quantity: cart[idx].qty,
-        cartCount: cart.reduce((sum, item) => sum + item.qty, 0),
-        metadata: { size, delta }
-    });
-    render();
-}
+            function updateQty(id, size, delta) {
+                let cart = getCart();
+                const idx = cart.findIndex(
+                    (i) => i.id === id && i.size === size,
+                );
+                if (idx === -1) return;
+                cart[idx].qty = Math.max(1, cart[idx].qty + delta);
+                saveCart(cart);
+                window.KroAnalytics?.track("cart_update", {
+                    productSlug: id,
+                    quantity: cart[idx].qty,
+                    cartCount: cart.reduce((sum, item) => sum + item.qty, 0),
+                    metadata: { size, delta },
+                });
+                render();
+            }
 
-function removeItem(id, size) {
-    let cart = getCart();
-    const itemEl = document.querySelector(`[data-id="${id}"][data-size="${size}"]`);
-    if (itemEl) {
-        itemEl.classList.add('removing');
-        setTimeout(() => {
-            cart = cart.filter(i => !(i.id === id && i.size === size));
-            saveCart(cart);
-            window.KroAnalytics?.track('remove_from_cart', {
-                productSlug: id,
-                cartCount: cart.reduce((sum, item) => sum + item.qty, 0),
-                metadata: { size }
-            });
-            render();
-        }, 300);
-    }
-    showToast('ITEM REMOVED!');
-}
+            function removeItem(id, size) {
+                let cart = getCart();
+                const itemEl = document.querySelector(
+                    `[data-id="${id}"][data-size="${size}"]`,
+                );
+                if (itemEl) {
+                    itemEl.classList.add("removing");
+                    setTimeout(() => {
+                        cart = cart.filter(
+                            (i) => !(i.id === id && i.size === size),
+                        );
+                        saveCart(cart);
+                        window.KroAnalytics?.track("remove_from_cart", {
+                            productSlug: id,
+                            cartCount: cart.reduce(
+                                (sum, item) => sum + item.qty,
+                                0,
+                            ),
+                            metadata: { size },
+                        });
+                        render();
+                    }, 300);
+                }
+                showToast("ITEM REMOVED!");
+            }
 
-function buildWhatsAppMessage(cart, info) {
-    const lines = cart.map(i => `• ${i.name} (Size: ${i.size}) x${i.qty} = ${formatPrice(i.price * i.qty)}`).join('\n');
-    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    return encodeURIComponent(
-`Hi KRO PK! I want to place an order 🛒
+            function buildWhatsAppMessage(cart, info) {
+                const lines = cart
+                    .map(
+                        (i) =>
+                            `• ${i.name} (Size: ${i.size}) x${i.qty} = ${formatPrice(i.price * i.qty)}`,
+                    )
+                    .join("\n");
+                const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+                return encodeURIComponent(
+                    `Hi KRO PK! I want to place an order 🛒
 
 *ORDER DETAILS:*
 ${lines}
@@ -908,83 +1033,160 @@ Address: ${info.address}
 City: ${info.city}
 State: ${info.state}
 
-Please confirm availability and payment details. Keep Rocking! 🔥`
-    );
-}
+Please confirm availability and payment details. Keep Rocking! 🔥`,
+                );
+            }
 
-async function handleCheckout() {
-    const cart = getCart();
-    if (!cart.length) { showToast('CART IS EMPTY!'); return; }
+            async function handleCheckout() {
+                const cart = getCart();
+                if (!cart.length) {
+                    showToast("CART IS EMPTY!");
+                    return;
+                }
 
-    const name = document.getElementById('f-name')?.value?.trim();
-    const phone = document.getElementById('f-phone')?.value?.trim();
-    const email = document.getElementById('f-email')?.value?.trim();
-    const address = document.getElementById('f-address')?.value?.trim();
-    const city = document.getElementById('f-city')?.value?.trim();
-    const state = document.getElementById('f-state')?.value?.trim();
+                const name = document.getElementById("f-name")?.value?.trim();
+                const phone = document.getElementById("f-phone")?.value?.trim();
+                const email = document.getElementById("f-email")?.value?.trim();
+                const address = document
+                    .getElementById("f-address")
+                    ?.value?.trim();
+                const city = document.getElementById("f-city")?.value?.trim();
+                const state = document.getElementById("f-state")?.value?.trim();
 
-    if (!name || !phone || !email || !address || !city || !state) {
-        showToast('FILL ALL FIELDS!');
-        ['f-name','f-phone','f-email','f-address','f-city','f-state'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el && !el.value.trim()) el.style.borderColor = 'var(--red)';
-        });
-        return;
-    }
+                if (!name || !phone || !email || !address || !city || !state) {
+                    showToast("FILL ALL FIELDS!");
+                    [
+                        "f-name",
+                        "f-phone",
+                        "f-email",
+                        "f-address",
+                        "f-city",
+                        "f-state",
+                    ].forEach((id) => {
+                        const el = document.getElementById(id);
+                        if (el && !el.value.trim())
+                            el.style.borderColor = "var(--red)";
+                    });
+                    return;
+                }
 
-    const payload = {
-        customer: { name, phone, email, address, city, state },
-        items: cart.map(item => ({ slug: item.id, size: item.size, qty: item.qty, price: item.price })),
-        promoCode: appliedPromo?.code || ''
-    };
+                // ── Pre-payment stock gate ──────────────────────────────
+                // Validate every cart item against live stock BEFORE opening
+                // Paystack. This prevents charging the user for sold-out items.
+                try {
+                    const slugs = [...new Set(cart.map((i) => i.id))];
+                    const stockResults = await Promise.all(
+                        slugs.map((slug) => fetchProduct(slug)),
+                    );
+                    const stockMap = Object.fromEntries(
+                        slugs.map((slug, i) => [slug, stockResults[i]]),
+                    );
+                    for (const item of cart) {
+                        const product = stockMap[item.id];
+                        if (!product || !product.active) {
+                            showToast(
+                                `${item.name} is no longer available. Remove it from your cart.`,
+                            );
+                            checkCartStock().catch(() => {});
+                            return;
+                        }
+                        const available = Number(
+                            (product.sizes || {})[item.size] || 0,
+                        );
+                        if (available < item.qty) {
+                            const msg =
+                                available === 0
+                                    ? `${item.name} (${item.size}) is SOLD OUT. Remove it to continue.`
+                                    : `Only ${available} × ${item.name} (${item.size}) left — you have ${item.qty} in cart.`;
+                            showToast(msg);
+                            checkCartStock().catch(() => {});
+                            return;
+                        }
+                    }
+                } catch {
+                    // Network issue — server will still validate after payment
+                }
 
-    try {
-        window.KroAnalytics?.track('checkout_click', {
-            cartCount: cart.reduce((sum, item) => sum + item.qty, 0)
-        });
-        const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
-        const afterPromo = appliedPromo
-            ? Math.round(subtotal * (1 - (Number(appliedPromo.discountPercent) || 0) / 100))
-            : subtotal;
-        const total = afterPromo + FLAT_DELIVERY_FEE_NGN;
-        await payWithPaystack(payload, total);
-    } catch (err) {
-        showToast(err?.message || 'Unable to process payment. Try again.');
-    }
-}
+                const payload = {
+                    customer: { name, phone, email, address, city, state },
+                    items: cart.map((item) => ({
+                        slug: item.id,
+                        size: item.size,
+                        qty: item.qty,
+                        price: item.price,
+                    })),
+                    promoCode: appliedPromo?.code || "",
+                };
 
-function render() {
-    const cart = getCart();
-    const layout = document.getElementById('cart-layout');
-    const label = document.getElementById('cart-count-label');
+                try {
+                    window.KroAnalytics?.track("checkout_click", {
+                        cartCount: cart.reduce(
+                            (sum, item) => sum + item.qty,
+                            0,
+                        ),
+                    });
+                    const subtotal = cart.reduce(
+                        (s, i) => s + i.price * i.qty,
+                        0,
+                    );
+                    const afterPromo = appliedPromo
+                        ? Math.round(
+                              subtotal *
+                                  (1 -
+                                      (Number(appliedPromo.discountPercent) ||
+                                          0) /
+                                          100),
+                          )
+                        : subtotal;
+                    const total = afterPromo + FLAT_DELIVERY_FEE_NGN;
+                    await payWithPaystack(payload, total);
+                } catch (err) {
+                    showToast(
+                        err?.message || "Unable to process payment. Try again.",
+                    );
+                }
+            }
 
-    const totalItems = cart.reduce((s,i) => s + i.qty, 0);
-    label.textContent = totalItems
-        ? `${totalItems} item${totalItems > 1 ? 's' : ''} — let's go 🔥`
-        : 'Nothing here yet';
+            function render() {
+                const cart = getCart();
+                const layout = document.getElementById("cart-layout");
+                const label = document.getElementById("cart-count-label");
 
-    if (!cart.length) {
-        layout.innerHTML = `
+                const totalItems = cart.reduce((s, i) => s + i.qty, 0);
+                label.textContent = totalItems
+                    ? `${totalItems} item${totalItems > 1 ? "s" : ""} — let's go 🔥`
+                    : "Nothing here yet";
+
+                if (!cart.length) {
+                    layout.innerHTML = `
             <div class="empty-cart">
                 <div class="empty-icon">🛒</div>
                 <h2>YOUR CART IS EMPTY!</h2>
                 <p>You haven't copped anything yet.<br>Go find something fresh.</p>
                 <a href="shop1.html" class="shop-btn">← BACK TO SHOP</a>
             </div>`;
-        return;
-    }
+                    return;
+                }
 
-    const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
+                const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
-    layout.innerHTML = `
+                layout.innerHTML = `
         <div class="cart-items-col">
             <h2>YOUR PICKS (${totalItems})</h2>
-            ${cart.map(item => `
+            <p style="font-size:0.8rem;color:#64748b;margin-bottom:1rem;">Checking stock availability…</p>
+            ${cart
+                .map(
+                    (item) => `
                 <div class="cart-item" data-id="${item.id}" data-size="${item.size}">
                     <div class="cart-item-img">
-                        ${item.img
-                            ? `<img src="${item.img}" alt="${item.name}">`
-                            : item.name.split(' ').map(w=>w[0]).join('')}
+                        ${
+                            item.img
+                                ? `<img src="${item.img}" alt="${item.name}">`
+                                : item.name
+                                      .split(" ")
+                                      .map((w) => w[0])
+                                      .join("")
+                        }
                     </div>
                     <div class="cart-item-details">
                         <h3>${item.name}</h3>
@@ -1001,7 +1203,9 @@ function render() {
                         <button class="remove-btn" onclick="removeItem('${item.id}', '${item.size}')">✕ Remove</button>
                     </div>
                 </div>
-            `).join('')}
+            `,
+                )
+                .join("")}
         </div>
 
         <div class="order-summary">
@@ -1084,58 +1288,170 @@ function render() {
             </div>
         </div>
     `;
-}
+                // Async: refresh live stock status and update item badges/button
+                checkCartStock().catch(() => {});
+            }
 
-function applyPromo() {
-    const code = document.getElementById('promo-input')?.value?.trim().toUpperCase();
-    if (!code) { showToast('ENTER A CODE'); return; }
+            // ─── LIVE STOCK CHECK ──────────────────────────────────────────
+            async function fetchProduct(slug) {
+                try {
+                    const res = await fetch(
+                        `/api/products/${encodeURIComponent(slug)}`,
+                        { cache: "no-store" },
+                    );
+                    if (!res.ok) return null;
+                    return await res.json();
+                } catch {
+                    return null;
+                }
+            }
 
-    fetch(`/api/promo/validate?code=${encodeURIComponent(code)}`, { cache: 'no-store' })
-        .then(async res => {
-            const body = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(body.message || 'Invalid promo code');
-            return body;
-        })
-        .then(data => {
-            appliedPromo = { code: data.code, discountPercent: data.discountPercent };
-            const cart = getCart();
-            const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
-            const discounted = Math.round(subtotal * (1 - (Number(data.discountPercent) || 0) / 100));
-            const grand = discounted + FLAT_DELIVERY_FEE_NGN;
-            const el = document.getElementById('total-display');
-            if (el) el.textContent = formatPrice(grand) + ` (${data.discountPercent}% off items)`;
-            showToast(`${data.discountPercent}% OFF APPLIED! 🔥`);
-        })
-        .catch(err => {
-            appliedPromo = null;
-            showToast(err?.message || 'INVALID CODE!');
-        });
-}
+            async function checkCartStock() {
+                const cart = getCart();
+                if (!cart.length) return;
 
-// Update cart icon count badge in other pages
-function updateCartBadge() {
-    const cart = getCart();
-    const total = cart.reduce((s,i) => s + i.qty, 0);
-    document.querySelectorAll('.cart-badge').forEach(el => {
-        el.textContent = total;
-        el.style.display = total ? 'flex' : 'none';
-    });
-}
+                // Fetch all unique products in parallel
+                const slugs = [...new Set(cart.map((i) => i.id))];
+                const results = await Promise.all(
+                    slugs.map((slug) => fetchProduct(slug)),
+                );
+                const productMap = Object.fromEntries(
+                    slugs.map((slug, i) => [slug, results[i]]),
+                );
 
-// Init
-window.addEventListener('DOMContentLoaded', () => {
-    window.KroAnalytics?.track('cart_view', {
-        cartCount: getCart().reduce((sum, item) => sum + item.qty, 0)
-    });
-    ['f-name', 'f-phone', 'f-email'].forEach(id => {
-        document.addEventListener('input', event => {
-            if (event.target?.id === id) syncCustomerProfile();
-        });
-    });
-    window.KroAnalytics?.updateProfile({ cartItems: getCart() });
-});
-render();
-updateCartBadge();
-</script>
-</body>
+                let hasIssue = false;
+                cart.forEach((item) => {
+                    const el = document.querySelector(
+                        `.cart-item[data-id="${item.id}"][data-size="${item.size}"]`,
+                    );
+                    if (!el) return;
+
+                    const product = productMap[item.id];
+                    const sizes = product?.sizes || {};
+                    const available = Number(sizes[item.size] || 0);
+                    const isUnavailable = !product || !product.active;
+                    const isOOS = isUnavailable || available === 0;
+                    const isLow =
+                        !isUnavailable && available > 0 && available < item.qty;
+
+                    // Remove any previous badge
+                    el.querySelector(".stock-badge")?.remove();
+
+                    if (isOOS || isLow) {
+                        hasIssue = true;
+                        el.style.opacity = "0.65";
+                        const badge = document.createElement("div");
+                        badge.className = "stock-badge";
+                        badge.style.cssText =
+                            "background:var(--red);color:#fff;font-family:Bangers,cursive;font-size:0.82rem;padding:0.2rem 0.75rem;border-radius:999px;display:inline-block;margin-top:0.45rem;letter-spacing:0.04em;";
+                        if (isUnavailable) {
+                            badge.textContent = "UNAVAILABLE";
+                        } else if (isOOS) {
+                            badge.textContent = "SOLD OUT";
+                        } else {
+                            badge.style.background = "#b45309"; // amber
+                            badge.textContent = `ONLY ${available} LEFT (you have ${item.qty})`;
+                        }
+                        el.querySelector(".cart-item-details")?.appendChild(
+                            badge,
+                        );
+                    } else {
+                        el.style.opacity = "";
+                    }
+                });
+
+                // Lock / unlock checkout button based on stock
+                const checkoutBtn = document.querySelector(".checkout-btn");
+                if (!checkoutBtn) return;
+                if (hasIssue) {
+                    checkoutBtn.disabled = true;
+                    checkoutBtn.textContent =
+                        "\u26a0\ufe0f REMOVE SOLD OUT ITEMS FIRST";
+                    checkoutBtn.style.cssText =
+                        "opacity:0.55;cursor:not-allowed;background:#64748b;color:#fff;";
+                } else {
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.textContent = "\ud83d\uded2 PLACE ORDER";
+                    checkoutBtn.style.cssText = "";
+                }
+            }
+
+            function applyPromo() {
+                const code = document
+                    .getElementById("promo-input")
+                    ?.value?.trim()
+                    .toUpperCase();
+                if (!code) {
+                    showToast("ENTER A CODE");
+                    return;
+                }
+
+                fetch(`/api/promo/validate?code=${encodeURIComponent(code)}`, {
+                    cache: "no-store",
+                })
+                    .then(async (res) => {
+                        const body = await res.json().catch(() => ({}));
+                        if (!res.ok)
+                            throw new Error(
+                                body.message || "Invalid promo code",
+                            );
+                        return body;
+                    })
+                    .then((data) => {
+                        appliedPromo = {
+                            code: data.code,
+                            discountPercent: data.discountPercent,
+                        };
+                        const cart = getCart();
+                        const subtotal = cart.reduce(
+                            (s, i) => s + i.price * i.qty,
+                            0,
+                        );
+                        const discounted = Math.round(
+                            subtotal *
+                                (1 - (Number(data.discountPercent) || 0) / 100),
+                        );
+                        const grand = discounted + FLAT_DELIVERY_FEE_NGN;
+                        const el = document.getElementById("total-display");
+                        if (el)
+                            el.textContent =
+                                formatPrice(grand) +
+                                ` (${data.discountPercent}% off items)`;
+                        showToast(`${data.discountPercent}% OFF APPLIED! 🔥`);
+                    })
+                    .catch((err) => {
+                        appliedPromo = null;
+                        showToast(err?.message || "INVALID CODE!");
+                    });
+            }
+
+            // Update cart icon count badge in other pages
+            function updateCartBadge() {
+                const cart = getCart();
+                const total = cart.reduce((s, i) => s + i.qty, 0);
+                document.querySelectorAll(".cart-badge").forEach((el) => {
+                    el.textContent = total;
+                    el.style.display = total ? "flex" : "none";
+                });
+            }
+
+            // Init
+            window.addEventListener("DOMContentLoaded", () => {
+                window.KroAnalytics?.track("cart_view", {
+                    cartCount: getCart().reduce(
+                        (sum, item) => sum + item.qty,
+                        0,
+                    ),
+                });
+                ["f-name", "f-phone", "f-email"].forEach((id) => {
+                    document.addEventListener("input", (event) => {
+                        if (event.target?.id === id) syncCustomerProfile();
+                    });
+                });
+                window.KroAnalytics?.updateProfile({ cartItems: getCart() });
+            });
+            render();
+            updateCartBadge();
+        </script>
+    </body>
 </html>
