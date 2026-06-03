@@ -666,8 +666,10 @@ const loadAnalytics = async () => {
     `;
   }).join('');
 
+  document.getElementById('comingSoonAnalyticsSection')?.remove();
+
   const comingSoonSection = data.comingSoon ? `
-    <div class="analytics-section">
+    <div id="comingSoonAnalyticsSection" class="analytics-section">
       <h3>Coming Soon Page</h3>
       <div class="analytics-grid">
         ${renderMetricCards([
