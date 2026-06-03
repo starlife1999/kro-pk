@@ -910,16 +910,21 @@ async function processAbandonedCartReminders() {
 
   try {
     const cutoff = new Date(Date.now() - ABANDONED_CART_HOURS * 60 * 60 * 1000);
-    const profiles = await ShopperProfile.find({
-      'cartItems.0': { $exists: true },
-      cartUpdatedAt: { $lte: cutoff },
-      abandonedCartReminderSentAt: null,
-      'customer.email': { $exists: true, $nin: [null, ''] },
-      $or: [
-        { checkedOutAt: null },
-        { $expr: { $lt: ['$checkedOutAt', '$cartUpdatedAt'] } }
-      ]
-    }).limit(40).lean();
+    const profiles = await ShopperProfile.aggregate([
+      {
+        $match: {
+          'cartItems.0': { $exists: true },
+          cartUpdatedAt: { $lte: cutoff },
+          abandonedCartReminderSentAt: null,
+          'customer.email': { $exists: true, $nin: [null, ''] },
+          $or: [
+            { checkedOutAt: null },
+            { $expr: { $lt: ['$checkedOutAt', '$cartUpdatedAt'] } }
+          ]
+        }
+      },
+      { $limit: 40 }
+    ]);
 
     for (const profile of profiles) {
       const email = String(profile.customer?.email || '').trim().toLowerCase();
@@ -1699,10 +1704,45 @@ function getAnalyticsRange(range = 'today') {
   return { key: range, label: labels[range] || 'Today', start, end: now };
 }
 
+function trustedDateRange(start, end) {
+  if (!start) return null;
+  return mongoose.trusted({ $gte: start, $lte: end });
+}
+
+function trustedDateUpperBound(end) {
+  return mongoose.trusted({ $lte: end });
+}
+
+function trustedNonEmptyString() {
+  return mongoose.trusted({ $ne: '' });
+}
+
+function trustedNonEmptyArray() {
+  return mongoose.trusted({ $exists: true, $ne: [] });
+}
+
+function safeAnalyticsQuery(label, fallback, query) {
+  return Promise.resolve()
+    .then(query)
+    .catch(err => {
+      console.error(`Analytics query failed: ${label}`, err?.message || err);
+      return fallback;
+    });
+}
+
 async function buildAnalyticsReport(rangeKey = 'today') {
   const range = getAnalyticsRange(rangeKey);
-  const inRange = range.start ? { createdAt: { $gte: range.start, $lte: range.end } } : {};
+  const createdAtRange = range.start ? { $gte: range.start, $lte: range.end } : null;
+  const createdAtFilter = range.start ? { createdAt: trustedDateRange(range.start, range.end) } : {};
+  const createdAtMatch = range.start ? { createdAt: createdAtRange } : {};
+  const timestampFilter = range.start ? { timestamp: trustedDateRange(range.start, range.end) } : {};
+  const lastActivityFilter = range.start ? { lastActivityAt: trustedDateRange(range.start, range.end) } : {};
   const abandonmentCutoff = new Date(Date.now() - 30 * 60 * 1000);
+  const abandonedCartUpdatedAtEnd = range.start && range.end < abandonmentCutoff ? range.end : abandonmentCutoff;
+  const abandonedCartUpdatedAtFilter = range.start
+    ? { cartUpdatedAt: mongoose.trusted({ $gte: range.start, $lte: abandonedCartUpdatedAtEnd }) }
+    : { cartUpdatedAt: trustedDateUpperBound(abandonmentCutoff) };
+  const shopperCartRangeFilter = range.start ? { cartUpdatedAt: trustedDateRange(range.start, range.end) } : {};
   const [
     todaysVisits,
     uniqueVisitors,
@@ -1721,19 +1761,19 @@ async function buildAnalyticsReport(rangeKey = 'today') {
     comingSoonEmailSubmissions,
     comingSoonPasswordUnlocks
   ] = await Promise.all([
-    Visit.countDocuments(inRange),
-    Visit.distinct('visitorId', inRange).then(ids => ids.length),
-    ShopperProfile.countDocuments({ cartItems: { $exists: true, $ne: [] }, ...(range.start ? { cartUpdatedAt: { $gte: range.start, $lte: range.end } } : {}) }),
-    AnalyticsEvent.countDocuments({ type: 'checkout_click', ...inRange }),
-    Order.countDocuments(inRange),
-    Order.aggregate([
-      { $match: inRange },
+    safeAnalyticsQuery('visit count', 0, () => Visit.countDocuments(createdAtFilter)),
+    safeAnalyticsQuery('unique visitor count', 0, () => Visit.distinct('visitorId', createdAtFilter).then(ids => ids.length)),
+    safeAnalyticsQuery('cart count', 0, () => ShopperProfile.countDocuments({ cartItems: trustedNonEmptyArray(), ...shopperCartRangeFilter })),
+    safeAnalyticsQuery('checkout click count', 0, () => AnalyticsEvent.countDocuments({ type: 'checkout_click', ...createdAtFilter })),
+    safeAnalyticsQuery('order count', 0, () => Order.countDocuments(createdAtFilter)),
+    safeAnalyticsQuery('revenue aggregate', [], () => Order.aggregate([
+      { $match: createdAtMatch },
       { $group: { _id: null, totalRevenue: { $sum: '$total' } } }
-    ]),
-    AnalyticsEvent.countDocuments({ type: 'product_view', ...inRange }),
-    AnalyticsEvent.countDocuments({ type: 'add_to_cart', ...inRange }),
-    AnalyticsEvent.aggregate([
-        { $match: { type: { $in: ['product_view', 'add_to_cart'] }, productSlug: { $ne: '' }, ...inRange } },
+    ])),
+    safeAnalyticsQuery('product view count', 0, () => AnalyticsEvent.countDocuments({ type: 'product_view', ...createdAtFilter })),
+    safeAnalyticsQuery('add to cart count', 0, () => AnalyticsEvent.countDocuments({ type: 'add_to_cart', ...createdAtFilter })),
+    safeAnalyticsQuery('product event aggregate', [], () => AnalyticsEvent.aggregate([
+        { $match: { type: { $in: ['product_view', 'add_to_cart'] }, productSlug: { $ne: '' }, ...createdAtMatch } },
       {
         $group: {
           _id: '$productSlug',
@@ -1743,9 +1783,9 @@ async function buildAnalyticsReport(rangeKey = 'today') {
         }
       },
       { $sort: { productViews: -1, addToCarts: -1, _id: 1 } }
-    ]),
-      Order.aggregate([
-        { $match: inRange },
+    ])),
+      safeAnalyticsQuery('sales aggregate', [], () => Order.aggregate([
+        { $match: createdAtMatch },
         { $unwind: '$items' },
       {
         $group: {
@@ -1754,33 +1794,32 @@ async function buildAnalyticsReport(rangeKey = 'today') {
           revenue: { $sum: { $multiply: ['$items.qty', '$items.price'] } }
         }
       }
-      ]),
-      ShopperProfile.find({
-        ...(range.start ? { lastActivityAt: { $gte: range.start, $lte: range.end } } : {}),
+      ])),
+      safeAnalyticsQuery('customer rows', [], () => ShopperProfile.find({
+        ...lastActivityFilter,
         $or: [
-          { 'customer.name': { $ne: '' } },
-          { 'customer.phone': { $ne: '' } },
-          { 'customer.email': { $ne: '' } }
+          { 'customer.name': trustedNonEmptyString() },
+          { 'customer.phone': trustedNonEmptyString() },
+          { 'customer.email': trustedNonEmptyString() }
         ]
-      }).sort({ lastActivityAt: -1 }).limit(50).lean(),
-      ShopperProfile.find({
-        cartItems: { $exists: true, $ne: [] },
-        cartUpdatedAt: { $lte: abandonmentCutoff },
-        ...(range.start ? { cartUpdatedAt: { $gte: range.start, $lte: range.end } } : {}),
-        $expr: {
+      }).sort({ lastActivityAt: -1 }).limit(50).lean()),
+      safeAnalyticsQuery('abandoned cart rows', [], () => ShopperProfile.find({
+        cartItems: trustedNonEmptyArray(),
+        ...abandonedCartUpdatedAtFilter,
+        $expr: mongoose.trusted({
           $or: [
             { $eq: ['$checkedOutAt', null] },
             { $lt: ['$checkedOutAt', '$cartUpdatedAt'] }
           ]
-        }
-      }).sort({ cartUpdatedAt: -1 }).limit(50).lean(),
-      Visit.aggregate([
-        ...(range.start ? [{ $match: inRange }] : []),
+        })
+      }).sort({ cartUpdatedAt: -1 }).limit(50).lean()),
+      safeAnalyticsQuery('traffic aggregate', [], () => Visit.aggregate([
+        ...(range.start ? [{ $match: createdAtMatch }] : []),
         { $group: { _id: '$source', visits: { $sum: 1 } } }
-      ]),
-      ComingSoonVisit.countDocuments({ timestamp: range.start ? { $gte: range.start, $lte: range.end } : {} }),
-      ComingSoonVisit.countDocuments({ emailSubmitted: true, timestamp: range.start ? { $gte: range.start, $lte: range.end } : {} }),
-      ComingSoonVisit.countDocuments({ passwordUnlocked: true, timestamp: range.start ? { $gte: range.start, $lte: range.end } : {} })
+      ])),
+      safeAnalyticsQuery('coming soon visit count', 0, () => ComingSoonVisit.countDocuments(timestampFilter)),
+      safeAnalyticsQuery('coming soon email signup count', 0, () => ComingSoonVisit.countDocuments({ emailSubmitted: true, ...timestampFilter })),
+      safeAnalyticsQuery('coming soon password unlock count', 0, () => ComingSoonVisit.countDocuments({ passwordUnlocked: true, ...timestampFilter }))
     ]);
 
   const salesBySlug = new Map(salesRows.map(row => [row._id, row]));
