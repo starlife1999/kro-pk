@@ -665,6 +665,23 @@ const loadAnalytics = async () => {
       </div>
     `;
   }).join('');
+
+  const comingSoonSection = data.comingSoon ? `
+    <div class="analytics-section">
+      <h3>Coming Soon Page</h3>
+      <div class="analytics-grid">
+        ${renderMetricCards([
+          { label: 'Total visits', value: data.comingSoon.totalVisits ?? 0 },
+          { label: 'Email signups', value: data.comingSoon.emailSignups ?? 0 },
+          { label: 'Password unlocks', value: data.comingSoon.passwordUnlocks ?? 0 }
+        ])}
+      </div>
+    </div>
+  ` : '';
+
+  if (comingSoonSection) {
+    analyticsPanel.insertAdjacentHTML('beforeend', comingSoonSection);
+  }
 };
 
 const loadPromoCodes = async () => {

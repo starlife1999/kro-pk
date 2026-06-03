@@ -22,6 +22,7 @@ const Broadcast = require('./models/Broadcast');
 const AnalyticsEvent = require('./models/AnalyticsEvent');
 const ShopperProfile = require('./models/ShopperProfile');
 const Visit = require('./models/Visit');
+const ComingSoonVisit = require('./models/ComingSoonVisit');
 
 mongoose.set('sanitizeFilter', true);
 
@@ -110,11 +111,12 @@ app.use((req, res, next) => {
 
   const p = req.path;
   const isComingSoonPage = p === '/coming-soon';
+  const isAnalyticsRoute = p.startsWith('/api/analytics') || p.startsWith('/api/admin/analytics');
   const isApiRoute = p.startsWith('/api');
   const isAdminRoute = p.startsWith('/admin');
   const isAsset = /\.(css|js|mjs|map|jpg|jpeg|png|gif|webp|ico|svg|woff2?|ttf|txt|xml|webmanifest)$/i.test(p);
 
-  if (isApiRoute) return next();
+  if (isAnalyticsRoute || isApiRoute) return next();
 
   try {
     const access = req.cookies?.[COMING_SOON_ACCESS_COOKIE];
@@ -162,6 +164,21 @@ app.post('/api/coming-soon/login', (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000
   });
   return res.json({ redirectTo: '/shop' });
+});
+
+app.post('/api/coming-soon/visits', async (req, res) => {
+  const visitorId = String(req.body?.visitorId || '').trim();
+  if (!visitorId) return res.status(400).json({ message: 'visitorId is required' });
+
+  const visit = await ComingSoonVisit.create({
+    visitorId,
+    userAgent: String(req.body?.userAgent || '').trim(),
+    emailSubmitted: req.body?.emailSubmitted === true,
+    passwordUnlocked: req.body?.passwordUnlocked === true,
+    email: String(req.body?.email || '').trim()
+  });
+
+  res.status(202).json({ accepted: true, id: visit._id });
 });
 
 function escapeXml(value = '') {
@@ -1699,7 +1716,10 @@ async function buildAnalyticsReport(rangeKey = 'today') {
     salesRows,
     customerRows,
     abandonedRows,
-    trafficRows
+    trafficRows,
+    comingSoonTotalVisits,
+    comingSoonEmailSubmissions,
+    comingSoonPasswordUnlocks
   ] = await Promise.all([
     Visit.countDocuments(inRange),
     Visit.distinct('visitorId', inRange).then(ids => ids.length),
@@ -1757,7 +1777,10 @@ async function buildAnalyticsReport(rangeKey = 'today') {
       Visit.aggregate([
         ...(range.start ? [{ $match: inRange }] : []),
         { $group: { _id: '$source', visits: { $sum: 1 } } }
-      ])
+      ]),
+      ComingSoonVisit.countDocuments({ timestamp: range.start ? { $gte: range.start, $lte: range.end } : {} }),
+      ComingSoonVisit.countDocuments({ emailSubmitted: true, timestamp: range.start ? { $gte: range.start, $lte: range.end } : {} }),
+      ComingSoonVisit.countDocuments({ passwordUnlocked: true, timestamp: range.start ? { $gte: range.start, $lte: range.end } : {} })
     ]);
 
   const salesBySlug = new Map(salesRows.map(row => [row._id, row]));
@@ -1857,6 +1880,11 @@ async function buildAnalyticsReport(rangeKey = 'today') {
     customers: customerRows,
     abandonedCarts: abandonedRows,
     traffic,
+    comingSoon: {
+      totalVisits: comingSoonTotalVisits,
+      emailSignups: comingSoonEmailSubmissions,
+      passwordUnlocks: comingSoonPasswordUnlocks
+    },
     insights,
     recommendations
   };

@@ -349,6 +349,40 @@
       goToSlide((current + 1) % images.length);
     }, 1800);
 
+    // Generate or retrieve visitor ID
+    const getVisitorId = () => {
+      let id = localStorage.getItem('comingSoonVisitorId');
+      if (!id) {
+        id = `visitor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('comingSoonVisitorId', id);
+      }
+      return id;
+    };
+
+    const visitorId = getVisitorId();
+
+    // Log coming soon visit
+    const logComingSoonVisit = async (emailSubmitted = false, passwordUnlocked = false, email = '') => {
+      try {
+        await fetch('/api/coming-soon/visits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            visitorId,
+            userAgent: navigator.userAgent,
+            emailSubmitted,
+            passwordUnlocked,
+            email
+          })
+        }).catch(() => {});
+      } catch {}
+    };
+
+    // Log page load
+    window.addEventListener('DOMContentLoaded', () => {
+      logComingSoonVisit(false, false, '');
+    });
+
     const loginTrigger = document.getElementById('loginTrigger');
     const loginPrompt = document.getElementById('loginPrompt');
     const loginForm = document.getElementById('loginForm');
@@ -384,6 +418,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.message || 'Login failed');
+        await logComingSoonVisit(false, true, '');
         window.location.assign(data.redirectTo || '/shop');
       } catch (err) {
         loginStatus.textContent = err.message || 'Login failed';
@@ -411,6 +446,7 @@
           body: JSON.stringify({ email, name: '' })
         });
         if (!res.ok) throw new Error('Subscribe failed');
+        await logComingSoonVisit(true, false, email);
         emailInput.value = '';
         status.textContent = "You're on the early access list.";
       } catch {
