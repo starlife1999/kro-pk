@@ -12,6 +12,7 @@ const { Readable } = require('stream');
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
 const { v2: cloudinary } = require('cloudinary');
+const OpenAI = require('openai');
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
@@ -1684,6 +1685,89 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
   const totalRevenue = revenueData.length ? revenueData[0].totalRevenue : 0;
   res.json({ totalOrders, pendingOrders, totalRevenue });
 });
+
+function safeJsonStringify(value, space = 0) {
+  try {
+    return JSON.stringify(value, null, space);
+  } catch {
+    return String(value);
+  }
+}
+
+app.post('/api/admin/ai-chat', authMiddleware, async (req, res) => {
+  try {
+    const userMessage = String(req.body?.message || '').trim();
+    if (!userMessage) {
+      return res.status(400).json({ message: 'message is required' });
+    }
+
+    const [latestOrders, revenueAgg, totalOrders, pendingOrders, activeSubscribersCount, lowStockProducts] = await Promise.all([
+      Order.find({}).sort({ createdAt: -1 }).limit(5).lean(),
+      Order.aggregate([{ $group: { _id: null, totalRevenue: { $sum: '$total' } } }]),
+      Order.countDocuments({}),
+      Order.countDocuments({ status: 'pending' }),
+      Subscriber.countDocuments({ active: true }),
+      (async () => {
+        const products = await Product.find({ active: true }).select('slug name sizes price').lean();
+        const low = [];
+        for (const product of products) {
+          const sizesObj = product.sizes || {};
+          // `sizes` is a Map in Mongoose; when using .lean() it becomes a plain object.
+          for (const [size, remaining] of Object.entries(sizesObj)) {
+            const n = Number(remaining || 0);
+            if (n <= 3) {
+              low.push({ slug: product.slug, name: product.name, size, remaining: Math.max(0, n), price: product.price ?? 0 });
+            }
+          }
+        }
+        return low;
+      })()
+    ]);
+
+    const totalRevenue = revenueAgg.length ? revenueAgg[0].totalRevenue : 0;
+
+    const storeData = {
+      last5Orders: (latestOrders || []).map(o => ({
+        orderNumber: o.orderNumber,
+        createdAt: o.createdAt,
+        status: o.status,
+        total: o.total,
+        items: (o.items || []).map(it => ({ slug: it.slug, name: it.name, size: it.size, qty: it.qty }))
+      })),
+      totalRevenue,
+      totalOrders,
+      lowStockProducts,
+      totalSubscribers: activeSubscribersCount,
+      pendingOrders
+    };
+
+    const openai = new OpenAI({
+      apiKey: process.env.NVIDIA_API_KEY,
+      baseURL: 'https://integrate.api.nvidia.com/v1'
+    });
+
+    const systemPromptBase = "You are KRO PK's smart store assistant. KRO PK is a Nigerian streetwear brand. You have access to live store data and give actionable business advice. Be direct, smart and use streetwear language. Keep responses concise.";
+
+    const systemPrompt = `${systemPromptBase}\n\nLive store snapshot (use this when answering):\n${safeJsonStringify(storeData, 2)}`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'meta/llama-3.1-8b-instruct',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ],
+      temperature: 0.4,
+      max_tokens: 500
+    });
+
+    const aiText = completion?.choices?.[0]?.message?.content || '';
+    return res.json({ message: aiText });
+  } catch (err) {
+    console.error('AI chat failed:', err?.message || err);
+    return res.status(500).json({ message: 'AI request failed', error: err?.message || String(err) });
+  }
+});
+
 
 function getAnalyticsRange(range = 'today') {
   const now = new Date();

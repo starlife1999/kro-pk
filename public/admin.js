@@ -877,3 +877,124 @@ const init = async () => {
 };
 
 init();
+
+// ─── KRO PK AI ADMIN ASSISTANT ───────────────────────────────────────────────
+const aiChatFab = document.getElementById('aiChatFab');
+const aiChatPanel = document.getElementById('aiChatPanel');
+const aiChatClose = document.getElementById('aiChatClose');
+const aiChatBody = document.getElementById('aiChatBody');
+const aiChatInput = document.getElementById('aiChatInput');
+const aiChatSend = document.getElementById('aiChatSend');
+
+let aiChatHasAutoGreeted = false;
+let aiChatIsTyping = false;
+
+function escapeForHtml(text) {
+  return String(text || '').replace(/[&<>"']/g, tag => ({
+    '&': '&amp;',
+    '<': '<',
+    '>': '>',
+    '"': '"',
+    "'": '&#39;'
+  }[tag]));
+}
+
+function appendMessage({ role, text }) {
+  const wrapper = document.createElement('div');
+  wrapper.className = `aiMsg ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.classList.add(role === 'user' ? 'user' : 'ai');
+  bubble.innerHTML = escapeForHtml(text);
+
+  wrapper.appendChild(bubble);
+  aiChatBody.appendChild(wrapper);
+  aiChatBody.scrollTop = aiChatBody.scrollHeight;
+}
+
+function setTypingIndicator(isTyping) {
+  aiChatIsTyping = isTyping;
+  if (isTyping) {
+    const indicator = document.createElement('div');
+    indicator.className = 'aiMsg ai';
+    indicator.id = 'aiChatTypingIndicator';
+    indicator.innerHTML = `
+      <div class="typing">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span style="margin-left:8px;">Thinking...</span>
+      </div>
+    `;
+    aiChatBody.appendChild(indicator);
+    aiChatBody.scrollTop = aiChatBody.scrollHeight;
+  } else {
+    document.getElementById('aiChatTypingIndicator')?.remove();
+  }
+}
+
+async function callAi(message) {
+  setTypingIndicator(true);
+  try {
+    const data = await fetchJson('/api/admin/ai-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ message })
+    });
+    return data?.message || '';
+  } finally {
+    setTypingIndicator(false);
+  }
+}
+
+async function handleSend(message) {
+  const text = String(message || '').trim();
+  if (!text || aiChatIsTyping) return;
+
+  appendMessage({ role: 'user', text });
+  aiChatInput.value = '';
+
+  const aiText = await callAi(text);
+  appendMessage({ role: 'ai', text: aiText || 'No response yet.' });
+}
+
+async function autoGreetAndLoadSummary() {
+  if (aiChatHasAutoGreeted) return;
+  aiChatHasAutoGreeted = true;
+
+  // Greeting + request summary.
+  appendMessage({ role: 'user', text: 'Hi KRO PK AI — give me a quick store rundown and what we should do this week.' });
+  const aiText = await callAi('Provide a quick store rundown and 3 actionable recommendations for this week. Use the live store data provided.');
+  appendMessage({ role: 'ai', text: aiText || 'No response yet.' });
+}
+
+function openAiChat() {
+  if (!aiChatPanel) return;
+  aiChatPanel.classList.add('open');
+  aiChatPanel.setAttribute('aria-hidden', 'false');
+  aiChatInput?.focus();
+  autoGreetAndLoadSummary().catch(() => {});
+}
+
+function closeAiChat() {
+  if (!aiChatPanel) return;
+  aiChatPanel.classList.remove('open');
+  aiChatPanel.setAttribute('aria-hidden', 'true');
+}
+
+aiChatFab?.addEventListener('click', openAiChat);
+aiChatClose?.addEventListener('click', closeAiChat);
+
+aiChatSend?.addEventListener('click', () => {
+  handleSend(aiChatInput.value).catch(err => showMessage(err.message || 'AI request failed'));
+});
+
+aiChatInput?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleSend(aiChatInput.value).catch(err => showMessage(err.message || 'AI request failed'));
+  }
+});
+
