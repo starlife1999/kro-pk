@@ -1,0 +1,5 @@
+
+> kro-pk-store@1.0.0 start
+> node src/server.js
+
+KRO PK backend running on http://localhost:3100

@@ -1732,11 +1732,20 @@ function safeAnalyticsQuery(label, fallback, query) {
 
 async function buildAnalyticsReport(rangeKey = 'today') {
   const range = getAnalyticsRange(rangeKey);
-  const createdAtRange = range.start ? { $gte: range.start, $lte: range.end } : null;
-  const createdAtFilter = range.start ? { createdAt: trustedDateRange(range.start, range.end) } : {};
-  const createdAtMatch = range.start ? { createdAt: createdAtRange } : {};
-  const timestampFilter = range.start ? { timestamp: trustedDateRange(range.start, range.end) } : {};
-  const lastActivityFilter = range.start ? { lastActivityAt: trustedDateRange(range.start, range.end) } : {};
+  // IMPORTANT: match Visit.createdAt actual schema type (Date)
+  // Ensure we NEVER double-wrap { createdAt: { createdAt: ... } }.
+  const createdAtFilter = range.start
+    ? { createdAt: { $gte: range.start, $lte: range.end } }
+    : {};
+
+  // For aggregation $match use the plain operator object
+  const createdAtMatch = range.start
+    ? { createdAt: { $gte: range.start, $lte: range.end } }
+    : {};
+
+  const timestampFilter = range.start ? { timestamp: { $gte: range.start, $lte: range.end } } : {};
+  const lastActivityFilter = range.start ? { lastActivityAt: { $gte: range.start, $lte: range.end } } : {};
+
   const abandonmentCutoff = new Date(Date.now() - 30 * 60 * 1000);
   const abandonedCartUpdatedAtEnd = range.start && range.end < abandonmentCutoff ? range.end : abandonmentCutoff;
   const abandonedCartUpdatedAtFilter = range.start
@@ -1761,8 +1770,15 @@ async function buildAnalyticsReport(rangeKey = 'today') {
     comingSoonEmailSubmissions,
     comingSoonPasswordUnlocks
   ] = await Promise.all([
-    safeAnalyticsQuery('visit count', 0, () => Visit.countDocuments(createdAtFilter)),
-    safeAnalyticsQuery('unique visitor count', 0, () => Visit.distinct('visitorId', createdAtFilter).then(ids => ids.length)),
+    // Debug: final query objects right before execution
+    safeAnalyticsQuery('visit count', 0, () => {
+      console.log('[analytics-debug] Visit.countDocuments filter', createdAtFilter);
+      return Visit.countDocuments(createdAtFilter);
+    }),
+    safeAnalyticsQuery('unique visitor count', 0, () => {
+      console.log('[analytics-debug] Visit.distinct filter', createdAtFilter);
+      return Visit.distinct('visitorId', createdAtFilter).then(ids => ids.length);
+    }),
     safeAnalyticsQuery('cart count', 0, () => ShopperProfile.countDocuments({ cartItems: trustedNonEmptyArray(), ...shopperCartRangeFilter })),
     safeAnalyticsQuery('checkout click count', 0, () => AnalyticsEvent.countDocuments({ type: 'checkout_click', ...createdAtFilter })),
     safeAnalyticsQuery('order count', 0, () => Order.countDocuments(createdAtFilter)),
@@ -1795,14 +1811,21 @@ async function buildAnalyticsReport(rangeKey = 'today') {
         }
       }
       ])),
-      safeAnalyticsQuery('customer rows', [], () => ShopperProfile.find({
-        ...lastActivityFilter,
-        $or: [
-          { 'customer.name': trustedNonEmptyString() },
-          { 'customer.phone': trustedNonEmptyString() },
-          { 'customer.email': trustedNonEmptyString() }
-        ]
-      }).sort({ lastActivityAt: -1 }).limit(50).lean()),
+      safeAnalyticsQuery('customer rows', [], () => {
+        // Fix cast error for range=all: force explicit string comparison
+        // createdAt cast issue handled earlier; this one is customer.email cast.
+        const customerQuery = {
+          ...lastActivityFilter,
+          $or: [
+            { 'customer.name': { $ne: '' } },
+            { 'customer.phone': { $ne: '' } },
+            { 'customer.email': { $ne: '' } }
+          ]
+        };
+        console.log('[analytics-debug] ShopperProfile.find customerQuery', customerQuery);
+        return ShopperProfile.find(customerQuery).sort({ lastActivityAt: -1 }).limit(50).lean();
+      }),
+
       safeAnalyticsQuery('abandoned cart rows', [], () => ShopperProfile.find({
         cartItems: trustedNonEmptyArray(),
         ...abandonedCartUpdatedAtFilter,
