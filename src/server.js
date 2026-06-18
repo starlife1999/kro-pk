@@ -1859,9 +1859,10 @@ async function buildAnalyticsReport(rangeKey = 'today') {
       console.log('[analytics-debug] Visit.countDocuments filter', createdAtFilter);
       return Visit.countDocuments(createdAtFilter);
     }),
-    safeAnalyticsQuery('unique visitor count', 0, () => {
+    safeAnalyticsQuery('unique visitor count', 0, async () => {
       console.log('[analytics-debug] Visit.distinct filter', createdAtFilter);
-      return Visit.distinct('visitorId', createdAtFilter).then(ids => ids.length);
+      const ids = await Visit.distinct('visitorId', createdAtFilter);
+      return ids ? ids.length : 0;
     }),
     safeAnalyticsQuery('cart count', 0, () => ShopperProfile.countDocuments({ cartItems: trustedNonEmptyArray(), ...shopperCartRangeFilter })),
     safeAnalyticsQuery('checkout click count', 0, () => AnalyticsEvent.countDocuments({ type: 'checkout_click', ...createdAtFilter })),
