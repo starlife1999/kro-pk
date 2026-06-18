@@ -1772,11 +1772,12 @@ app.post('/api/admin/ai-chat', authMiddleware, async (req, res) => {
 function getAnalyticsRange(range = 'today') {
   const now = new Date();
   const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  if (range === 'last7') start.setDate(start.getDate() - 6);
-  if (range === 'last30') start.setDate(start.getDate() - 29);
-  if (range === 'last90') start.setDate(start.getDate() - 89);
-  if (range === 'thisMonth') start.setDate(1);
+  // Use UTC dates to match MongoDB storage
+  start.setUTCHours(0, 0, 0, 0);
+  if (range === 'last7') start.setUTCDate(start.getUTCDate() - 6);
+  if (range === 'last30') start.setUTCDate(start.getUTCDate() - 29);
+  if (range === 'last90') start.setUTCDate(start.getUTCDate() - 89);
+  if (range === 'thisMonth') start.setUTCDate(1);
   if (range === 'all') return { key: 'all', label: 'All time', start: null, end: now };
   const labels = {
     today: 'Today',
