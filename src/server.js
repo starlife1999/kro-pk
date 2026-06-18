@@ -1820,7 +1820,7 @@ async function buildAnalyticsReport(rangeKey = 'today') {
   // IMPORTANT: match Visit.createdAt actual schema type (Date)
   // Ensure we NEVER double-wrap { createdAt: { createdAt: ... } }.
   const createdAtFilter = range.start
-    ? { createdAt: { $gte: range.start, $lte: range.end } }
+    ? { createdAt: mongoose.trusted({ $gte: range.start, $lte: range.end }) }
     : {};
 
   // For aggregation $match use the plain operator object
