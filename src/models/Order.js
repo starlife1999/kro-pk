@@ -26,6 +26,7 @@ const orderSchema = new mongoose.Schema({
   promoCode: { type: String, default: '' },
   discountPercent: { type: Number, default: 0 },
   deliveryCost: { type: Number, default: 0 },
+  universityPickup: { type: Boolean, default: false },
   total: { type: Number, required: true },
   paystackReference: { type: String, required: true, unique: true },
   visitorId: { type: String, default: '', index: true },

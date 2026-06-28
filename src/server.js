@@ -34,8 +34,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@kropk.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'password';
 const OWNER_EMAIL = process.env.OWNER_EMAIL || 'orders@kropk.com';
-/** Flat nationwide delivery in NGN (must match cart checkout). */
-const FLAT_DELIVERY_FEE_NGN = 4500;
+/** Delivery fees (NGN). Must match public/cart.html rules. */
+const DELIVERY_FEES = {
+  UNIVERSITY_PICKUP_NGN: 4500,
+  OYO_NGN: 2000,
+  LAGOS_NGN: 4000,
+  OGUN_NGN: 4000,
+  OTHER_NGN: 5000
+};
+
 const SITE_URL = 'https://www.kro-pk.shop';
 const SITE_ICON_URL = `${SITE_URL}/android-chrome-512x512.png`;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -1143,6 +1150,12 @@ app.post('/api/analytics/profile', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   const { customer, items, paystackReference, promoCode, visitorId, sessionId } = req.body;
+  const universityPickup = req.body?.universityPickupSelected === true;
+
+  // Delivery fee inputs must be present/clean so Paystack amount can be validated reliably.
+  const requestedState = String(customer.state || '').trim().toLowerCase();
+
+
   if (!customer || !items || !Array.isArray(items) || !items.length || !paystackReference) {
     return res.status(400).json({ message: 'Customer, items and paystackReference are required' });
   }
@@ -1151,6 +1164,9 @@ app.post('/api/orders', async (req, res) => {
   if (missingFields.length) {
     return res.status(400).json({ message: 'All customer fields are required' });
   }
+
+
+
   if (!isValidEmail(customer.email)) {
     return res.status(400).json({ message: 'A valid customer email is required' });
   }
@@ -1160,6 +1176,18 @@ app.post('/api/orders', async (req, res) => {
   const productsToUpdate = [];
   const lowStockItems = [];
   let total = 0;
+
+  const state = requestedState;
+
+
+  function calculateDeliveryFeeNgn(serverState, serverUniversityPickup) {
+    if (serverUniversityPickup) return DELIVERY_FEES.UNIVERSITY_PICKUP_NGN;
+    if (serverState === 'oyo') return DELIVERY_FEES.OYO_NGN;
+    if (serverState === 'lagos') return DELIVERY_FEES.LAGOS_NGN;
+    if (serverState === 'ogun') return DELIVERY_FEES.OGUN_NGN;
+    return DELIVERY_FEES.OTHER_NGN;
+  }
+
 
   for (const item of items) {
     const slug = String(item?.slug || '').trim();
@@ -1206,7 +1234,15 @@ app.post('/api/orders', async (req, res) => {
 
   const totalBeforeDiscount = total;
   const discountedTotal = discountPercent > 0 ? Math.round(total * (1 - discountPercent / 100)) : total;
-  const grandTotal = discountedTotal + FLAT_DELIVERY_FEE_NGN;
+
+  const deliveryCost = calculateDeliveryFeeNgn(state, universityPickup);
+  if (!Number.isFinite(deliveryCost) || deliveryCost < 0) {
+    return res.status(400).json({ message: 'Invalid delivery fee calculation' });
+  }
+
+  const grandTotal = discountedTotal + deliveryCost;
+
+
 
   const paystackData = await verifyPaystackPayment(paystackReference);
   const expectedAmount = grandTotal * 100;
@@ -1255,13 +1291,15 @@ app.post('/api/orders', async (req, res) => {
       totalBeforeDiscount: discountPercent > 0 ? totalBeforeDiscount : null,
       promoCode: appliedPromoCode,
       discountPercent,
-      deliveryCost: FLAT_DELIVERY_FEE_NGN,
+      deliveryCost,
+      universityPickup,
       total: grandTotal,
       paystackReference,
       paymentStatus: paystackData.status,
       visitorId: String(visitorId || '').trim(),
       sessionId: String(sessionId || '').trim()
     }], { session });
+
 
     await session.commitTransaction();
     session.endSession();
